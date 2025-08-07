@@ -20,7 +20,79 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #fff; /* Light background */
+  color: #333;
+}
+
+/* Specific styling for headers and body text */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Plus Jakarta Sans';
+}
+
+.headingH1 {
+  font-family: 'Plus Jakarta Sans';
+  font-size: 54.57px;
+  font-weight: 800;
+}
+.headingP {
+  font-family: 'Plus Jakarta Sans';
+  font-size: 20.46px;
+  font-weight: 400;
+  color: #4F5E64;
+}
+.categoriesP {
+  font-family: 'Plus Jakarta Sans';
+  font-size: 18px;
+  font-weight: 500;
+  color: #66789C;
+}
+.browseH2 {
+  font-family: 'Plus Jakarta Sans';
+  font-size: 36px;
+  font-weight: 700;
+  color: #05264E;
+}
+.browseH3 {
+  font-family: 'Plus Jakarta Sans';
+  font-size: 22px;
+  font-weight: 700;
+  color: #05264E;
+}
+.browseP {
+  font-family: 'Plus Jakarta Sans';
+  font-size: 16px;
+  font-weight: 500;
+  color: #4F5E64;
+}
+.pCard {
+  font-family: 'Plus Jakarta Sans';
+  font-size: 16px;
+  font-weight: 400;
+  color: #667282;
+}
+.h3Card {
+  font-family: 'Plus Jakarta Sans';
+  font-size: 23px;
+  font-weight: 600;
+  color: #12223B;
+}
+
+p, li, span {
+  font-weight: 400; /* Regular font weight for body text */
+}
+
+.custom-link {
+  color: #05264E;
+  font-family: 'Plus Jakarta Sans';
+  font-size: 17.85px;
+  font-weight: 500;
+}
+.custom-link-button {
+  color: #fff;
+  font-family: 'Plus Jakarta Sans';
+  font-size: 17.85px;
+  font-weight: 500;
 }
