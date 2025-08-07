@@ -22,13 +22,15 @@ export default function StepsCardGrid({ steps, className = '' }: StepsCardGridPr
               className="bg-[#F7F7F7] rounded-2xl p-6 shadow-sm text-center flex flex-col items-center max-w-[512px]"
             >
               <div className="w-14 h-14 rounded-full bg-[#C60000] flex items-center justify-center mb-4">
-                <Image
-                  src={step.icon}
-                  alt={step.title}
-                  width={24}
-                  height={24}
-                  className="object-contain"
-                />
+                <div className="w-8 h-8 relative">
+                  <Image
+                    src={step.icon}
+                    alt={step.title}
+                    fill
+                    className="object-contain"
+                    sizes="24px"
+                  />
+                </div>
               </div>
               <h3 className="h3Card mb-2">{step.title}</h3>
               <p className="pCard leading-relaxed">{step.description}</p>
