@@ -10,7 +10,7 @@ export default function Footer() {
         <div className="col-span-3 space-y-6">
           <Image src="/kindLogo.png" alt="Kind Logo" width={120} height={60} />
           <p className="footerSubText">
-            Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text.
+            Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry&apos;s standard dummy text.
           </p>
           <div className="flex space-x-4">
             <span className="bg-red-600 text-white p-2 rounded-full hover:bg-red-700 cursor-pointer">
