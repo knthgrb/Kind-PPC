@@ -43,7 +43,7 @@ export default function LatestJobs({
     setFilters(inputs);
   };
 
-  const updateInput = (key: keyof typeof inputs, value: any) => {
+  const updateInput = <K extends keyof typeof inputs>(key: K, value: typeof inputs[K]) => {
     setInputs((prev) => ({ ...prev, [key]: value }));
   };
 
