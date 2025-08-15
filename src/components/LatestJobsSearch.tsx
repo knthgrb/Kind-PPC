@@ -48,7 +48,8 @@ export default function LatestJobs({
   };
 
   const filteredJobs = latestJobs.filter((job) => {
-    const text = `${job.name} ${job.occupation} ${job.location} ${job.price}`.toLowerCase();
+    const text =
+      `${job.name} ${job.occupation} ${job.location} ${job.price}`.toLowerCase();
 
     return (
       filters.tags.every((tag) => text.includes(tag.toLowerCase())) &&
@@ -59,11 +60,10 @@ export default function LatestJobs({
   });
 
   return (
-    <section className="bg-white px-4">
+    <section className="px-4">
       <div className="max-w-[1100px] mx-auto">
         <div className="flex items-stretch w-full gap-0">
           <div className="bg-white border border-gray-200 rounded-l-lg flex flex-wrap items-center justify-between gap-4 p-6 flex-1">
-
             {/* Tags Input */}
             <div className="flex items-center flex-wrap gap-2 flex-1 min-w-[200px]">
               <CiSearch className="text-xl" />
@@ -91,10 +91,16 @@ export default function LatestJobs({
                 value={inputs.keyword}
                 onChange={(e) => updateInput("keyword", e.target.value)}
                 onKeyDown={(e) => {
-                  if ((e.key === "Enter" || e.key === ",") && inputs.keyword.trim()) {
+                  if (
+                    (e.key === "Enter" || e.key === ",") &&
+                    inputs.keyword.trim()
+                  ) {
                     e.preventDefault();
                     if (!inputs.tags.includes(inputs.keyword.trim())) {
-                      updateInput("tags", [...inputs.tags, inputs.keyword.trim()]);
+                      updateInput("tags", [
+                        ...inputs.tags,
+                        inputs.keyword.trim(),
+                      ]);
                     }
                     updateInput("keyword", "");
                   } else if (e.key === "Backspace" && !inputs.keyword) {
@@ -143,7 +149,10 @@ export default function LatestJobs({
 
       <div className="flex justify-center w-full my-8">
         <button className="py-3 px-8 bg-white text-[#CC0000] border-1 border-[#CC0000] rounded-lg hover:bg-[#CC0000] hover:text-white w-full sm:w-auto">
-          <span className="flex items-center gap-2 text-sm !font-bold">View All<FaArrowRight /></span>
+          <span className="flex items-center gap-2 text-sm !font-bold">
+            View All
+            <FaArrowRight />
+          </span>
         </button>
       </div>
     </section>
@@ -157,7 +166,12 @@ type FilterSelectProps = {
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 };
 
-function FilterSelect({ icon: Icon, value, options, onChange }: FilterSelectProps) {
+function FilterSelect({
+  icon: Icon,
+  value,
+  options,
+  onChange,
+}: FilterSelectProps) {
   return (
     <div className="flex items-center gap-2 flex-1">
       <Icon className="text-gray-500" />

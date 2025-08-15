@@ -14,21 +14,25 @@ type PricingProps = {
 export default function PricingList({ pricing }: PricingProps) {
   return (
     <section className="bg-white">
-      <div className="max-w-6xl bg-white mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 px-4">        
+      <div className="max-w-6xl bg-white mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 px-4">
         {pricing.map((pricing, index) => (
-          <div key={index} className="flex flex-col p-[45px] rounded-2xl bg-white border border-[#E6E7E9] hover:border-gray-400 transition-all w-full h-auto">
-            <h3 className="pricingh3">
-                {pricing.tier}
+          <div
+            key={index}
+            className="flex flex-col p-[45px] rounded-2xl bg-white border border-[#E6E7E9] hover:border-[#CC0000] transition-all w-full h-auto"
+          >
+            <h3 className="pricingh3 font-plusJakarta font-bold text-textPrimary">
+              {pricing.tier}
             </h3>
             <p>
-              <span className="pricingPrice text-[#CC0000]">₱{pricing.price.toLocaleString()}</span>
-              <span className="pricingPriceSubtext">/month</span>
+              <span className="pricingh4 text-[#CC0000]">
+                ₱{pricing.price.toLocaleString()}
+              </span>
+              <span className="pricingPriceSubtext text-[#A0ABB8]">/month</span>
             </p>
-            
-            <p className="pricingP max-w-[200px]">
-                {pricing.description}
-            </p>
-            <hr  className="pricingP mb-[20px] mt-[20px]"></hr>
+            <p className={`pricingP ${index < 2 ? "max-w-[150px]" : "w-full"}`}>
+              {pricing.description}
+            </p>{" "}
+            <hr className="pricingP mb-[20px] mt-[20px]"></hr>
             <ul className="mb-[40px] space-y-5">
               {pricing.features.map((feature, featureIndex) => (
                 <li

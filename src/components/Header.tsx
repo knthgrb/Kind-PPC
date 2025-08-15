@@ -1,11 +1,10 @@
-import Image from 'next/image';
-import Link from 'next/link';
+import Image from "next/image";
+import Link from "next/link";
 
 export default function Header() {
   return (
-    <header className="bg-white shadow-md">
+    <header className="bg-white">
       <div className="w-full px-35 mx-auto flex justify-between items-center p-4">
-        
         {/* Logo on the Left */}
         <div className="flex items-center">
           <Image src="/kindLogo.png" alt="Kind Logo" width={150} height={50} />
@@ -13,12 +12,24 @@ export default function Header() {
 
         {/* Menu Links */}
         <nav className="flex space-x-10 text-lg font-medium">
-          <Link href="/" className="custom-link hover:text-red-600">Home</Link>
-          <Link href="/find-help" className="custom-link hover:text-red-600">Find Help</Link>
-          <Link href="/find-work" className="custom-link hover:text-red-600">Find Work</Link>
-          <Link href="/about" className="custom-link hover:text-red-600">About</Link>
-          <Link href="/pricing" className="custom-link hover:text-red-600">Pricing</Link>
-          <Link href="/contact-us" className="custom-link hover:text-red-600">Contact Us</Link>
+          <Link href="/" className="custom-link hover:text-red-600">
+            Home
+          </Link>
+          <Link href="/find-help" className="custom-link hover:text-red-600">
+            Find Help
+          </Link>
+          <Link href="/find-work" className="custom-link hover:text-red-600">
+            Find Work
+          </Link>
+          <Link href="/about" className="custom-link hover:text-red-600">
+            About
+          </Link>
+          <Link href="/pricing" className="custom-link hover:text-red-600">
+            Pricing
+          </Link>
+          <Link href="/contact-us" className="custom-link hover:text-red-600">
+            Contact Us
+          </Link>
         </nav>
 
         {/* Register and Sign In Button */}

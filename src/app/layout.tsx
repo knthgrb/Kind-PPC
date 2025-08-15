@@ -40,11 +40,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${plusJakartaSans.variable} ${barlowCondensed.variable} antialiased`}
+        className={`font-sans ${plusJakartaSans.variable} ${geistSans.variable} ${geistMono.variable} ${barlowCondensed.variable} antialiased`}
       >
         {/* Header component at the top */}
         <Header />
-        
+
         {/* Main content of the page */}
         {children}
       </body>
