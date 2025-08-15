@@ -1,8 +1,7 @@
 import { Plus_Jakarta_Sans, Barlow_Condensed } from "next/font/google";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import Header from "@/components/Header"; // Import your Header component
+import "@/styles/globals.css";
 
 // Import the required fonts
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -42,10 +41,6 @@ export default function RootLayout({
       <body
         className={`font-sans ${plusJakartaSans.variable} ${geistSans.variable} ${geistMono.variable} ${barlowCondensed.variable} antialiased`}
       >
-        {/* Header component at the top */}
-        <Header />
-
-        {/* Main content of the page */}
         {children}
       </body>
     </html>

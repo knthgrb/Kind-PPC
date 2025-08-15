@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import RoleCard from "@/components/RoleCard";
+import RoleCard from "@/app/(marketing)/_components/RoleCard";
 
 type Role = "bossing" | "tao" | null;
 
@@ -20,7 +20,10 @@ export default function RegisterChooseRolePage() {
       <section className="w-full max-w-5xl">
         <div className="text-center mt-10 mb-8">
           <h1 className="mb-2 signupH1">Join Kind Today!</h1>
-          <h2 className="signupH2">Are you looking to hire help or find rewarding<br/> household work?</h2>
+          <h2 className="signupH2">
+            Are you looking to hire help or find rewarding
+            <br /> household work?
+          </h2>
         </div>
 
         <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6">

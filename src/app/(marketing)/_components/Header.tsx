@@ -35,12 +35,12 @@ export default function Header() {
         {/* Register and Sign In Button */}
         <div className="flex space-x-4">
           <Link href="/register">
-            <button className="px-6 py-2 bg-white custom-link  text-lg">
+            <button className="px-6 py-2 bg-white custom-link  text-lg cursor-pointer">
               Register
             </button>
           </Link>
-          <Link href="/signin">
-            <button className="px-6 py-2 bg-red-600 text-white rounded-md text-lg hover:bg-red-700 custom-link-button">
+          <Link href="/login">
+            <button className="px-6 py-2 bg-red-600 text-white rounded-md text-lg hover:bg-red-700 custom-link-button cursor-pointer">
               Sign In
             </button>
           </Link>

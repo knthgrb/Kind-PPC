@@ -1,9 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import FaqAccordion from "@/components/FaqAccordion";
-import Subscribe from "@/components/Subscribe";
-import Footer from "@/components/Footer";
-import SectionHeader from "@/components/SectionHeading";
+import FaqAccordion from "@/app/(marketing)/_components/FaqAccordion";
+import Subscribe from "@/app/(marketing)/_components/Subscribe";
+import Footer from "@/app/(marketing)/_components/Footer";
+import SectionHeader from "@/app/(marketing)/_components/SectionHeading";
 
 export default function About() {
   const faqs = [
@@ -138,8 +138,6 @@ export default function About() {
       <FaqAccordion faq={faqs} />
 
       <Subscribe />
-
-      <Footer />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { FaRegEnvelope } from "react-icons/fa";
-import Footer from "@/components/Footer";
+import Footer from "@/app/(marketing)/_components/Footer";
 
 export default function ContactPage() {
   return (
@@ -113,7 +113,6 @@ export default function ContactPage() {
           </form>
         </div>
       </div>
-      <Footer />
     </div>
   );
 }

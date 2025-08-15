@@ -1,10 +1,10 @@
 import Image from "next/image";
-import Hero from "@/components/Hero";
-import FaqAccordion from "@/components/FaqAccordion";
-import Subscribe from "@/components/Subscribe";
-import Footer from "@/components/Footer";
-import SectionHeader from "@/components/SectionHeading";
-import PricingCard from "@/components/PricingCard";
+import Hero from "@/app/(marketing)/_components/Hero";
+import FaqAccordion from "@/app/(marketing)/_components/FaqAccordion";
+import Subscribe from "@/app/(marketing)/_components/Subscribe";
+import Footer from "@/app/(marketing)/_components/Footer";
+import SectionHeader from "@/app/(marketing)/_components/SectionHeading";
+import PricingCard from "@/app/(marketing)/_components/PricingCard";
 
 export default function Pricing() {
   const faqs = [
@@ -91,8 +91,6 @@ export default function Pricing() {
       </div>
 
       <Subscribe />
-
-      <Footer />
     </div>
   );
 }
