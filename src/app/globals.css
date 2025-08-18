@@ -104,6 +104,88 @@ h1, h2, h3, h4, h5, h6 {
   color: #454545;
 }
 
+/* OTP */
+.otpH1 {
+  font-family: 'Plus Jakarta Sans';
+  font-size: 26.5px;
+  font-weight: 700;
+  color: #000;
+}
+.otpP {
+  font-family: 'Plus Jakarta Sans';
+  font-size: 17px;
+  font-weight: 500;
+  color: #667282;
+}
+.otpInput {
+  font-family: 'Plus Jakarta Sans';
+  font-size: 22px;
+  font-weight: 800;
+}
+.popTitle {
+  font-family: 'Plus Jakarta Sans';
+  font-size: 19.5px;
+  font-weight: 600;
+  color: #000;
+}
+.popP {
+  font-family: 'Plus Jakarta Sans';
+  font-size: 11.5px;
+  font-weight: 400;
+  color: #000;
+}
+
+/* onboarding */
+.stepsNumber {
+    font-family: 'Plus Jakarta Sans';
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.stepsH1 {
+  font-family: 'Plus Jakarta Sans';
+  font-size: 28.5px;
+  font-weight: 600;
+  color: #12223B;
+}
+
+.stepsLabel {
+  font-family: 'Plus Jakarta Sans';
+  font-size: 18px;
+  font-weight: 500;
+  color: #000000;
+}
+
+.stepsSkills {
+  font-family: 'Plus Jakarta Sans';
+  font-size: 15.5px;
+  font-weight: 400;
+  color: #000000;
+}
+
+/* profile */
+
+.profileH1 {
+  font-family: 'Plus Jakarta Sans';
+  font-size: 28.5px;
+  font-weight: 600;
+  color: #12223B;
+}
+
+.profileLabel {
+  font-family: 'Plus Jakarta Sans';
+  font-size: 18px;
+  font-weight: 500;
+  color: #000000;
+}
+
+.profileSkills {
+  font-family: 'Plus Jakarta Sans';
+  font-size: 15.5px;
+  font-weight: 400;
+  color: #000000;
+}
+
 
 .headingH1 {
   font-family: 'Plus Jakarta Sans';
