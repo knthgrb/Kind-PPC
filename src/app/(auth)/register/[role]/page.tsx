@@ -1,7 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 
-export default function SignUpPage() {
+export default async function SignUpPage({
+  params,
+}: {
+  params: { role: string };
+}) {
   return (
     <main className="min-h-screen flex items-center justify-center px-4">
       <section className="w-full max-w-xl rounded-2xl border border-[#DFDFDF] shadow-sm p-8 md:p-10">

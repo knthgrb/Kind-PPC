@@ -1,0 +1,311 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-plus-jakarta-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #fff; /* Light background */
+  color: #333;
+}
+
+/* LOGIN */
+.loginH1 {
+  font-family: "Plus Jakarta Sans";
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #12223b;
+}
+.loginLabel {
+  font-family: "Plus Jakarta Sans";
+  font-size: 0.969rem;
+  font-weight: 500;
+  color: #000;
+}
+.input-placeholder::placeholder {
+  font-family: "Plus Jakarta Sans";
+  font-size: 0.813rem;
+  font-weight: 400;
+  color: #808080;
+}
+
+/* REGISTER */
+.registerH1 {
+  font-family: "Plus Jakarta Sans";
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #12223b;
+}
+
+.registerLabel {
+  font-family: "Plus Jakarta Sans";
+  font-size: 0.969rem;
+  font-weight: 500;
+  color: #000;
+}
+
+.registerInput::placeholder {
+  font-family: "Plus Jakarta Sans";
+  font-size: 0.813rem;
+  font-weight: 400;
+  color: #808080;
+}
+
+/* SIGNUP */
+.signupH1 {
+  font-family: "Plus Jakarta Sans";
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #05264e;
+}
+
+.signupH2 {
+  font-family: "Plus Jakarta Sans";
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #66789c;
+}
+
+.signupH3 {
+  font-family: "Plus Jakarta Sans";
+  font-size: 1.094rem;
+  font-weight: 700;
+  color: #05264e;
+}
+.signupBullet {
+  font-family: "Plus Jakarta Sans";
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #454545;
+}
+
+.headingH1 {
+  font-family: "Plus Jakarta Sans";
+  font-size: 3.411rem;
+  font-weight: 800;
+}
+.headingP {
+  font-family: "Plus Jakarta Sans";
+  font-size: 1.279rem;
+  font-weight: 400;
+  color: #4f5e64;
+}
+
+.footerH4 {
+  font-family: "Plus Jakarta Sans";
+  font-size: 0.919rem;
+  font-style: bold;
+  font-weight: 700;
+  color: #05264e;
+}
+.footerP {
+  font-family: "Plus Jakarta Sans";
+  font-size: 0.804rem;
+  font-weight: 400;
+  color: #4f5e64;
+}
+.footerSubText {
+  font-family: "Plus Jakarta Sans";
+  font-size: 0.689rem;
+  font-weight: 500;
+  font-style: medium;
+  color: #66789c;
+}
+.categoriesP {
+  font-family: "Plus Jakarta Sans";
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #66789c;
+}
+.browseH2 {
+  font-family: "Plus Jakarta Sans";
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #05264e;
+}
+.browseH3 {
+  font-family: "Plus Jakarta Sans";
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: #05264e;
+}
+.browseP {
+  font-family: "Plus Jakarta Sans";
+  font-size: 1rem;
+  font-weight: 500;
+  color: #4f5e64;
+}
+.pCard {
+  font-family: "Plus Jakarta Sans";
+  font-size: 1rem;
+  font-weight: 400;
+  color: #667282;
+}
+.h3Card {
+  font-family: "Plus Jakarta Sans";
+  font-size: 1.438rem;
+  font-weight: 600;
+  color: #12223b;
+}
+
+.jobh3 {
+  font-family: "Plus Jakarta Sans";
+  font-size: 1.086rem;
+  font-style: bold;
+  font-weight: 700;
+  color: #05264e;
+}
+
+.jobh4 {
+  font-family: "Plus Jakarta Sans";
+  font-size: 0.965rem;
+  font-style: bold;
+  font-weight: 700;
+  color: #05264e;
+}
+
+.jobP {
+  font-family: "Plus Jakarta Sans";
+  font-size: 0.724rem;
+  font-weight: 400;
+  color: #a0abb8;
+}
+
+.jobPrice {
+  font-family: "Plus Jakarta Sans";
+  font-size: 1.328rem;
+  font-style: bold;
+  font-weight: 700;
+  color: #cc0000;
+}
+
+.jobPriceP {
+  font-family: "Plus Jakarta Sans";
+  font-size: 0.846rem;
+  font-weight: 400;
+  color: #6c757d;
+}
+
+.pricingh3 {
+  font-family: "Plus Jakarta Sans";
+  font-size: 1.75rem;
+  font-style: bold;
+  font-weight: 700;
+  color: #05264e;
+}
+
+.pricingh4 {
+  font-family: "Plus Jakarta Sans";
+  font-size: 3.5rem;
+  font-style: extra-bold;
+  font-weight: 800;
+  color: #cc0000;
+}
+
+.pricingh4Subtext {
+  font-family: "Plus Jakarta Sans";
+  font-size: 1.125rem;
+  font-weight: 400;
+  color: #a0abb8;
+}
+
+.pricingP {
+  font-family: "Plus Jakarta Sans";
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-style: medium;
+  color: #4f5e64;
+}
+
+.pricingFeatures {
+  font-family: "Plus Jakarta Sans";
+  font-size: 0.938rem;
+  font-weight: 400;
+  color: #4f5e64;
+}
+
+.faqh3 {
+  font-family: "Plus Jakarta Sans";
+  font-size: 1.163rem;
+  font-style: bold;
+  font-weight: 600;
+}
+
+.faqP {
+  font-family: "Plus Jakarta Sans";
+  font-size: 1.034rem;
+  font-weight: 400;
+  color: #ffffff;
+}
+
+.subscribeH2 {
+  font-family: "Plus Jakarta Sans";
+  font-size: 2.139rem;
+  font-style: semi-bold;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.subscribeP {
+  font-family: "Plus Jakarta Sans";
+  font-size: 0.811rem;
+  font-weight: 400;
+}
+
+p,
+li,
+span {
+  font-weight: 400; /* Regular font weight for body text */
+}
+
+.custom-link {
+  color: #05264e;
+  font-family: "Plus Jakarta Sans";
+  font-size: 1.116rem;
+  font-weight: 500;
+}
+.custom-link-button {
+  color: #fff;
+  font-family: "Plus Jakarta Sans";
+  font-size: 1.116rem;
+  font-weight: 500;
+}
+
+.aboutTitle {
+  font-family: "Plus Jakarta Sans";
+  font-size: 3.398rem;
+  font-style: bold;
+  font-weight: 800;
+}
+
+.aboutSubtitle {
+  font-family: "Plus Jakarta Sans";
+  font-size: 2.091rem;
+  font-style: bold;
+  font-weight: 800;
+  color: #a0abb8;
+}
+
+.aboutP {
+  font-family: "Plus Jakarta Sans";
+  font-size: 0.915rem;
+  font-style: normal;
+  font-weight: 400;
+}

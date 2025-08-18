@@ -32,17 +32,17 @@ export default function LatestJobsCardGrid({ jobs }: Props) {
                 />
               </div>
               <div className="flex flex-col justify-center">
-                <h4 className="jobh4 font-bold mb-1">{job.name}</h4>
+                <h4 className="jobh3 font-bold mb-1">{job.name}</h4>
                 <p className="jobp pr-10 flex items-center">{job.location}</p>
               </div>
             </div>
-            <h4 className="jobh4 font-bold mb-1">{job.occupation}</h4>
+            <h4 className="jobh3 font-bold mb-1">{job.occupation}</h4>
             <div className="flex items-center justify-between mt-auto">
               <p>
                 <span className="jobPrice text-[#CC0000]">
                   ₱{job.price.toLocaleString()}
                 </span>
-                <span className="text-sm ml-1">/day</span>
+                <span className="jobPriceP ml-1">/day</span>
               </p>
               <button className="py-1 px-4 mr-[3px] bg-[#CC0000] text-white rounded-lg text-lg hover:bg-red-700">
                 <span className="text-xs">Apply Now</span>
