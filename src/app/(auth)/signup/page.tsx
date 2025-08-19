@@ -11,7 +11,7 @@ export default function RegisterChooseRolePage() {
 
   const onContinue = () => {
     if (!role) return;
-    const next = role === "bossing" ? "/register/bossing" : "/register/tao";
+    const next = role === "bossing" ? "/signup/bossing" : "/signup/tao";
     window.location.href = next;
   };
 

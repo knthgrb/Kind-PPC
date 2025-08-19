@@ -52,7 +52,10 @@ export default function LoginPage() {
 
         {/* Forgot password */}
         <div className="mb-6 flex justify-end">
-          <Link href="/forgot-password" className="underline underline-offset-2">
+          <Link
+            href="/forgot-password"
+            className="underline underline-offset-2"
+          >
             Forgot Password?
           </Link>
         </div>
@@ -70,7 +73,7 @@ export default function LoginPage() {
         {/* Footer links */}
         <p className="text-center">
           No Account ?{" "}
-          <Link href="/register" className="underline underline-offset-2">
+          <Link href="/signup" className="underline underline-offset-2">
             Sign up
           </Link>
         </p>
