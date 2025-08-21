@@ -68,6 +68,38 @@ body {
   color: #808080;
 }
 
+/* KINDBOSSING */
+/* POST JOB TYPOGRAPHY (copied from profile classes but renamed) */
+.postJobH1 {
+  font-family: 'Plus Jakarta Sans';
+  font-size: 28.5px;
+  font-weight: 600;
+  color: #12223B;
+}
+
+.postJobLabel {
+  font-family: 'Plus Jakarta Sans';
+  font-size: 18px;
+  font-weight: 500;
+  color: #000000;
+}
+
+.postJobInputPlaceholder {
+  font-family: 'Plus Jakarta Sans';
+  font-size: 15.5px;
+  font-weight: 400;
+  color: #000000;
+}
+
+.postJobInputPlaceholder::placeholder {
+  font-family: 'Plus Jakarta Sans';
+  font-size: 15.5px;
+  font-weight: 400;
+  color: #8C8C8C; /* placeholder lighter shade */
+}
+
+
+
 /* SIGNUP */
 .signupH1 {
   font-family: "Plus Jakarta Sans";
