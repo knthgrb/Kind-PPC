@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 
-export default function AccountCreatedModal({
+export default function ContinueModal({
   open,
   onClose,
   onAction,
@@ -17,7 +17,7 @@ export default function AccountCreatedModal({
   title?: string;
   description?: string;
   buttonLabel?: string;
-  icon?: string | null;   // <-- optional now
+  icon?: string | null; // <-- optional now
 }) {
   if (!open) return null;
 

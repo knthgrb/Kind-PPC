@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import Stepper from "@/components/Stepper";
 import StepperFooter from "@/components/StepperFooter";
 import { useRouter } from "next/navigation";
-import AccountCreatedModal from "@/components/AccountCreatedModal";
+import ContinueModal from "@/components/ContinueModal";
 
 const DOC_TYPES = [
   "National ID",
@@ -60,7 +60,7 @@ export default function DocumentUploadPage() {
         icon: "/icons/checkCircleOTP.png",
         onAction: () => {
           setModalOpen(false);
-          router.push("/profile/complete");
+          router.push("/profile");
         },
       });
       setModalOpen(true);
@@ -145,14 +145,14 @@ export default function DocumentUploadPage() {
         )}
 
         <StepperFooter
-          onBack={() => router.push("/kindtao/profile")}
+          onBack={() => router.push("/onboarding/work-history")}
           onNext={handleNext}
         />
       </section>
 
       {/* Dynamic Modal */}
       {modalProps && (
-        <AccountCreatedModal
+        <ContinueModal
           open={modalOpen}
           onClose={() => setModalOpen(false)}
           onAction={modalProps.onAction}

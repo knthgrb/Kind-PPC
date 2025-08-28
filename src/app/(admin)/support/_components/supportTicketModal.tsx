@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { formatMMDDYYYY } from "@/utils/dateFormatter";
+import Dropdown from "@/components/dropdown/Dropdown";
 
 type Ticket = {
   id: number;
@@ -57,89 +58,89 @@ export default function SupportTicketDialog({ open, onClose, ticket }: Props) {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-3 sm:px-6"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="ticket-dialog-title"
     >
       <div
-        className="w-full max-w-5xl rounded-[28px] bg-white p-6 shadow-xl"
+        className="w-full max-w-5xl rounded-[28px] bg-white p-4 sm:p-6 shadow-xl max-h-[80vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           {/* Left: User Information */}
-          <section className="rounded-2xl bg-gray-50 p-5">
-            <h3 className="mb-4 text-[1.314rem] font-semibold text-[#222222]">
+          <section className="rounded-2xl bg-gray-50 p-4 sm:p-5">
+            <h3 className="mb-4 text-lg sm:text-[1.314rem] font-semibold text-[#222222]">
               User Information
             </h3>
 
-            <div className="flex items-center gap-4">
-              <div className="relative w-40 aspect-square rounded-full overflow-hidden bg-white ring-4 ring-[#D0D0D0]">
+            <div className="flex flex-col sm:flex-row items-center sm:items-center gap-10">
+              <div className="relative w-32 sm:w-40 aspect-square rounded-full overflow-hidden bg-white ring-4 ring-[#D0D0D0]">
                 <img src={profilePic} alt="" className="object-cover" />
               </div>
-              <div>
-                <div className="text-[1.417rem] font-semibold text-[#222222]">
+              <div className="text-center sm:text-left">
+                <div className="text-xl sm:text-[1.417rem] font-semibold text-[#222222] mt-1">
                   {ticket?.userName ?? "—"}
                 </div>
-                <div className="text-[1.006rem] text-[#667282]">{email}</div>
-                <div className="text-[1.006rem] text-[#667282]">{number}</div>
-                <div className="text-[1.006rem] text-[#667282]">{address}</div>
+                <div className="text-sm sm:text-[1.006rem] text-[#667282] mt-1">
+                  {email}
+                </div>
+                <div className="text-sm sm:text-[1.006rem] text-[#667282] mt-1">
+                  {number}
+                </div>
+                <div className="text-sm sm:text-[1.006rem] text-[#667282] mt-1">
+                  {address}
+                </div>
               </div>
             </div>
 
-            <div className="mt-5 grid grid-cols-3 gap-3 text-[1.006rem]">
+            <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm sm:text-[1.006rem]">
               <div>
-                <div className="text-[1.006rem] font-medium text-[#101010]">
-                  Ticket ID:
-                </div>
-                <div className="text-[1.006rem] text-[#667282]">
+                <div className="font-medium text-[#101010]">Ticket ID:</div>
+                <div className="text-[#667282]">
                   #{ticket ? String(ticket.id).padStart(3, "0") : "—"}
                 </div>
               </div>
               <div>
-                <div className="text-[1.006rem] font-medium text-[#101010]">
+                <div className="font-medium text-[#101010]">
                   Submitted Date:
                 </div>
-                <div className="text-[1.006rem] text-[#667282]">
+                <div className="text-[#667282]">
                   {ticket ? formatMMDDYYYY(ticket.submittedDate) : "—"}
                 </div>
               </div>
               <div>
-                <div className="text-[1.006rem] font-medium text-[#101010]">
-                  Ticket Status:
-                </div>
-                <select
-                  className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1 text-[1.006rem] text-[#667282]"
+                <div className="font-medium text-[#101010]">Ticket Status:</div>
+                <Dropdown
                   value={status}
-                  onChange={(e) =>
-                    setStatus(e.target.value as Ticket["status"])
-                  }
-                >
-                  <option value="In Progress">In Progress</option>
-                  <option value="Resolved">Resolved</option>
-                </select>
+                  className="border border-[#D0D0D0] bg-white rounded-md"
+                  options={["In Progress", "Resolved"]}
+                  onChange={(val) => setStatus(val as Ticket["status"])}
+                />
               </div>
             </div>
           </section>
 
           {/* Right: Issue */}
-          <section className="rounded-2xl bg-gray-50 p-5">
-            <h3 className="mb-3 text-[1.417rem] font-semibold text-[#222222]">
+          <section className="rounded-2xl bg-gray-50 p-4 sm:p-5">
+            <h3 className="mb-3 text-lg sm:text-[1.217rem] font-semibold text-[#222222]">
               {ticket?.issueType ?? "Issue"}
             </h3>
-            <div className="text-[1.006rem] text-[#667282]">{issueDesc}</div>
-
-            <div className="mt-4 text-sm font-medium text-gray-700">
-              Attached File
+            <div className="text-sm sm:text-[1.006rem] text-[#667282]">
+              {issueDesc}
             </div>
+
+            <h3 className="mb-3 text-lg sm:text-[1.217rem] font-semibold text-[#222222] mt-5">
+              Attached File
+            </h3>
             <div className="mt-2 flex flex-wrap gap-3">
               {attachments.map((src, i) => (
                 <img
                   key={i}
                   src={src}
                   alt={`attachment-${i}`}
-                  className="h-20 w-36 rounded-md object-cover ring-1 ring-gray-200"
+                  className="h-16 w-28 sm:h-20 sm:w-36 rounded-md object-cover ring-1 ring-gray-200"
                 />
               ))}
             </div>
@@ -147,18 +148,16 @@ export default function SupportTicketDialog({ open, onClose, ticket }: Props) {
         </div>
 
         {/* Footer buttons */}
-        <div className="mt-8 flex items-center justify-center gap-4">
+        <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
           <button
             onClick={onClose}
-            className="rounded-xl border border-red-600 px-6 py-2 text-[0.95rem] font-semibold text-red-600 hover:bg-red-50"
+            className="w-full sm:w-auto rounded-xl border border-red-600 px-6 py-2 text-sm sm:text-[0.95rem] font-semibold text-red-600 hover:bg-red-50"
           >
             Back
           </button>
           <button
-            onClick={() => {
-              onClose();
-            }}
-            className="rounded-xl bg-red-700 px-6 py-2 text-[0.95rem] font-semibold text-white hover:bg-red-800"
+            onClick={onClose}
+            className="w-full sm:w-auto rounded-xl bg-red-700 px-6 py-2 text-sm sm:text-[0.95rem] font-semibold text-white hover:bg-red-800"
           >
             Close Ticket
           </button>
