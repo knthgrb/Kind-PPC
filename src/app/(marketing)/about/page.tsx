@@ -4,53 +4,40 @@ import FaqAccordion from "@/app/(marketing)/_components/FaqAccordion";
 import Subscribe from "@/app/(marketing)/_components/Subscribe";
 import Footer from "@/app/(marketing)/_components/Footer";
 import SectionHeader from "@/app/(marketing)/_components/SectionHeading";
-
+import {
+  categories,
+  howItWorksSteps,
+  benefitsList,
+  locations,
+  jobTypes,
+  payTypes,
+  latestJobs,
+  pricingList,
+  faqs,
+} from "@/lib/marketing/homeData";
 export default function About() {
-  const faqs = [
-    {
-      title: "What is Kind and how does it work?",
-      description:
-        "Kind is the Philippines' trusted online marketplace connecting kindBossing with verifiedkindTao. Simply create a profile, browse verified kindTao or job postings, and hire or gethiredquickly and safely. Kind is the Philippines' trusted online marketplace connecting kindBossing with verifiedkindTao. Simply create a profile, browse verified kindTao or job postings, and hire or gethiredquickly and safely.",
-    },
-    {
-      title: "Is there a fee to join Kind?",
-      description:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    },
-    {
-      title: "How do I know if someone is verified?",
-      description:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    },
-    {
-      title: "Can I communicate with kindTao before hiring?",
-      description:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    },
-    {
-      title: "What kind of jobs are available on Kind?",
-      description:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    },
-  ];
-
   return (
-    <div>
-      <p className={`aboutSubtitle mx-auto max-w-7xl px-6 pt-10`}>About Us</p>
+    <div className="px-4 lg:px-0">
+      <p
+        className={`aboutSubtitle mx-auto max-w-7xl px-6 pt-10 text-center md:text-left`}
+      >
+        About Us
+      </p>
 
-      <section className="md:pb-16">
-        <div className="mx-auto max-w-7xl px-6 grid gap-10 md:grid-cols-[1.1fr_1fr]">
-          <div>
+      {/* About Section */}
+      <section className="pb-16">
+        <div className="mx-auto max-w-7xl px-6 grid gap-10 md:grid-cols-[1.1fr_1fr] sm:items-center md:items-start">
+          <div className="text-center md:text-left">
             <h1 className={`aboutTitle text-[#05264e]`}>
               Find the{" "}
               <span className={`aboutTitle text-[#CC0000]`}>Perfect</span> Match
               <br /> for Your Household
             </h1>
 
-            <div className="mt-5 flex items-center gap-3">
+            <div className="mt-5 flex flex-col sm:flex-row items-center justify-center md:justify-start gap-3">
               <Link
                 href="/jobs"
-                className={`aboutP text-white rounded-[10px] bg-[#E11F26] px-6 py-4`}
+                className={`aboutP text-white rounded-[10px] bg-[#E11F26] px-6 py-4 w-full sm:w-auto text-center`}
               >
                 Search Jobs
               </Link>
@@ -62,7 +49,10 @@ export default function About() {
               </Link>
             </div>
           </div>
-          <div className={`aboutP text-[#05264e] px-7`}>
+
+          <div
+            className={`aboutP text-[#05264e] px-2 md:px-0 lg:px-7 text-center md:text-left self-center`}
+          >
             <p className="mb-5">
               At Kind, we connect kindBossing like you with reliable, verified
               kindTao for all your household needs—yayas, caregivers, helpers,
@@ -80,9 +70,10 @@ export default function About() {
         </div>
       </section>
 
+      {/* Mission & Vision Section */}
       <section id="mission" className="pb-20">
         <div className="mx-auto max-w-7xl px-6 grid gap-10 md:grid-cols-[1fr_1.3fr] items-center">
-          <div>
+          <div className="order-2 md:order-1 text-center md:text-left">
             <h2 className={`aboutSubtitle mb-3`}>Our Mission &amp; Vision</h2>
             <div className={`aboutP text-[#05264e]`}>
               <p className="mb-5">
@@ -100,10 +91,10 @@ export default function About() {
               </p>
             </div>
 
-            <div className="mt-5 flex items-center gap-3">
+            <div className="mt-5 flex flex-col sm:flex-row items-center justify-center md:justify-start gap-3">
               <Link
                 href="/find-help"
-                className={`aboutP text-white rounded-[10px] bg-[#E11F26] px-6 py-4`}
+                className={`aboutP text-white rounded-[10px] bg-[#E11F26] px-6 py-4 w-full sm:w-auto text-center`}
               >
                 Find Help Now
               </Link>
@@ -116,7 +107,14 @@ export default function About() {
             </div>
           </div>
 
-          <div className="relative w-[565px] h-[460px] rounded-2xl overflow-hidden justify-self-end">
+          <div
+            className="
+              relative order-1 lg:order-2 
+              w-full h-[200px] lg:w-[565px] lg:h-[460px] 
+              rounded-2xl overflow-hidden 
+              justify-self-center lg:justify-self-end
+            "
+          >
             <Image
               src="/aboutUs/missionVission.png"
               alt="Younger and older hands together"
@@ -131,13 +129,14 @@ export default function About() {
 
       <SectionHeader
         title="FAQ's"
-        description={`Lorem Ipsum is simply dummy text of the printing and typesetting.`}
+        description={`Lorem Ipsum is simply dummy text of the printing and typesetting.`}
         className="pt-5 bg-white"
       />
-
       <FaqAccordion faq={faqs} />
 
       <Subscribe />
+
+      <Footer />
     </div>
   );
 }

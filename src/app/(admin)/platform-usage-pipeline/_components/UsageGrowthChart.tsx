@@ -27,7 +27,7 @@ export default function MonthlyRevenueLineChart({
     <div>
       <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data} barCategoryGap={35}>
+          <ComposedChart data={data}>
             <CartesianGrid
               strokeDasharray="0 0"
               stroke="#E5E7EB"
@@ -47,7 +47,7 @@ export default function MonthlyRevenueLineChart({
               tick={{ fontSize: 12, fill: "#000000" }}
               ticks={[0, 20, 40, 60, 80, 100]}
             />
-            <Bar dataKey="usage" radius={[5, 5, 0, 0]}>
+            <Bar dataKey="usage" radius={[5, 5, 0, 0]} barSize={30}>
               {data.map((entry, index) => (
                 <Cell
                   key={`cell-${index}`}

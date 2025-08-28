@@ -7,52 +7,11 @@ import { GoTriangleUp } from "react-icons/go";
 import MonthlyRevenueLineChart from "../_components/MonthlyRevenueLineChart";
 import MonthlyRevenueDonutChart from "./_components/MonthlyRevenueDonutChart";
 import PlansTable from "./_components/PlansTable";
-
-const revenueData = {
-  stats: {
-    totalRevenue: 55250,
-    activeSubscriptions: 25232,
-    cancelledSubscriptions: 530,
-  },
-  pricingPlans: [
-    {
-      id: 1,
-      planName: "Basic",
-      activeUsers: 546,
-      planType: "Monthly",
-      amountCollected: 56654,
-    },
-    {
-      id: 2,
-      planName: "Standard",
-      activeUsers: 3456,
-      planType: "Monthly",
-      amountCollected: 32456,
-    },
-    {
-      id: 3,
-      planName: "Enterprise",
-      activeUsers: 235,
-      planType: "Monthly",
-      amountCollected: 8762,
-    },
-  ],
-};
-
-const revenueBreakdownData = [
-  { name: "Basic", value: 33150, color: "#CB0000" },
-  { name: "Standard", value: 5525, color: "#05264E" },
-  { name: "Enterprise", value: 16575, color: "#0DA759" },
-];
-
-const monthlyRevenueData = [
-  { month: "SEP", value: 98, trend: 76 },
-  { month: "OCT", value: 88, trend: 65 },
-  { month: "NOV", value: 108, trend: 90 },
-  { month: "DEC", value: 80, trend: 65 },
-  { month: "JAN", value: 120, trend: 95 },
-  { month: "FEB", value: 118, trend: 100 },
-];
+import {
+  monthlyRevenueData,
+  revenueData,
+  revenueBreakdownData,
+} from "@/lib/admin/adminData";
 
 export default function Revenue() {
   const { stats, pricingPlans } = revenueData;
@@ -85,12 +44,14 @@ export default function Revenue() {
         {/* Charts */}
         <div className="pt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Line Chart */}
-          <div className="rounded-xl border border-[#D0D0D0] bg-white p-5 ">
+          <div className="rounded-xl border border-[#D0D0D0] bg-white p-5">
             <h3 className="font-semibold text-[#3D434A] pb-4">
               Monthly Revenue
             </h3>
-            <div className="flex items-start justify-between">
-              <div>
+
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              {/* Left Section (Text Info) */}
+              <div className="w-full md:w-auto">
                 <div className="text-[2.145rem] text-[#CB0000] font-bold">
                   ₱37.5K
                 </div>
@@ -104,19 +65,26 @@ export default function Revenue() {
                   <span className="text-[#CB0000] font-bold">On track</span>
                 </div>
               </div>
-              <div className="flex-1 h-[300px]">
+
+              {/* Right Section (Chart) */}
+              <div className="w-full md:flex-1 h-[300px]">
                 <MonthlyRevenueLineChart data={monthlyRevenueData} />
               </div>
             </div>
           </div>
 
           {/* Pie / Donut Chart */}
-          <div className="rounded-xl border border-[#D0D0D0] bg-white p-5 ">
+          <div className="rounded-xl border border-[#D0D0D0] bg-white p-5">
             <h3 className="font-semibold text-[#3D434A] pb-4">
               Revenue Breakdown
             </h3>
-            <div className="grid grid-cols-2 gap-4 items-center">
-              <MonthlyRevenueDonutChart data={revenueBreakdownData} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+              <div className="flex justify-center md:block">
+                {" "}
+                <div className="w-[250px] h-[250px] md:w-[300px] md:h-[300px] overflow-visible">
+                  <MonthlyRevenueDonutChart data={revenueBreakdownData} />
+                </div>
+              </div>
               <div className="flex flex-col space-y-3 mx-auto">
                 {revenueBreakdownData.map((item) => (
                   <div key={item.name} className="flex items-center gap-2">

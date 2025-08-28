@@ -3,7 +3,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import AccountCreatedModal from "@/components/AccountCreatedModal";
+import ContinueModal from "@/components/ContinueModal";
 import StepperFooter from "@/components/StepperFooter";
 
 export default function PostJobPage() {
@@ -30,7 +30,13 @@ export default function PostJobPage() {
   const units = ["Per Hour", "Per Day", "Per Week", "Per Month"];
 
   const handlePost = () => {
-    if (!title.trim() || !location.trim() || !amount || !unit || !description.trim()) {
+    if (
+      !title.trim() ||
+      !location.trim() ||
+      !amount ||
+      !unit ||
+      !description.trim()
+    ) {
       setModalProps({
         title: "Missing Information",
         description: "Please complete all required fields before posting.",
@@ -150,7 +156,7 @@ export default function PostJobPage() {
       </section>
 
       {/* Modal with safe fallbacks to satisfy TS */}
-      <AccountCreatedModal
+      <ContinueModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onAction={modalProps.onAction ?? (() => setModalOpen(false))}
