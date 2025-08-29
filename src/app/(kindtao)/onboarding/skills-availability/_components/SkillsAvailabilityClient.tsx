@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { DAYS_OF_WEEK, TIME_SLOTS } from "@/constants/onboarding";
 import {
@@ -10,10 +10,11 @@ import {
 } from "@/types/onboarding";
 import PillToggle from "@/components/onboarding/PillToggle";
 import StepperFooter from "@/components/StepperFooter";
+import { createClient } from "@/utils/supabase/client";
 
 export default function SkillsAvailabilityClient() {
   const router = useRouter();
-  const [skills, setSkills] = useState<string[]>(["Cooking", "Cleaning"]);
+  const [skills, setSkills] = useState<string[]>(["cooking", "cleaning"]);
   const [skillInput, setSkillInput] = useState("");
 
   const [daysExpanded, setDaysExpanded] = useState(true);
@@ -28,13 +29,56 @@ export default function SkillsAvailabilityClient() {
   const [slotMorning, setSlotMorning] = useState(false);
   const [slotEvening, setSlotEvening] = useState(true);
 
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const [skillDropdownOpen, setSkillDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const isClickingDropdown = useRef(false);
+
+  // Click outside handler to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current && 
+        !dropdownRef.current.contains(event.target as Node) &&
+        inputRef.current && 
+        !inputRef.current.contains(event.target as Node)
+      ) {
+        setSkillDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   const allDays: DayOfWeek[] = useMemo(() => [...DAYS_OF_WEEK], []);
 
-  const addSkill = () => {
-    const s = skillInput.trim();
-    if (!s) return;
-    if (!skills.includes(s)) setSkills((prev) => [...prev, s]);
+  // Valid skills from database enum
+  const VALID_SKILLS = ["childcare", "elderly_care", "cooking", "cleaning", "driving", "pet_care", "tutoring"];
+
+  // Filter skills based on input and already selected skills
+  const filteredSkills = VALID_SKILLS.filter(skill => 
+    !skills.includes(skill) && 
+    skill.toLowerCase().includes(skillInput.toLowerCase())
+  );
+
+  // Helper function to capitalize skill names for display
+  const capitalizeSkill = (skill: string) => {
+    return skill.charAt(0).toUpperCase() + skill.slice(1).replace('_', ' ');
+  };
+
+  const addSkill = (skill: string) => {
+    if (!skill) return;
+    if (!skills.includes(skill)) {
+      setSkills((prev) => [...prev, skill]);
+    }
     setSkillInput("");
+    setSkillDropdownOpen(false);
   };
 
   const removeSkill = (s: string) =>
@@ -44,6 +88,114 @@ export default function SkillsAvailabilityClient() {
     setSelectedDays((prev) =>
       prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]
     );
+
+  const handleSkillInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value;
+    setSkillInput(input);
+    setSkillDropdownOpen(true);
+  };
+
+  const handleSkillInputBlur = () => {
+    // Only close if we're not clicking on the dropdown
+    if (!isClickingDropdown.current) {
+      setTimeout(() => setSkillDropdownOpen(false), 150);
+    }
+  };
+
+  const handleSkillClick = (skill: string) => {
+    isClickingDropdown.current = true;
+    addSkill(skill);
+    // Reset the flag after a short delay
+    setTimeout(() => {
+      isClickingDropdown.current = false;
+    }, 100);
+  };
+
+  const handleNext = async () => {
+    if (skills.length === 0) {
+      setSaveError("Please add at least one skill");
+      return;
+    }
+
+    if (selectedDays.length === 0) {
+      setSaveError("Please select at least one day");
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveError(null);
+
+    try {
+      const supabase = createClient();
+      
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (!user) {
+        setSaveError("User not authenticated");
+        return;
+      }
+
+      // Create availability schedule
+      const availabilitySchedule: Record<string, {
+        available: boolean;
+        timeSlot: TimeSlot;
+        morning: boolean;
+        evening: boolean;
+      }> = {};
+      selectedDays.forEach(day => {
+        availabilitySchedule[day.toLowerCase()] = {
+          available: true,
+          timeSlot: timeSlot,
+          morning: slotMorning,
+          evening: slotEvening
+        };
+      });
+
+      // Check if helper_profile exists, if not create it
+      const { data: existingProfile, error: checkError } = await supabase
+        .from('helper_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      let saveResult;
+      if (existingProfile) {
+        // Update existing profile
+        saveResult = await supabase
+          .from('helper_profiles')
+          .update({
+            skills: skills,
+            availability_schedule: availabilitySchedule,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
+      } else {
+        // Create new profile
+        saveResult = await supabase
+          .from('helper_profiles')
+          .insert({
+            user_id: user.id,
+            skills: skills,
+            availability_schedule: availabilitySchedule,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+      }
+
+      if (saveResult.error) {
+        setSaveError(`Failed to save data: ${saveResult.error.message}`);
+        return;
+      }
+
+      // Redirect to next stage
+      router.push("/onboarding/work-history");
+      
+    } catch (err) {
+      setSaveError("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <>
@@ -56,7 +208,7 @@ export default function SkillsAvailabilityClient() {
               key={s}
               className="inline-flex items-center gap-2 rounded-md border border-[#DFDFDF] px-3 py-1 stepsSkills bg-[#DFDFDF]"
             >
-              {s}
+              {capitalizeSkill(s)}
               <button
                 type="button"
                 onClick={() => removeSkill(s)}
@@ -68,15 +220,40 @@ export default function SkillsAvailabilityClient() {
             </span>
           ))}
 
-          <input
-            value={skillInput}
-            onChange={(e) => setSkillInput(e.target.value)}
-            onKeyDown={(e) =>
-              e.key === "Enter" ? (e.preventDefault(), addSkill()) : null
-            }
-            placeholder="Type a skill and press Enter"
-            className="flex-1 min-w-[160px] outline-none px-1"
-          />
+          {/* Skills Dropdown */}
+          <div className="relative flex-1 min-w-[160px]">
+            <input
+              value={skillInput}
+              onChange={handleSkillInputChange}
+              onFocus={() => setSkillDropdownOpen(true)}
+              onBlur={handleSkillInputBlur}
+              placeholder="Type to search skills..."
+              className="w-full outline-none px-1"
+              ref={inputRef}
+            />
+            
+            {/* Dropdown Options */}
+            {skillDropdownOpen && filteredSkills.length > 0 && (
+              <div 
+                className="absolute top-full left-0 right-0 mt-1 bg-white border border-[#DFDFDF] rounded-md shadow-lg z-20 max-h-48 overflow-y-auto"
+                ref={dropdownRef}
+              >
+                {filteredSkills.map((skill) => (
+                  <button
+                    key={skill}
+                    type="button"
+                    onClick={() => handleSkillClick(skill)}
+                    className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                  >
+                    {capitalizeSkill(skill)}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="text-xs text-gray-500 mt-1">
+            Valid skills: childcare, elderly_care, cooking, cleaning, driving, pet_care, tutoring
+          </div>
         </div>
       </div>
 
@@ -202,9 +379,24 @@ export default function SkillsAvailabilityClient() {
         </div>
       </div>
 
+      {/* Error Message */}
+      {saveError && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-md mb-6">
+          <p className="text-red-600 text-sm">{saveError}</p>
+        </div>
+      )}
+
+      {/* Loading State */}
+      {isSaving && (
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-md mb-6">
+          <p className="text-blue-600 text-sm">Saving your skills & availability...</p>
+        </div>
+      )}
+
       <StepperFooter
         onBack={() => router.push("/onboarding/personal-info")}
-        onNext={() => router.push("/onboarding/work-history")}
+        onNext={isSaving ? undefined : handleNext}
+        nextLabel={isSaving ? "Saving..." : "Next"}
       />
     </>
   );

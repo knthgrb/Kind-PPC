@@ -1,5 +1,7 @@
+"use client";
+
 import ProfileClient from "./_components/ProfileClient";
 
-export default function ProfilePage() {
+export default function KindTaoProfilePage() {
   return <ProfileClient />;
 }
