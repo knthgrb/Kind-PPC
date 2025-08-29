@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import StatCard from "../_components/StatCard";
 import { IoIosCheckmarkCircle } from "react-icons/io";
@@ -43,14 +41,13 @@ export default function Revenue() {
 
         {/* Charts */}
         <div className="pt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Line Chart */}
+          {/* Monthly Revenue */}
           <div className="rounded-xl border border-[#D0D0D0] bg-white p-5">
             <h3 className="font-semibold text-[#3D434A] pb-4">
               Monthly Revenue
             </h3>
 
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-              {/* Left Section (Text Info) */}
+            <div className="flex flex-col md:flex-row items-start justify-between gap-6">
               <div className="w-full md:w-auto">
                 <div className="text-[2.145rem] text-[#CB0000] font-bold">
                   ₱37.5K
@@ -65,15 +62,13 @@ export default function Revenue() {
                   <span className="text-[#CB0000] font-bold">On track</span>
                 </div>
               </div>
-
-              {/* Right Section (Chart) */}
               <div className="w-full md:flex-1 h-[300px]">
                 <MonthlyRevenueLineChart data={monthlyRevenueData} />
               </div>
             </div>
           </div>
 
-          {/* Pie / Donut Chart */}
+          {/* Revenue Breakdown */}
           <div className="rounded-xl border border-[#D0D0D0] bg-white p-5">
             <h3 className="font-semibold text-[#3D434A] pb-4">
               Revenue Breakdown
@@ -102,7 +97,7 @@ export default function Revenue() {
           </div>
         </div>
 
-        {/* Plans Table */}
+        {/* Table */}
         <div className="border border-[#D0D0D0] rounded-3xl p-8 bg-white mt-6 overflow-x-auto">
           <PlansTable plans={pricingPlans} />
         </div>

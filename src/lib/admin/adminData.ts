@@ -67,15 +67,13 @@ export const revenueBreakdownData = [
 ];
 
 export const platformUsagePipelineData = {
-  stats: {
-    totalActiveUsers: 5250,
-    newSignups: 232,
-    totalJobsPosted: 530,
-    registeredUsers: 2594,
-    verifiedUsers: 1925,
-    jobsCreated: 2515,
-    jobsCompleted: 2450,
-  },
+  totalActiveUsers: 5250,
+  newSignups: 232,
+  totalJobsPosted: 530,
+  registeredUsers: 2594,
+  verifiedUsers: 1925,
+  jobsCreated: 2515,
+  jobsCompleted: 2450,
 };
 
 export const expectedUsage = 30;

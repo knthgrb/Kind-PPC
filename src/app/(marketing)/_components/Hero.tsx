@@ -5,17 +5,6 @@ export default function Hero() {
   return (
     <section className="relative bg-white pt-10 px-4 sm:px-0">
       <div className="w-full mx-auto flex flex-col sm:flex-row items-center justify-between">
-        {/* Left Image */}
-        <div className="hidden md:block mb-6 sm:mb-0 self-end">
-          <Image
-            src="/homepage/dashboardHeroLeft.png"
-            alt="Hero Left Image"
-            width={255}
-            height={184}
-            className="object-cover rounded-lg"
-          />
-        </div>
-
         {/* Hero Text */}
         <div className="w-full sm:w-1/2 text-center flex flex-col justify-start flex-grow pt-10 px-6">
           <h1 className="text-[#05264E] leading-tight mb-4 text-center headingH1">
@@ -50,6 +39,17 @@ export default function Hero() {
               </button>
             </div>
           </div>
+        </div>
+
+        {/* Left Image */}
+        <div className="hidden md:block mb-6 sm:mb-0 self-end">
+          <Image
+            src="/homepage/dashboardHeroLeft.png"
+            alt="Hero Left Image"
+            width={255}
+            height={184}
+            className="object-cover rounded-lg"
+          />
         </div>
 
         {/* Right Image */}

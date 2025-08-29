@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import { LuFilter, LuSearch } from "react-icons/lu";
 import { govBenefits } from "@/lib/kindBossing/data";

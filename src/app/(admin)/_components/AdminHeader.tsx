@@ -25,7 +25,6 @@ export default function AdminHeader() {
         </Link>
 
         {/* Desktop Navigation */}
-        {/* Desktop Navigation */}
         <nav className="hidden lg:flex space-x-10 font-medium items-center text-[clamp(0.9rem,1vw,1.125rem)]">
           {[
             { label: "Dashboard", href: "/dashboard" },
@@ -82,7 +81,6 @@ export default function AdminHeader() {
         </div>
       </div>
 
-      {/* Mobile Dropdown Menu */}
       {/* Mobile Dropdown Menu */}
       {menuOpen && (
         <div className="lg:hidden bg-white border-t border-gray-200 py-6 text-[clamp(0.9rem,2.5vw,1rem)]">
