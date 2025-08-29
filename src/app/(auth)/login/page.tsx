@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { login } from "@/app/_actions/auth/login";
 
 export default function LoginPage() {
   return (
@@ -22,52 +23,64 @@ export default function LoginPage() {
           <h2 className="loginInput">Continue with Google</h2>
         </button>
 
-        {/* Username / Email */}
-        <div className="mb-6">
-          <label htmlFor="email" className="block mb-2 loginLabel">
-            Enter your username or email address
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="text"
-            placeholder="Username or email address"
-            className="input-placeholder w-full rounded-md border-1 border-[#ADADAD] px-4 h-12"
-          />
-        </div>
+        {/* Login Form */}
+        <form action={login}>
+          {/* Username / Email */}
+          <div className="mb-6">
+            <label htmlFor="email" className="block mb-2 loginLabel">
+              Enter your username or email address
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="text"
+              placeholder="Username or email address"
+              className="input-placeholder w-full rounded-md border-1 border-[#ADADAD] px-4 h-12"
+              required
+            />
+          </div>
 
-        {/* Password */}
-        <div className="mb-2">
-          <label htmlFor="password" className="block mb-2 loginLabel">
-            Enter your Password
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            placeholder="Password"
-            className="input-placeholder w-full rounded-md border-[1px] border-[#ADADAD] px-4 h-12"
-          />
-        </div>
+          {/* Password */}
+          <div className="mb-2">
+            <label htmlFor="password" className="block mb-2 loginLabel">
+              Enter your Password
+            </label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              placeholder="Password"
+              className="input-placeholder w-full rounded-md border-[1px] border-[#ADADAD] px-4 h-12"
+              required
+            />
+          </div>
 
-        {/* Forgot password */}
-        <div className="mb-6 flex justify-end">
-          <Link
-            href="/forgot-password"
-            className="underline underline-offset-2"
-          >
-            Forgot Password?
-          </Link>
-        </div>
+          {/* Forgot password */}
+          <div className="mb-6 flex justify-end">
+            <Link
+              href="/forgot-password"
+              className="underline underline-offset-2"
+            >
+              Forgot Password?
+            </Link>
+          </div>
 
-        {/* Submit */}
-        <div className="flex justify-center mb-6">
-          <button
-            type="submit"
-            className="h-12 w-[233px] rounded-md px-4 bg-[#CB0000] text-white"
-          >
-            Sign in
-          </button>
+          {/* Submit */}
+          <div className="flex justify-center mb-6">
+            <button
+              type="submit"
+              className="h-12 w-[233px] rounded-md px-4 bg-[#CB0000] text-white hover:bg-[#A00000] transition-colors"
+            >
+              Sign in
+            </button>
+          </div>
+        </form>
+
+        {/* Email confirmation note */}
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-blue-800 text-sm text-center">
+            <strong>New user?</strong> Please check your email and click the confirmation link before logging in.
+          </p>
         </div>
 
         {/* Footer links */}
