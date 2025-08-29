@@ -2,7 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { OnboardingService, OnboardingProgress } from "@/services/OnboardingService";
+
+interface OnboardingProgress {
+  personalInfo: boolean;
+  skillsAvailability: boolean;
+  workHistory: boolean;
+  documentUpload: boolean;
+}
 
 interface OnboardingProgressProps {
   currentStage: string;
@@ -20,7 +26,7 @@ export default function OnboardingProgressComponent({ currentStage, className = 
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const onboardingProgress = await OnboardingService.checkOnboardingProgress(user.id);
+          const onboardingProgress = await checkOnboardingProgressClient(user.id);
           setProgress(onboardingProgress);
         }
       } catch (error) {
@@ -56,6 +62,7 @@ export default function OnboardingProgressComponent({ currentStage, className = 
   ];
 
   const currentStageIndex = stages.findIndex(stage => stage.path === currentStage);
+  const progressPercentage = getProgressPercentage(progress);
 
   return (
     <div className={`bg-white rounded-lg shadow p-6 ${className}`}>
@@ -65,11 +72,11 @@ export default function OnboardingProgressComponent({ currentStage, className = 
           <div className="flex-1 bg-gray-200 rounded-full h-2">
             <div 
               className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${OnboardingService.getProgressPercentage(progress)}%` }}
+              style={{ width: `${progressPercentage}%` }}
             ></div>
           </div>
           <span className="text-sm font-medium text-gray-600">
-            {OnboardingService.getProgressPercentage(progress)}%
+            {progressPercentage}%
           </span>
         </div>
       </div>
@@ -100,18 +107,18 @@ export default function OnboardingProgressComponent({ currentStage, className = 
                     : isCurrent
                     ? 'bg-blue-500 text-white'
                     : isAccessible
-                    ? 'bg-gray-300 text-gray-600'
-                    : 'bg-gray-200 text-gray-400'
+                    ? 'bg-gray-400 text-white'
+                    : 'bg-gray-300 text-gray-600'
                 }`}>
                   {isCompleted ? '✓' : index + 1}
                 </div>
                 <p className={`text-xs font-medium ${
                   isCompleted
-                    ? 'text-green-800'
+                    ? 'text-green-700'
                     : isCurrent
-                    ? 'text-blue-800'
+                    ? 'text-blue-700'
                     : isAccessible
-                    ? 'text-gray-700'
+                    ? 'text-gray-600'
                     : 'text-gray-400'
                 }`}>
                   {stage.name}
@@ -119,7 +126,7 @@ export default function OnboardingProgressComponent({ currentStage, className = 
               </div>
               
               {isCurrent && (
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-white"></div>
               )}
             </div>
           );
@@ -128,12 +135,68 @@ export default function OnboardingProgressComponent({ currentStage, className = 
 
       <div className="mt-4 text-center">
         <p className="text-sm text-gray-600">
-          {progress.isComplete 
-            ? "🎉 Onboarding complete! You can now access all features."
-            : `Current stage: ${OnboardingService.getCurrentStageName(progress)}`
+          {progressPercentage === 100 
+            ? "🎉 Onboarding Complete!" 
+            : `Step ${currentStageIndex + 1} of ${stages.length}`
           }
         </p>
       </div>
     </div>
   );
+}
+
+// Client-side progress checking functions
+async function checkOnboardingProgressClient(userId: string): Promise<OnboardingProgress> {
+  try {
+    const supabase = createClient();
+    
+    // Get user data
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('first_name, last_name, phone, date_of_birth, gender, address, city, province')
+      .eq('id', userId)
+      .single();
+
+    if (userError) throw userError;
+
+    // Get helper profile data
+    const { data: helperProfile, error: helperError } = await supabase
+      .from('helper_profiles')
+      .select('skills, availability_schedule, work_experience')
+      .eq('user_id', userId)
+      .single();
+
+    // Get verification data
+    const { data: verification, error: verificationError } = await supabase
+      .from('user_verifications')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+
+    // Check completion status
+    const personalInfo = !!(userData?.first_name && userData?.last_name && userData?.phone && userData?.date_of_birth && userData?.gender && userData?.address && userData?.city && userData?.province);
+    const skillsAvailability = !!(helperProfile?.skills && helperProfile?.availability_schedule);
+    const workHistory = !!(helperProfile?.work_experience && Array.isArray(helperProfile.work_experience) && helperProfile.work_experience.length > 0);
+    const documentUpload = !!verification;
+
+    return {
+      personalInfo,
+      skillsAvailability,
+      workHistory,
+      documentUpload
+    };
+  } catch (error) {
+    console.error('Error checking onboarding progress:', error);
+    return {
+      personalInfo: false,
+      skillsAvailability: false,
+      workHistory: false,
+      documentUpload: false
+    };
+  }
+}
+
+function getProgressPercentage(progress: OnboardingProgress): number {
+  const completed = Object.values(progress).filter(Boolean).length;
+  return Math.round((completed / 4) * 100);
 }

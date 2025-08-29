@@ -81,7 +81,7 @@ export async function login(formData: FormData) {
         // KindBossing users go directly to profile (no onboarding required)
         console.log("Redirecting to kindbossing profile...");
         revalidatePath("/", "layout");
-        redirect("/kindbossing/profile");
+        redirect("/kindbossing/kindbossing-profile");
         
       } else if (userMetadata.role === 'admin') {
         // Admin users go to admin dashboard
