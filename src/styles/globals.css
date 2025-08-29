@@ -68,6 +68,29 @@ body {
   color: #808080;
 }
 
+/* OTP VERIFICATION */
+.otpH1 {
+  font-family: "Plus Jakarta Sans";
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #12223b;
+}
+
+.otpP {
+  font-family: "Plus Jakarta Sans";
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: #66789c;
+  line-height: 1.5;
+}
+
+.otpInput {
+  font-family: "Plus Jakarta Sans";
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #12223b;
+}
+
 /* KINDBOSSING */
 /* POST JOB TYPOGRAPHY (copied from profile classes but renamed) */
 .postJobH1 {

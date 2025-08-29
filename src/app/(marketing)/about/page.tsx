@@ -4,17 +4,7 @@ import FaqAccordion from "@/app/(marketing)/_components/FaqAccordion";
 import Subscribe from "@/app/(marketing)/_components/Subscribe";
 import Footer from "@/app/(marketing)/_components/Footer";
 import SectionHeader from "@/app/(marketing)/_components/SectionHeading";
-import {
-  categories,
-  howItWorksSteps,
-  benefitsList,
-  locations,
-  jobTypes,
-  payTypes,
-  latestJobs,
-  pricingList,
-  faqs,
-} from "@/lib/marketing/homeData";
+import { faqs } from "@/lib/marketing/homeData";
 export default function About() {
   return (
     <div className="px-4 lg:px-0">

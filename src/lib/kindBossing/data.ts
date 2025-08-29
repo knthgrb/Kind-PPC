@@ -1,4 +1,4 @@
-import { BenefitCategory } from "@/types/Benefits";
+import { BenefitCategory } from "@/types/benefits";
 
 export const stats = {
   totalEmployees: 12,
@@ -82,7 +82,15 @@ export const attendees = [
   },
 ];
 
-export const payslips = [
+export interface Payslip {
+  name: string;
+  month: string;
+  netPay: string;
+  hours: string;
+  status: "Paid" | "Unpaid";
+}
+
+export const payslips: Payslip[] = [
   {
     name: "Darlene Robertson",
     month: "Mar",
@@ -283,5 +291,64 @@ export const pdfData = [
     date: "2024-04-10",
     type: "PDF",
     description: "Description for the fourth PDF file.",
+  },
+];
+
+export const postedJobs = [
+  {
+    name: "Jarrel Steward",
+    image: "/people/darrellSteward.png",
+    location: "Cebu City",
+    occupation: "Maid for Home",
+    price: 550,
+  },
+  {
+    name: "Ralph Edwards",
+    image: "/people/ralphEdwards.png",
+    location: "Cebu City",
+    occupation: "Electrician",
+    price: 550,
+  },
+  {
+    name: "Esther Howard",
+    image: "/people/estherHoward.png",
+    location: "Talisay City",
+    occupation: "Plumber",
+    price: 550,
+  },
+  {
+    name: "Theresa Webb",
+    image: "/people/theresaWebb.png",
+    location: "Talisay City",
+    occupation: "Maid for Home",
+    price: 550,
+  },
+  {
+    name: "Devon Lane",
+    image: "/people/devonLane.png",
+    location: "Naga City",
+    occupation: "Electrician",
+    price: 550,
+  },
+  {
+    name: "Kristin Watson",
+    image: "/people/kristinWatson.png",
+    location: "Naga City",
+    occupation: "Plumber",
+    price: 550,
+  },
+  {
+    name: "Dianne Russell",
+    image: "/people/dianneRussell.png",
+    location: "Minglanilla",
+    occupation: "Maid for Home",
+    price: 550,
+  },
+  {
+    name: "Jane Cooper",
+    image: "/people/janeCooper.png",
+    location: "Minglanilla",
+    occupation: "Electrician",
+    price: 550,
   },
 ];

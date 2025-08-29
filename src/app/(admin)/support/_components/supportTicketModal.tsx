@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { formatMMDDYYYY } from "@/utils/dateFormatter";
 import Dropdown from "@/components/dropdown/Dropdown";
+import Card from "@/components/Card";
 
 type Ticket = {
   id: number;
@@ -20,7 +21,7 @@ type Props = {
   ticket: Ticket | null;
 };
 
-export default function SupportTicketDialog({ open, onClose, ticket }: Props) {
+export default function SupportTicketModal({ open, onClose, ticket }: Props) {
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const prevActive = useRef<HTMLElement | null>(null);
   const [status, setStatus] = React.useState<Ticket["status"]>("In Progress");
@@ -70,11 +71,7 @@ export default function SupportTicketDialog({ open, onClose, ticket }: Props) {
       >
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           {/* Left: User Information */}
-          <section className="rounded-2xl bg-gray-50 p-4 sm:p-5">
-            <h3 className="mb-4 text-lg sm:text-[1.314rem] font-semibold text-[#222222]">
-              User Information
-            </h3>
-
+          <Card title="User Information">
             <div className="flex flex-col sm:flex-row items-center sm:items-center gap-10">
               <div className="relative w-32 sm:w-40 aspect-square rounded-full overflow-hidden bg-white ring-4 ring-[#D0D0D0]">
                 <img src={profilePic} alt="" className="object-cover" />
@@ -120,20 +117,17 @@ export default function SupportTicketDialog({ open, onClose, ticket }: Props) {
                 />
               </div>
             </div>
-          </section>
+          </Card>
 
           {/* Right: Issue */}
-          <section className="rounded-2xl bg-gray-50 p-4 sm:p-5">
-            <h3 className="mb-3 text-lg sm:text-[1.217rem] font-semibold text-[#222222]">
-              {ticket?.issueType ?? "Issue"}
-            </h3>
+          <Card title={ticket?.issueType ?? "Issue"}>
             <div className="text-sm sm:text-[1.006rem] text-[#667282]">
               {issueDesc}
             </div>
 
-            <h3 className="mb-3 text-lg sm:text-[1.217rem] font-semibold text-[#222222] mt-5">
+            <h4 className="mb-3 text-base sm:text-lg font-semibold text-[#222222] mt-5">
               Attached File
-            </h3>
+            </h4>
             <div className="mt-2 flex flex-wrap gap-3">
               {attachments.map((src, i) => (
                 <img
@@ -144,7 +138,7 @@ export default function SupportTicketDialog({ open, onClose, ticket }: Props) {
                 />
               ))}
             </div>
-          </section>
+          </Card>
         </div>
 
         {/* Footer buttons */}

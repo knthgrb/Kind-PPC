@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import StatCard from "../_components/StatCard";
 import { IoIosCheckmarkCircle } from "react-icons/io";
@@ -19,6 +17,7 @@ export default function Dashboard() {
   return (
     <div className="px-6 pt-10 pb-16">
       <div className="mx-auto max-w-7xl">
+        {/* Stats */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Link href="/platform-usage-pipeline">
             <div className="rounded-xl border border-[#D0D0D0] bg-white">
@@ -58,8 +57,7 @@ export default function Dashboard() {
               Monthly Revenue
             </h3>
 
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-              {/* Left Section (Text Info) */}
+            <div className="flex flex-col md:flex-row items-start justify-between gap-6">
               <div className="w-full md:w-auto">
                 <div className="text-[2.145rem] text-[#CB0000] font-bold">
                   ₱37.5K
@@ -75,7 +73,6 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* Right Section (Chart) */}
               <div className="w-full md:flex-1 h-[300px]">
                 <MonthlyRevenueLineChart data={monthlyRevenueData} />
               </div>
