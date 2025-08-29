@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { AuthService } from "@/services/AuthService";
+import { OnboardingService } from "@/services/OnboardingService";
 
 export async function login(formData: FormData) {
   const data = {
@@ -56,34 +57,43 @@ export async function login(formData: FormData) {
       console.log("User metadata:", userMetadata);
       console.log("User role:", userMetadata.role);
       
-      // Check if user is kindtao and needs to complete onboarding
+      // Handle different user roles
       if (userMetadata.role === 'kindtao') {
-        console.log("User is kindtao, checking onboarding status...");
-        const { isComplete, error: onboardingError } = await AuthService.checkOnboardingStatus(user.id);
+        console.log("User is kindtao, checking onboarding progress...");
         
-        if (onboardingError) {
-          console.error("Error checking onboarding status:", onboardingError);
-        }
+        // Check onboarding progress
+        const onboardingProgress = await OnboardingService.checkOnboardingProgress(user.id);
+        console.log("Onboarding progress:", onboardingProgress);
         
-        console.log("Onboarding complete:", isComplete);
-        
-        if (!onboardingError && !isComplete) {
-          // Redirect to onboarding if not complete
-          console.log("Redirecting to onboarding...");
+        if (onboardingProgress.isComplete) {
+          // Onboarding complete, redirect to profile
+          console.log("Onboarding complete, redirecting to profile...");
           revalidatePath("/", "layout");
-          redirect("/kindtao/onboarding");
+          redirect("/kindtao/profile");
+        } else {
+          // Redirect to next incomplete stage
+          console.log("Redirecting to next onboarding stage:", onboardingProgress.nextStage);
+          revalidatePath("/", "layout");
+          redirect(onboardingProgress.nextStage || "/onboarding/personal-info");
         }
-      }
-      
-      // For kindbossing users or kindtao users who completed onboarding, redirect to dashboard
-      if (userMetadata.role === 'kindbossing') {
-        console.log("Redirecting to kindbossing dashboard...");
+        
+      } else if (userMetadata.role === 'kindbossing') {
+        // KindBossing users go directly to profile (no onboarding required)
+        console.log("Redirecting to kindbossing profile...");
         revalidatePath("/", "layout");
-        redirect("/kindbossing/dashboard");
+        redirect("/kindbossing/profile");
+        
+      } else if (userMetadata.role === 'admin') {
+        // Admin users go to admin dashboard
+        console.log("Redirecting to admin dashboard...");
+        revalidatePath("/", "layout");
+        redirect("/admin/dashboard");
+        
       } else {
-        console.log("Redirecting to kindtao dashboard...");
+        // Unknown role, redirect to profile
+        console.log("Unknown role, redirecting to profile...");
         revalidatePath("/", "layout");
-        redirect("/kindtao/dashboard");
+        redirect("/profile");
       }
     }
   }
