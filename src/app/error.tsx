@@ -1,63 +1,40 @@
-"use client";
-import React from "react";
+'use client';
 
-interface ErrorProps {
+import Link from 'next/link';
+
+export default function Error({
+  error,
+  reset,
+}: {
   error: Error & { digest?: string };
   reset: () => void;
-}
-
-export default function Error({ error, reset }: ErrorProps) {
-  const handleRetry = () => {
-    reset();
-  };
-
-  const handleGoHome = () => {
-    window.location.href = "/";
-  };
-
+}) {
   return (
-    <main className="grid min-h-screen place-items-center px-6 py-24 sm:py-32 lg:px-8">
-      <div className="text-center">
-        <p className="text-small font-semibold text-brand">500</p>
-        <h1 className="mt-xs text-heading-1 font-bold tracking-tight text-strong">
-          Something went wrong.
+    <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="w-full max-w-md text-center">
+        <h1 className="text-2xl font-bold text-red-600 mb-4">
+          Something went wrong!
         </h1>
-        <p className="mt-s text-tiny text-weak">
-          Sorry, we encountered an error while loading this page. Please try
-          again.
+        <p className="text-gray-600 mb-6">
+          {error.message || 'An unexpected error occurred during login.'}
         </p>
-        {process.env.NODE_ENV === "development" && (
-          <details className="mt-m text-left">
-            <summary className="cursor-pointer text-sm font-medium text-weak hover:text-strong">
-              Error Details
-            </summary>
-            <pre className="mt-2 text-xs text-weak bg-gray-50 p-4 rounded-md overflow-auto">
-              {error.message}
-              {error.stack && (
-                <>
-                  <br />
-                  <br />
-                  {error.stack}
-                </>
-              )}
-            </pre>
-          </details>
-        )}
-        <div className="mt-m flex items-center justify-center gap-x-6">
+        
+        <div className="space-y-3">
           <button
-            className="bg-red-700 text-white px-4 py-2 rounded-md cursor-pointer"
-            onClick={handleRetry}
+            onClick={reset}
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
           >
             Try again
           </button>
-          <button
-            className="bg-red-700 text-white px-4 py-2 rounded-md cursor-pointer"
-            onClick={handleGoHome}
+          
+          <Link
+            href="/login"
+            className="block w-full bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition-colors"
           >
-            Go back home
-          </button>
+            Back to Login
+          </Link>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
