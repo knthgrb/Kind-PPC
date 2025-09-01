@@ -1,4 +1,16 @@
-export default function KindTaoOnboarding() {
+import { redirect } from "next/navigation";
+import { createClient } from "@/utils/supabase/server";
+import { OnboardingService } from "@/services/OnboardingService";
+
+export default async function KindTaoOnboarding() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const progress = await OnboardingService.checkOnboardingProgress(user.id);
+  if (progress.isComplete) redirect("/profile");
+  if (progress.nextStage) redirect(progress.nextStage);
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-4xl mx-auto">

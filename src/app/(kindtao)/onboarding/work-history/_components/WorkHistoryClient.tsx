@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { MONTHS, WORK_HISTORY_YEARS } from "@/constants/onboarding";
 import { WorkEntry } from "@/types/onboarding";
@@ -30,9 +30,47 @@ export default function WorkHistoryClient() {
   // save state
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const months = [...MONTHS];
   const years = WORK_HISTORY_YEARS.map(String);
+
+  // Load existing data when component mounts
+  useEffect(() => {
+    const loadExistingData = async () => {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: profileData } = await supabase
+          .from('helper_profiles')
+          .select('work_experience')
+          .eq('user_id', user.id)
+          .single();
+
+        if (profileData?.work_experience && Array.isArray(profileData.work_experience)) {
+          const workEntries = profileData.work_experience.map((exp: Record<string, unknown>) => ({
+            jobTitle: String(exp.jobTitle || exp.employer || ''),
+            company: String(exp.company || ''),
+            startMonth: exp.startDate ? new Date(String(exp.startDate)).toLocaleDateString('en-US', { month: 'long' }) : '',
+            startYear: exp.startDate ? new Date(String(exp.startDate)).getFullYear().toString() : '',
+            endMonth: exp.endDate ? new Date(String(exp.endDate)).toLocaleDateString('en-US', { month: 'long' }) : '',
+            endYear: exp.endDate ? new Date(String(exp.endDate)).getFullYear().toString() : '',
+            description: String(exp.description || ''),
+            expanded: false
+          }));
+          setEntries(workEntries);
+        }
+      } catch (error) {
+        console.error('Error loading existing data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadExistingData();
+  }, []);
 
   const resetForm = () => {
     setJobTitle("");
@@ -117,7 +155,7 @@ export default function WorkHistoryClient() {
       const supabase = createClient();
       
       // Get current user
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setSaveError("User not authenticated");
         return;
@@ -137,7 +175,7 @@ export default function WorkHistoryClient() {
       }));
 
       // Check if helper_profile exists, if not create it
-      const { data: existingProfile, error: checkError } = await supabase
+      const { data: existingProfile } = await supabase
         .from('helper_profiles')
         .select('id')
         .eq('user_id', user.id)
@@ -190,6 +228,16 @@ export default function WorkHistoryClient() {
       prev.map((e, i) => (i === idx ? { ...e, expanded: !e.expanded } : e))
     );
   };
+
+  if (isLoading) {
+    return (
+      <>
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-md mb-6">
+          <p className="text-blue-600 text-sm">Loading your data...</p>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>

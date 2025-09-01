@@ -69,7 +69,7 @@ export async function login(formData: FormData) {
           // Onboarding complete, redirect to profile
           console.log("Onboarding complete, redirecting to profile...");
           revalidatePath("/", "layout");
-          redirect("/kindtao/profile");
+          redirect("/profile");
         } else {
           // Redirect to next incomplete stage
           console.log("Redirecting to next onboarding stage:", onboardingProgress.nextStage);
@@ -81,13 +81,13 @@ export async function login(formData: FormData) {
         // KindBossing users go directly to profile (no onboarding required)
         console.log("Redirecting to kindbossing profile...");
         revalidatePath("/", "layout");
-        redirect("/kindbossing/kindbossing-profile");
+        redirect("/kindbossing-profile");
         
       } else if (userMetadata.role === 'admin') {
         // Admin users go to admin dashboard
         console.log("Redirecting to admin dashboard...");
         revalidatePath("/", "layout");
-        redirect("/admin/dashboard");
+        redirect("/admin-dashboard");
         
       } else {
         // Unknown role, redirect to profile

@@ -56,14 +56,28 @@ export class OnboardingService {
         workData.work_experience.length > 0;
 
       // Check document upload
-      const { data: docsData, error: docsError } = await supabase
-        .from("user_verifications")
-        .select("valid_id_url, barangay_clearance_url, clinic_certificate_url")
+      // Prefer new user_documents table (any uploaded doc counts as submitted),
+      // but also support legacy user_verifications fields
+      let documentUpload = false;
+      const { data: userDocs, error: userDocsError } = await supabase
+        .from("user_documents")
+        .select("id")
         .eq("user_id", userId)
-        .single();
+        .limit(1);
 
-      const documentUpload = !docsError && docsData && 
-        (docsData.valid_id_url || docsData.barangay_clearance_url || docsData.clinic_certificate_url);
+      if (!userDocsError && Array.isArray(userDocs) && userDocs.length > 0) {
+        documentUpload = true;
+      } else {
+        const { data: docsData, error: docsError } = await supabase
+          .from("user_verifications")
+          .select("valid_id_url, barangay_clearance_url, clinic_certificate_url")
+          .eq("user_id", userId)
+          .single();
+
+        documentUpload = !docsError && !!docsData && (
+          docsData.valid_id_url || docsData.barangay_clearance_url || docsData.clinic_certificate_url
+        );
+      }
 
       // Determine next stage
       let nextStage: string | null = null;
@@ -107,15 +121,12 @@ export class OnboardingService {
     city?: string | null;
     province?: string | null;
   }): boolean {
+    // Align with the current Personal Info form which collects
+    // date_of_birth and gender only. Treat other fields as optional
+    // for completion to avoid false negatives during redirects.
     return !!(
-      userData.first_name &&
-      userData.last_name &&
-      userData.phone &&
-      userData.date_of_birth &&
-      userData.gender &&
-      userData.address &&
-      userData.city &&
-      userData.province
+      userData?.date_of_birth &&
+      userData?.gender
     );
   }
 
