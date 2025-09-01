@@ -15,61 +15,81 @@ export default function Pagination({
   onChange,
   className = "",
 }: Props) {
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [maxFit, setMaxFit] = React.useState<number>(0);
+
+  React.useEffect(() => {
+    function update() {
+      if (containerRef.current) {
+        const width = containerRef.current.offsetWidth;
+        const approxButtonWidth = 36; // px estimate for each number button
+        const fit = Math.floor(width / approxButtonWidth);
+        setMaxFit(fit);
+      }
+    }
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
   const pages = React.useMemo<(number | "...")[]>(() => {
-    if (totalPages <= 7)
+    if (totalPages <= maxFit && maxFit > 0) {
       return Array.from({ length: totalPages }, (_, i) => i + 1);
-    const pool = new Set<number>([
-      1,
-      2,
-      totalPages - 1,
-      totalPages,
-      page - 1,
-      page,
-      page + 1,
-    ]);
-    const sorted = [...pool]
-      .filter((n) => n >= 1 && n <= totalPages)
-      .sort((a, b) => a - b);
+    }
+
     const out: (number | "...")[] = [];
-    sorted.forEach((n, i) => {
-      if (i > 0 && n - sorted[i - 1] > 1) out.push("...");
-      out.push(n);
-    });
+    out.push(1);
+
+    if (page > 3) out.push("...");
+
+    const start = Math.max(2, page - 1);
+    const end = Math.min(totalPages - 1, page + 1);
+    for (let i = start; i <= end; i++) out.push(i);
+
+    if (page < totalPages - 2) out.push("...");
+
+    out.push(totalPages);
+
     return out;
-  }, [page, totalPages]);
+  }, [page, totalPages, maxFit]);
 
   const clamp = (p: number) => Math.min(Math.max(1, p), totalPages);
 
   return (
-    <div className={`flex items-center justify-between ${className}`}>
-      {/* Previous */}
-      <button
-        onClick={() => onChange(clamp(page - 1))}
-        disabled={page === 1}
-        className="inline-flex items-center gap-2 rounded-lg border border-gray-400 px-3.5 py-2 text-[0.916rem] text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-transparent disabled:cursor-not-allowed"
-      >
-        <FaChevronLeft className="text-xs" aria-hidden />
-        Previous
-      </button>
+    <div className={`grid grid-cols-3 items-center w-full ${className}`}>
+      {/* Prev */}
+      <div className="flex justify-start">
+        <button
+          onClick={() => onChange(clamp(page - 1))}
+          disabled={page === 1}
+          className="inline-flex items-center gap-1 rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <FaChevronLeft className="text-xs" aria-hidden />
+          <span className="hidden sm:inline">Prev</span>
+        </button>
+      </div>
 
       {/* Numbers */}
-      <div className="flex items-center gap-6">
+      <div
+        ref={containerRef}
+        className="flex justify-center items-center gap-1 overflow-hidden"
+      >
         {pages.map((p, i) =>
           p === "..." ? (
-            <span key={`dots-${i}`} className="text-gray-400 select-none">
+            <span key={`dots-${i}`} className="px-2 text-gray-400 select-none">
               …
             </span>
           ) : (
             <button
-              key={p}
+              key={`page-${p}-${i}`}
               onClick={() => onChange(p)}
               aria-current={p === page ? "page" : undefined}
-              className={`text-[0.916rem] font-semibold rounded-md px-2 py-1 transition
-                ${
-                  p === page
-                    ? "text-[#CB0000] bg-[#fefafa]"
-                    : "text-gray-400 hover:text-gray-700"
-                }`}
+              className={`px-2 py-1 rounded-md text-sm font-medium transition
+        ${
+          p === page
+            ? "text-[#CB0000] bg-[#fefafa]"
+            : "text-gray-500 hover:text-gray-800"
+        }`}
             >
               {p}
             </button>
@@ -78,14 +98,16 @@ export default function Pagination({
       </div>
 
       {/* Next */}
-      <button
-        onClick={() => onChange(clamp(page + 1))}
-        disabled={page === totalPages}
-        className="inline-flex items-center gap-2 rounded-lg border border-gray-400 px-3.5 py-2 text-[0.916rem] text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-transparent disabled:cursor-not-allowed"
-      >
-        Next
-        <FaChevronRight className="text-xs" aria-hidden />
-      </button>
+      <div className="flex justify-end">
+        <button
+          onClick={() => onChange(clamp(page + 1))}
+          disabled={page === totalPages}
+          className="inline-flex items-center gap-1 rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <span className="hidden sm:inline">Next</span>
+          <FaChevronRight className="text-xs" aria-hidden />
+        </button>
+      </div>
     </div>
   );
 }

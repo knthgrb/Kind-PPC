@@ -3,7 +3,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import AccountCreatedModal from "@/components/AccountCreatedModal"; // adjust path
+import ContinueModal from "@/components/ContinueModal"; // adjust path
 
 export default function OtpVerificationPage() {
   const [modalOpen, setModalOpen] = useState(false);
@@ -30,18 +30,17 @@ export default function OtpVerificationPage() {
         </div>
       </section>
 
-<AccountCreatedModal
-  open={modalOpen}
-  onClose={() => setModalOpen(false)}
-  onAction={() => {
-    setModalOpen(false);
-    router.push("/profile/complete");
-  }}
-  title="Account Created"
-  description="Your account has been successfully created"
-  buttonLabel="Complete Profile"
-/>
-
+      <ContinueModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onAction={() => {
+          setModalOpen(false);
+          router.push("/profile/complete");
+        }}
+        title="Account Created"
+        description="Your account has been successfully created"
+        buttonLabel="Complete Profile"
+      />
     </main>
   );
 }
@@ -112,7 +111,7 @@ function OtpInput({ length = 4 }: { length?: number }) {
         return (
           <input
             key={i}
-             ref={(el: HTMLInputElement | null) => {
+            ref={(el: HTMLInputElement | null) => {
               refs.current[i] = el;
             }}
             inputMode="numeric"

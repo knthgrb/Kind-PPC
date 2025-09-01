@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { FaRegEnvelope } from "react-icons/fa";
-import Footer from "@/app/(marketing)/_components/Footer";
 
 export default function ContactPage() {
   return (

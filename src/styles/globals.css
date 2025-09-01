@@ -68,37 +68,58 @@ body {
   color: #808080;
 }
 
+/* OTP VERIFICATION */
+.otpH1 {
+  font-family: "Plus Jakarta Sans";
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #12223b;
+}
+
+.otpP {
+  font-family: "Plus Jakarta Sans";
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: #66789c;
+  line-height: 1.5;
+}
+
+.otpInput {
+  font-family: "Plus Jakarta Sans";
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #12223b;
+}
+
 /* KINDBOSSING */
 /* POST JOB TYPOGRAPHY (copied from profile classes but renamed) */
 .postJobH1 {
-  font-family: 'Plus Jakarta Sans';
+  font-family: "Plus Jakarta Sans";
   font-size: 28.5px;
   font-weight: 600;
-  color: #12223B;
+  color: #12223b;
 }
 
 .postJobLabel {
-  font-family: 'Plus Jakarta Sans';
+  font-family: "Plus Jakarta Sans";
   font-size: 18px;
   font-weight: 500;
   color: #000000;
 }
 
 .postJobInputPlaceholder {
-  font-family: 'Plus Jakarta Sans';
+  font-family: "Plus Jakarta Sans";
   font-size: 15.5px;
   font-weight: 400;
   color: #000000;
 }
 
 .postJobInputPlaceholder::placeholder {
-  font-family: 'Plus Jakarta Sans';
+  font-family: "Plus Jakarta Sans";
   font-size: 15.5px;
   font-weight: 400;
-  color: #8C8C8C; /* placeholder lighter shade */
+  color: #8c8c8c; /* placeholder lighter shade */
 }
-
-
 
 /* SIGNUP */
 .signupH1 {
@@ -130,14 +151,14 @@ body {
 
 .headingH1 {
   font-family: "Plus Jakarta Sans";
-  font-size: 3.411rem;
   font-weight: 800;
+  font-size: clamp(1.5rem, 3vw, 3.411rem);
 }
 .headingP {
   font-family: "Plus Jakarta Sans";
-  font-size: 1.279rem;
   font-weight: 400;
   color: #4f5e64;
+  font-size: clamp(0.775rem, 1.4vw, 1.279rem);
 }
 
 .footerH4 {
@@ -160,144 +181,123 @@ body {
   font-style: medium;
   color: #66789c;
 }
-.categoriesP {
+
+.sectionH2 {
   font-family: "Plus Jakarta Sans";
-  font-size: 1.125rem;
-  font-weight: 500;
-  color: #66789c;
-}
-.browseH2 {
-  font-family: "Plus Jakarta Sans";
-  font-size: 2.25rem;
+  font-size: clamp(1.3rem, 2.5vw, 2.25rem);
   font-weight: 700;
   color: #05264e;
 }
+.sectionP {
+  font-family: "Plus Jakarta Sans";
+  font-size: clamp(0.775rem, 1.4vw, 1.279rem);
+  font-weight: 500;
+  color: #66789c;
+}
+
 .browseH3 {
   font-family: "Plus Jakarta Sans";
-  font-size: 1.375rem;
+  font-size: clamp(1.1rem, 2vw, 1.375rem);
   font-weight: 700;
   color: #05264e;
 }
 .browseP {
   font-family: "Plus Jakarta Sans";
-  font-size: 1rem;
+  font-size: clamp(0.85rem, 1.5vw, 1rem);
   font-weight: 500;
   color: #4f5e64;
 }
-.pCard {
-  font-family: "Plus Jakarta Sans";
-  font-size: 1rem;
-  font-weight: 400;
-  color: #667282;
-}
+
 .h3Card {
   font-family: "Plus Jakarta Sans";
-  font-size: 1.438rem;
+  font-size: clamp(1.1rem, 2.3vw, 1.438rem);
   font-weight: 600;
   color: #12223b;
 }
-
-.jobh3 {
+.pCard {
   font-family: "Plus Jakarta Sans";
-  font-size: 1.086rem;
-  font-style: bold;
-  font-weight: 700;
-  color: #05264e;
+  font-size: clamp(0.85rem, 1.5vw, 1rem);
+  font-weight: 400;
+  color: #667282;
 }
 
 .jobh4 {
   font-family: "Plus Jakarta Sans";
-  font-size: 0.965rem;
-  font-style: bold;
+  font-size: clamp(0.95rem, 1.8vw, 1.086rem);
   font-weight: 700;
   color: #05264e;
 }
-
 .jobP {
   font-family: "Plus Jakarta Sans";
-  font-size: 0.724rem;
+  font-size: clamp(0.65rem, 1.2vw, 0.724rem);
   font-weight: 400;
   color: #a0abb8;
 }
-
 .jobPrice {
   font-family: "Plus Jakarta Sans";
-  font-size: 1.328rem;
-  font-style: bold;
+  font-size: clamp(1.1rem, 2.2vw, 1.328rem);
   font-weight: 700;
   color: #cc0000;
 }
-
 .jobPriceP {
   font-family: "Plus Jakarta Sans";
-  font-size: 0.846rem;
+  font-size: clamp(0.75rem, 1.3vw, 0.846rem);
   font-weight: 400;
   color: #6c757d;
 }
 
 .pricingh3 {
   font-family: "Plus Jakarta Sans";
-  font-size: 1.75rem;
-  font-style: bold;
+  font-size: clamp(1.25rem, 2.2vw, 1.75rem);
   font-weight: 700;
   color: #05264e;
 }
-
 .pricingh4 {
   font-family: "Plus Jakarta Sans";
-  font-size: 3.5rem;
-  font-style: extra-bold;
+  font-size: clamp(2.25rem, 4vw, 3.5rem);
   font-weight: 800;
   color: #cc0000;
 }
-
 .pricingh4Subtext {
   font-family: "Plus Jakarta Sans";
-  font-size: 1.125rem;
+  font-size: clamp(1rem, 1.5vw, 1.125rem);
   font-weight: 400;
   color: #a0abb8;
 }
-
 .pricingP {
   font-family: "Plus Jakarta Sans";
-  font-size: 0.875rem;
+  font-size: clamp(0.75rem, 1.2vw, 0.875rem);
   font-weight: 500;
-  font-style: medium;
   color: #4f5e64;
 }
-
 .pricingFeatures {
   font-family: "Plus Jakarta Sans";
-  font-size: 0.938rem;
+  font-size: clamp(0.85rem, 1.3vw, 0.938rem);
   font-weight: 400;
   color: #4f5e64;
 }
 
 .faqh3 {
   font-family: "Plus Jakarta Sans";
-  font-size: 1.163rem;
-  font-style: bold;
+  font-size: clamp(1rem, 1.6vw, 1.163rem);
   font-weight: 600;
 }
-
 .faqP {
   font-family: "Plus Jakarta Sans";
-  font-size: 1.034rem;
+  font-size: clamp(0.9rem, 1.5vw, 1.034rem);
   font-weight: 400;
   color: #ffffff;
 }
 
 .subscribeH2 {
   font-family: "Plus Jakarta Sans";
-  font-size: 2.139rem;
-  font-style: semi-bold;
+  font-size: clamp(1.3rem, 3vw, 2.139rem);
   font-weight: 600;
   color: #ffffff;
 }
-
 .subscribeP {
   font-family: "Plus Jakarta Sans";
-  font-size: 0.811rem;
+  font-size: clamp(0.7rem, 1.2vw, 0.811rem);
   font-weight: 400;
 }
 
@@ -322,23 +322,20 @@ span {
 
 .aboutTitle {
   font-family: "Plus Jakarta Sans";
-  font-size: 3.398rem;
-  font-style: bold;
+  font-size: clamp(1.5rem, 3vw, 3.398rem);
   font-weight: 800;
 }
 
 .aboutSubtitle {
   font-family: "Plus Jakarta Sans";
-  font-size: 2.091rem;
-  font-style: bold;
+  font-size: clamp(1.2rem, 2.5vw, 2.091rem);
   font-weight: 800;
   color: #a0abb8;
 }
 
 .aboutP {
   font-family: "Plus Jakarta Sans";
-  font-size: 0.915rem;
-  font-style: normal;
+  font-size: clamp(0.6rem, 1.2vw, 0.915rem);
   font-weight: 400;
 }
 
@@ -403,4 +400,37 @@ span {
 
 .toggle-btn.toggled .thumb {
   left: calc(50px - 25px);
+}
+
+.mySwiper .swiper-wrapper {
+  padding-top: 40px !important;
+  padding-bottom: 40px !important;
+}
+
+.mySwiper .swiper-slide {
+  transition: transform 0.3s;
+  z-index: 0 !important;
+}
+
+/* Scale only on tablet and up */
+@media (min-width: 768px) {
+  .mySwiper .swiper-slide-active {
+    transform: scale(1.42) !important;
+    z-index: 9999 !important;
+  }
+}
+
+.profileH1 {
+  font-size: clamp(1.3rem, 3vw, 1.469rem);
+  font-weight: 800;
+}
+
+.popTitle {
+  font-size: 1.213rem;
+  font-weight: 600;
+}
+
+.popP {
+  font-size: 0.729rem;
+  font-weight: 400;
 }

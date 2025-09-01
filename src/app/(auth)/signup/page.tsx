@@ -4,14 +4,14 @@ import { useState } from "react";
 import Link from "next/link";
 import RoleCard from "@/app/(marketing)/_components/RoleCard";
 
-type Role = "bossing" | "tao" | null;
+type Role = "kindbossing" | "kindtao" | null;
 
 export default function RegisterChooseRolePage() {
   const [role, setRole] = useState<Role>(null);
 
   const onContinue = () => {
     if (!role) return;
-    const next = role === "bossing" ? "/signup/bossing" : "/signup/tao";
+    const next = role === "kindbossing" ? "/signup/kindbossing" : "/signup/kindtao";
     window.location.href = next;
   };
 
@@ -28,8 +28,8 @@ export default function RegisterChooseRolePage() {
 
         <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6">
           <RoleCard
-            selected={role === "bossing"}
-            onSelect={() => setRole("bossing")}
+            selected={role === "kindbossing"}
+            onSelect={() => setRole("kindbossing")}
             iconSrc="/icons/reg_kind_bossing.png"
             title="I'm a kindBossing, looking to hire:"
             bullets={[
@@ -40,8 +40,8 @@ export default function RegisterChooseRolePage() {
           />
 
           <RoleCard
-            selected={role === "tao"}
-            onSelect={() => setRole("tao")}
+            selected={role === "kindtao"}
+            onSelect={() => setRole("kindtao")}
             iconSrc="/icons/reg_kind_tao.png"
             title="I'm a kindTao, looking for work:"
             bullets={[

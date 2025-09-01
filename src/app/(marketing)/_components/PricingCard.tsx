@@ -14,7 +14,7 @@ type PricingProps = {
 export default function PricingList({ pricing }: PricingProps) {
   return (
     <section className="bg-white">
-      <div className="max-w-6xl bg-white mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 px-4">
+      <div className="max-w-6xl bg-white mx-auto grid grid-cols-1 lg:grid-cols-3 gap-5 px-4">
         {pricing.map((pricing, index) => (
           <div
             key={index}
@@ -29,9 +29,13 @@ export default function PricingList({ pricing }: PricingProps) {
               </span>
               <span className="pricingPriceSubtext text-[#A0ABB8]">/month</span>
             </p>
-            <p className={`pricingP ${index < 2 ? "max-w-[150px]" : "w-full"}`}>
+            <p
+              className={`pricingP w-full ${
+                index < 2 ? "lg:max-w-[150px]" : "lg:w-full"
+              }`}
+            >
               {pricing.description}
-            </p>{" "}
+            </p>
             <hr className="pricingP mb-[20px] mt-[20px]"></hr>
             <ul className="mb-[40px] space-y-5">
               {pricing.features.map((feature, featureIndex) => (
