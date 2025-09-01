@@ -3,11 +3,7 @@
 import { useMemo, useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { DAYS_OF_WEEK, TIME_SLOTS } from "@/constants/onboarding";
-import {
-  DayOfWeek,
-  TimeSlot,
-  SkillsAvailabilityForm,
-} from "@/types/onboarding";
+import { DayOfWeek, TimeSlot } from "@/types/onboarding";
 import PillToggle from "@/components/onboarding/PillToggle";
 import StepperFooter from "@/components/StepperFooter";
 import { createClient } from "@/utils/supabase/client";
@@ -31,11 +27,48 @@ export default function SkillsAvailabilityClient() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [skillDropdownOpen, setSkillDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const isClickingDropdown = useRef(false);
+
+  // Load existing data when component mounts
+  useEffect(() => {
+    const loadExistingData = async () => {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: profileData } = await supabase
+          .from('helper_profiles')
+          .select('skills, availability_schedule')
+          .eq('user_id', user.id)
+          .single();
+
+        if (profileData) {
+          if (profileData.skills && Array.isArray(profileData.skills)) {
+            setSkills(profileData.skills);
+          }
+          if (profileData.availability_schedule) {
+            const schedule = profileData.availability_schedule as Record<string, Record<string, unknown>>;
+            const availableDays = Object.keys(schedule).filter(day => 
+              schedule[day]?.available === true
+            );
+            setSelectedDays(availableDays as DayOfWeek[]);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading existing data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadExistingData();
+  }, []);
 
   // Click outside handler to close dropdown
   useEffect(() => {
@@ -129,7 +162,7 @@ export default function SkillsAvailabilityClient() {
       const supabase = createClient();
       
       // Get current user
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setSaveError("User not authenticated");
         return;
@@ -152,7 +185,7 @@ export default function SkillsAvailabilityClient() {
       });
 
       // Check if helper_profile exists, if not create it
-      const { data: existingProfile, error: checkError } = await supabase
+      const { data: existingProfile } = await supabase
         .from('helper_profiles')
         .select('id')
         .eq('user_id', user.id)
@@ -190,12 +223,22 @@ export default function SkillsAvailabilityClient() {
       // Redirect to next stage
       router.push("/onboarding/work-history");
       
-    } catch (err) {
+    } catch {
       setSaveError("An unexpected error occurred. Please try again.");
     } finally {
       setIsSaving(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <>
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-md mb-6">
+          <p className="text-blue-600 text-sm">Loading your data...</p>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>

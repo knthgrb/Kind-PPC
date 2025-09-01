@@ -31,29 +31,51 @@ export default function DocumentUploadClient() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [user, setUser] = useState<{ id: string; email: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Check authentication status on component load
+  // Check authentication status and load existing documents on component load
   useEffect(() => {
-    const checkAuth = async () => {
+    const checkAuthAndLoadDocuments = async () => {
       const supabase = createClient();
-      const { data: { user }, error } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       
-      if (error) {
-        console.error('Auth check error:', error);
-        setSaveError(`Authentication error: ${error.message}`);
-      } else if (user && user.email) {
+      if (user && user.email) {
         console.log('User authenticated:', user.id, user.email);
         setUser({ id: user.id, email: user.email });
+        
+        // Load existing documents
+        try {
+          const { data: existingDocs } = await supabase
+            .from('user_documents')
+            .select('*')
+            .eq('user_id', user.id);
+
+          if (existingDocs && existingDocs.length > 0) {
+            const docs = existingDocs.map(doc => ({
+              id: doc.id,
+              documentType: doc.document_type,
+              fileName: doc.file_name,
+              fileSize: doc.file_size,
+              mimeType: doc.mime_type,
+              uploadProgress: 100,
+              status: 'success' as const
+            }));
+            setUploadedDocuments(docs);
+          }
+        } catch (error) {
+          console.error('Error loading existing documents:', error);
+        }
       } else {
         console.log('No user found');
         setSaveError("User not authenticated. Please log in again.");
       }
       
       setIsLoading(false);
+      setIsLoadingDocuments(false);
     };
 
-    checkAuth();
+    checkAuthAndLoadDocuments();
   }, []);
 
   const formatFileSize = (bytes: number): string => {
@@ -71,7 +93,7 @@ export default function DocumentUploadClient() {
     const supabase = createClient();
     
     // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setSaveError("User not authenticated");
       return;
@@ -101,7 +123,7 @@ export default function DocumentUploadClient() {
         const filePath = `documents/${user.id}/${fileName}`;
 
         // Upload to Supabase Storage
-        const { data, error } = await supabase.storage
+        const { error } = await supabase.storage
           .from('documents')
           .upload(filePath, file, {
             cacheControl: '3600',
@@ -250,7 +272,7 @@ export default function DocumentUploadClient() {
       // All documents are uploaded successfully
       // Redirect to profile page
       router.push("/profile");
-    } catch (err) {
+    } catch {
       setSaveError("An unexpected error occurred. Please try again.");
     } finally {
       setIsSaving(false);
@@ -260,9 +282,11 @@ export default function DocumentUploadClient() {
   return (
     <>
       {/* Loading State */}
-      {isLoading && (
+      {(isLoading || isLoadingDocuments) && (
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-md mb-6">
-          <p className="text-blue-600 text-sm">Checking authentication...</p>
+          <p className="text-blue-600 text-sm">
+            {isLoading ? 'Checking authentication...' : 'Loading your documents...'}
+          </p>
         </div>
       )}
 

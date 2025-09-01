@@ -24,17 +24,52 @@ export default function PersonalInfoClient() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const daysInMonth = useMemo(
     () => getDaysInMonth(form.month, form.year),
     [form.month, form.year]
   );
 
+  // Load existing data when component mounts
+  useEffect(() => {
+    const loadExistingData = async () => {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: userData } = await supabase
+          .from('users')
+          .select('date_of_birth, gender')
+          .eq('id', user.id)
+          .single();
+
+        if (userData?.date_of_birth) {
+          const date = new Date(userData.date_of_birth);
+          setForm(prev => ({
+            ...prev,
+            day: date.getDate().toString(),
+            month: (date.getMonth() + 1).toString(),
+            year: date.getFullYear().toString(),
+            gender: userData.gender || prev.gender
+          }));
+        }
+      } catch (error) {
+        console.error('Error loading existing data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadExistingData();
+  }, []);
+
   useEffect(() => {
     if (form.day && Number(form.day) > daysInMonth) {
       setForm((prev) => ({ ...prev, day: "" }));
     }
-  }, [form.month, form.year, daysInMonth]);
+  }, [form.day, form.month, form.year, daysInMonth]);
 
   const handleNext = async () => {
     if (!form.day || !form.month || !form.year) {
@@ -49,7 +84,7 @@ export default function PersonalInfoClient() {
       const supabase = createClient();
       
       // Get current user
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setSaveError("User not authenticated");
         return;
@@ -91,6 +126,16 @@ export default function PersonalInfoClient() {
       setIsSaving(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+          <p className="text-blue-600 text-sm">Loading your data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
