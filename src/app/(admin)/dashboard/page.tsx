@@ -80,7 +80,7 @@ export default function Dashboard() {
           </div>
 
           {/* Employee Engagement */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-5 bg-white shadow-sm border border-gray-200">
+          <div className="rounded-xl p-5 bg-white shadow-sm border border-gray-200">
             <h3 className="text-[1.034rem] text-[#3D434A] font-semibold pb-4">
               Employee Engagement
             </h3>
