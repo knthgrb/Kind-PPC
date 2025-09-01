@@ -13,7 +13,7 @@ export default function Notifications() {
         <h3 className="mb-4 text-[1.578rem] font-medium text-black">
           Notifications
         </h3>
-        <div className="max-w-5xl grid grid-cols-1 gap-20 grid-cols-1 lg:grid-cols-2">
+        <div className="max-w-5xl grid grid-cols-1 gap-20 lg:grid-cols-2">
           <div className="flex justify-between py-10">
             <p className="text-[0.934rem] text-[#12223B] !font-medium">
               Push Notifications
