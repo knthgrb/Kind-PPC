@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import JobCard, { Job } from "../../../../components/jobsearch/JobCard";
-import JobSearch, { Filters } from "../../../../components/jobsearch/JobSearch";
+import JobCard, { Job } from "../../../../components/jobs/JobCardTest";
+import JobSearch, { Filters } from "../../../../components/jobs/JobSearch";
 import { FaArrowRight } from "react-icons/fa6";
 import { useJobs } from "../../../../hooks/useJobs"; // <--- new hook
 

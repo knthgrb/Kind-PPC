@@ -17,7 +17,7 @@ export default function Card({
     >
       {(title || right) && (
         <header className="mb-3 flex items-center justify-between">
-          {title ? <h3 className="profileLabel">{title}</h3> : <div />}
+          {title ? <h3 className="profileH1">{title}</h3> : <div />}
           {right}
         </header>
       )}
