@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import { Job } from "@/components/jobsearch/JobCard";
-import { Filters } from "@/components/jobsearch/JobSearch";
+import { Job } from "@/components/jobs/JobCardTest";
+import { Filters } from "@/components/jobs/JobSearch";
 export function useJobs(latestJobs: Job[], filters: Filters) {
   // Local filtering for now
   const jobs = useMemo(() => {

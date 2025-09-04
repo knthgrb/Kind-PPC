@@ -5,8 +5,13 @@ import { useState } from "react";
 import ContinueModal from "@/components/ContinueModal";
 import StepperFooter from "@/components/StepperFooter";
 import Dropdown from "@/components/dropdown/Dropdown";
+import { postJob } from "@/services/jobs/(kindBossing)/postJobService";
 
-export default function PostJobClient() {
+type PostJobClientProps = {
+  familyId: string;
+};
+
+export default function PostJobClient({ familyId }: PostJobClientProps) {
   const router = useRouter();
 
   // form state
@@ -16,7 +21,7 @@ export default function PostJobClient() {
   const [unit, setUnit] = useState("Per Day");
   const [description, setDescription] = useState("");
 
-  // modal state (use optional fields + safe fallback)
+  // modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [modalProps, setModalProps] = useState<{
     title?: string;
@@ -29,7 +34,7 @@ export default function PostJobClient() {
   const amounts = ["₱350", "₱450", "₱500", "₱550", "₱600", "₱700", "₱800"];
   const units = ["Per Hour", "Per Day", "Per Week", "Per Month"];
 
-  const handlePost = () => {
+  const handlePost = async () => {
     if (
       !title.trim() ||
       !location.trim() ||
@@ -41,24 +46,48 @@ export default function PostJobClient() {
         title: "Missing Information",
         description: "Please complete all required fields before posting.",
         buttonLabel: "OK",
-        icon: null, // AccountCreatedModal hides the icon when null
+        icon: null,
         onAction: () => setModalOpen(false),
       });
       setModalOpen(true);
       return;
     }
 
-    setModalProps({
-      title: "Job Posted",
-      description: "Your job has been posted successfully",
-      buttonLabel: "Continue",
-      icon: "/icons/checkCircleOTP.png",
-      onAction: () => {
-        setModalOpen(false);
-        // router.push("/jobs"); // navigate if desired
-      },
-    });
-    setModalOpen(true);
+    try {
+      const numericAmount = parseInt(amount.replace(/[₱,]/g, ""), 10);
+
+      const job = await postJob({
+        family_id: familyId,
+        title,
+        description,
+        location: location,
+        salary_min: numericAmount,
+        salary_max: numericAmount,
+        salary_rate: unit as "Per Hour" | "Per Day" | "Per Week" | "Per Month",
+      });
+
+      setModalProps({
+        title: "Job Posted",
+        description: `Your job "${job.title}" has been posted successfully`,
+        buttonLabel: "Continue",
+        icon: "/icons/checkCircleOTP.png",
+        onAction: () => {
+          setModalOpen(false);
+          router.push(`/jobs/${job.id}`);
+        },
+      });
+      setModalOpen(true);
+    } catch (err) {
+      console.error("Failed to post job:", err);
+      setModalProps({
+        title: "Error",
+        description: "Something went wrong while posting the job.",
+        buttonLabel: "OK",
+        icon: null,
+        onAction: () => setModalOpen(false),
+      });
+      setModalOpen(true);
+    }
   };
 
   return (
@@ -87,7 +116,7 @@ export default function PostJobClient() {
             value={location}
             onChange={(e) => setLocation(e.target.value)}
             type="text"
-            placeholder="Company"
+            placeholder="Location"
             className="postJobInputPlaceholder w-full h-12 rounded-md border border-[#DFDFDF] px-4 outline-none"
           />
         </div>
@@ -125,7 +154,7 @@ export default function PostJobClient() {
           />
         </div>
 
-        {/* Footer with icons (prev/next) */}
+        {/* Footer */}
         <StepperFooter
           onBack={() => router.back()}
           onNext={handlePost}
@@ -134,7 +163,7 @@ export default function PostJobClient() {
         />
       </section>
 
-      {/* Modal with safe fallbacks to satisfy TS */}
+      {/* Modal */}
       <ContinueModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}

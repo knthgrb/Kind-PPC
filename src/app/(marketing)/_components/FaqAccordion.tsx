@@ -11,7 +11,7 @@ type FaqsAccordionProps = {
   faq: Faqs[];
 };
 
-export default function PricingList({ faq }: FaqsAccordionProps) {
+export default function FaqAccordion({ faq }: FaqsAccordionProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(0);
 
   const toggleAccordion = (index: number) => {

@@ -11,7 +11,7 @@ export default function Chip({ children, onRemove }: ChipProps) {
         <button
           type="button"
           aria-label="remove"
-          className="-mt-0.5"
+          className="-mt-0.5 cursor-pointer hover:opacity-80 transition-opacity"
           onClick={onRemove}
         >
           ×

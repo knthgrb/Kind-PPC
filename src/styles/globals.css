@@ -221,9 +221,15 @@ body {
   color: #667282;
 }
 
+.jobh3 {
+  font-family: "Plus Jakarta Sans";
+  font-size: clamp(0.85rem, 1.8vw, 0.965rem);
+  font-weight: 700;
+  color: #05264e;
+}
 .jobh4 {
   font-family: "Plus Jakarta Sans";
-  font-size: clamp(0.95rem, 1.8vw, 1.086rem);
+  font-size: clamp(0.8rem, 1.75vw, 0.954rem);
   font-weight: 700;
   color: #05264e;
 }

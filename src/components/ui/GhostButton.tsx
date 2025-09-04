@@ -13,7 +13,7 @@ export default function GhostButton({
     <button
       {...props}
       className={[
-        "w-[118px] h-[36px] rounded-md border border-[#CFCFCF] bg-white",
+        "w-[118px] h-[36px] rounded-md border border-[#CFCFCF] bg-white cursor-pointer hover:bg-gray-50 transition-colors",
         className,
       ].join(" ")}
     >

@@ -13,7 +13,7 @@ type Props = {
   job: Job;
 };
 
-export default function JobCard({ job }: Props) {
+export default function JobCardTest({ job }: Props) {
   return (
     <div className="flex flex-col p-4 rounded-2xl bg-white border border-[#E0E6F7] transition-all w-full h-auto">
       <div className="flex items-center mb-3">

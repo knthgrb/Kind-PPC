@@ -1,7 +1,7 @@
 import React from "react";
 import EmployeeCard from "./_components/EmployeeCard";
 import { employees } from "@/lib/admin/adminData";
-export default function Employees() {
+export default function ProfileVerification() {
   return (
     <div className="px-6 pt-10 pb-16">
       <div className="mx-auto max-w-7xl border border-[#D9E0E8] rounded-lg px-8 py-6 bg-white">

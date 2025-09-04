@@ -28,7 +28,7 @@ export default function AdminHeader() {
         <nav className="hidden lg:flex space-x-10 font-medium items-center text-[clamp(0.9rem,1vw,1.125rem)]">
           {[
             { label: "Dashboard", href: "/dashboard" },
-            { label: "Employees", href: "/employees" },
+            { label: "Employees", href: "/profile-verification" },
             { label: "Payslip", href: "/error" },
             { label: "Gov't Benefits", href: "/error" },
             { label: "Documents", href: "/error" },

@@ -10,14 +10,20 @@ import {
   categories,
   howItWorksSteps,
   benefitsList,
-  locations,
-  jobTypes,
-  payTypes,
-  latestJobs,
   pricingList,
   faqs,
 } from "@/lib/marketing/homeData";
-export default function Home() {
+import {
+  fetchJobFilterOptions,
+  fetchLatestJobs,
+} from "@/services/jobs/fetchJobs";
+
+export default async function Home() {
+  const [{ locations, jobTypes, payTypes }, latestJobs] = await Promise.all([
+    fetchJobFilterOptions(),
+    fetchLatestJobs(8),
+  ]);
+
   return (
     <div>
       <Hero />
@@ -33,7 +39,7 @@ export default function Home() {
 
         <SectionHeader
           title="How it Works"
-          description={`Lorem Ipsum is simply dummy text of the printing and typesetting`}
+          description={`Lorem Ipsum is simply dummy text of the printing and typesetting`}
           className="pt-30 bg-white"
         />
 
@@ -41,16 +47,16 @@ export default function Home() {
 
         <div className="bg-[#fcf7f7] py-15 my-15">
           <SectionHeader
-            title="Latest Jobs"
-            description="Explore the newest job listings from trusted kindBossing."
+            title="Find Your Perfect Match"
+            description="Search and discover the right kindTao for your needs."
             className="bg-transparent"
           />
 
           <JobsGrid
-            latestJobs={latestJobs}
             locations={locations}
             jobTypes={jobTypes}
             payTypes={payTypes}
+            latestJobs={latestJobs}
           />
         </div>
 
@@ -60,19 +66,34 @@ export default function Home() {
           className="pt-15 bg-white"
         />
 
-        <StepsCardGrid steps={benefitsList} />
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-4">
+          {benefitsList.map((benefit, index) => (
+            <div
+              key={index}
+              className="bg-white p-6 rounded-lg shadow-md text-center"
+            >
+              <div className="w-16 h-16 bg-[#CC0000] rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-white text-2xl font-bold">
+                  {benefit.icon}
+                </span>
+              </div>
+              <h3 className="text-xl font-semibold mb-2">{benefit.title}</h3>
+              <p className="text-gray-600">{benefit.description}</p>
+            </div>
+          ))}
+        </div>
 
         <SectionHeader
           title="Pricing"
-          description={`Choose the plan that's right for your household needs.`}
+          description={`Choose the plan that works best for you`}
           className="pt-30 bg-white"
         />
 
         <PricingCard pricing={pricingList} />
 
         <SectionHeader
-          title="FAQ's"
-          description={`Lorem Ipsum is simply dummy text of the printing and typesetting.`}
+          title="Frequently Asked Questions"
+          description={`Get answers to common questions about our platform`}
           className="pt-30 bg-white"
         />
 

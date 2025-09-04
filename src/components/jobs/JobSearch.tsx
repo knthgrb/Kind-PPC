@@ -20,6 +20,7 @@ type Props = {
   jobTypes: string[];
   payTypes: string[];
   onSearch: (filters: Filters) => void;
+  initialFilters?: Filters;
 };
 
 type FilterDropdownProps = {
@@ -42,8 +43,11 @@ export default function JobSearch({
   jobTypes,
   payTypes,
   onSearch,
+  initialFilters,
 }: Props) {
-  const [inputs, setInputs] = useState<Filters>({ ...defaultFilters });
+  const [inputs, setInputs] = useState<Filters>(
+    initialFilters ? { ...initialFilters } : { ...defaultFilters }
+  );
 
   const updateInput = <K extends keyof Filters>(key: K, value: Filters[K]) =>
     setInputs((prev) => ({ ...prev, [key]: value }));
@@ -64,11 +68,73 @@ export default function JobSearch({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row w-full">
-      <div className="bg-white border border-gray-200 rounded-t-lg lg:rounded-l-lg lg:rounded-tr-none p-4 sm:p-6 flex-1">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
+    <div className="max-w-6xl mx-auto">
+      <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6">
+        {/* Mobile Layout */}
+        <div className="block lg:hidden space-y-4">
+          {/* Search Input Section */}
+          <div className="flex items-center gap-2">
+            <CiSearch className="text-xl text-gray-500 flex-shrink-0" />
+            <div className="flex flex-wrap gap-2 flex-1 min-w-0">
+              {inputs.tags.map((tag, i) => (
+                <Tag
+                  key={i}
+                  tag={tag}
+                  onRemove={() =>
+                    updateInput(
+                      "tags",
+                      inputs.tags.filter((_, index) => index !== i)
+                    )
+                  }
+                />
+              ))}
+              <input
+                type="text"
+                value={inputs.keyword}
+                onChange={(e) => updateInput("keyword", e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="flex-1 min-w-32 border-none focus:outline-none text-sm placeholder-gray-400"
+                placeholder={inputs.tags.length === 0 ? "Add keywords" : ""}
+              />
+            </div>
+          </div>
+
+          {/* Filters Row */}
+          <div className="flex gap-2">
+            <FilterDropdown
+              icon={CiLocationOn}
+              value={inputs.location}
+              options={locations}
+              onChange={(val) => updateInput("location", val)}
+            />
+            <FilterDropdown
+              icon={LuBriefcaseBusiness}
+              value={inputs.jobType}
+              options={jobTypes}
+              onChange={(val) => updateInput("jobType", val)}
+            />
+            <FilterDropdown
+              icon={LuBadgeDollarSign}
+              value={inputs.payType}
+              options={payTypes}
+              onChange={(val) => updateInput("payType", val)}
+            />
+          </div>
+
+          {/* Search Button */}
+          <button
+            onClick={handleSearch}
+            className="w-full bg-[#CC0000] hover:bg-red-700 text-white text-sm px-6 py-3 rounded-lg flex items-center justify-center gap-2"
+          >
+            Search
+            <IoArrowForwardCircleOutline className="text-white text-lg" />
+          </button>
+        </div>
+
+        {/* Desktop Layout */}
+        <div className="hidden lg:flex items-center gap-2 min-w-0">
           {/* Search icon */}
-          <CiSearch className="text-xl text-gray-500" />
+          <CiSearch className="text-xl text-gray-500 flex-shrink-0" />
 
           {/* Tags + Input */}
           <div className="flex flex-wrap gap-2 flex-1 min-w-0">
@@ -90,7 +156,7 @@ export default function JobSearch({
               value={inputs.keyword}
               onChange={(e) => updateInput("keyword", e.target.value)}
               onKeyDown={handleKeyDown}
-              className="w-28 sm:w-32 border-none focus:outline-none text-sm placeholder-gray-400"
+              className="w-80 border-none focus:outline-none text-sm placeholder-gray-400"
               placeholder={inputs.tags.length === 0 ? "Add keywords" : ""}
             />
           </div>
@@ -118,7 +184,7 @@ export default function JobSearch({
           {/* Search button */}
           <button
             onClick={handleSearch}
-            className="bg-[#CC0000] hover:bg-red-700 text-white text-sm px-6 py-3 rounded-b-lg sm:rounded-lg lg:rounded-r-lg lg:rounded-bl-none flex items-center justify-center gap-2"
+            className="bg-[#CC0000] hover:bg-red-700 text-white text-sm px-6 py-3 rounded-lg flex items-center justify-center gap-2 flex-shrink-0"
           >
             Search
             <IoArrowForwardCircleOutline className="text-white text-lg" />
