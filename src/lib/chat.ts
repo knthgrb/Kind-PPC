@@ -1,58 +1,73 @@
+import type { ChatParticipant, LegacyMessage } from "@/types/chat";
+
+// Legacy chat data for mock/development purposes
+// This can be removed once you're using real data from the database
 export const chatData: {
-  participants: Participant[];
-  conversations: Record<number, Message[]>;
+  participants: ChatParticipant[];
+  conversations: Record<string, LegacyMessage[]>;
 } = {
   participants: [
     {
-      id: 1,
+      id: "1",
       name: "Darrell Steward",
       image: "/people/darrellSteward.png",
-      status: "online",
+      role: "kindbossing",
+      isOnline: true,
     },
     {
-      id: 2,
+      id: "2",
       name: "Theresa Webb",
       image: "/people/theresaWebb.png",
-      status: "online",
+      role: "kindtao",
+      isOnline: true,
     },
     {
-      id: 3,
+      id: "3",
       name: "Esther Howard",
       image: "/people/estherHoward.png",
-      status: "away",
+      role: "kindtao",
+      isOnline: false,
     },
     {
-      id: 4,
+      id: "4",
       name: "Jane Cooper",
       image: "/people/janeCooper.png",
-      status: "offline",
+      role: "kindbossing",
+      isOnline: false,
     },
   ],
   conversations: {
-    2: [
+    "22222222-2222-2222-2222-222222222222": [
       {
         id: 1,
         senderId: 2,
-        message: "Hey, I'm looking to redesign my website. Can you help me? 😊",
+        message:
+          "Hi, I saw your profile. Are you available for a full-time yaya position?",
         time: new Date(),
       },
       {
         id: 2,
         senderId: 1,
         message:
-          "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum..",
+          "Yes, I am available. Could you tell me more about the work schedule?",
         time: new Date(),
       },
     ],
-    3: [
+    "6b3ee30c-e13c-4503-aa53-56af804e3308": [
       {
         id: 1,
         senderId: 3,
         message:
-          "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum..",
+          "Hello! Thank you for considering me. I am available tomorrow afternoon or this weekend. What works best for you?",
+        time: new Date(),
+      },
+      {
+        id: 2,
+        senderId: 1,
+        message:
+          "Tomorrow afternoon at 2 PM would be perfect. Can you come to our house in Quezon City?",
         time: new Date(),
       },
     ],
-    4: [],
   },
 };
