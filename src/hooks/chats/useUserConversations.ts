@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { ChatService } from "@/services/chat/chatService";
-import { useAuth } from "./useAuth";
+import { useAuth } from "../useAuth";
 import type { ConversationWithDetails } from "@/types/chat";
 export interface UseUserConversationsOptions {
   // Using realtime subscriptions instead of polling

@@ -6,7 +6,7 @@ import {
   type ChatMessage,
 } from "@/services/chat/realtimeService";
 import { ChatService } from "@/services/chat/chatService";
-import { useAuth } from "./useAuth";
+import { useAuth } from "../useAuth";
 
 export interface UseRealtimeChatOptions {
   conversationId: string | null;

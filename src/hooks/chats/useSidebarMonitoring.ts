@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ChatService } from "@/services/chat/chatService";
 import { RealtimeService } from "@/services/chat/realtimeService";
-import { useAuth } from "./useAuth";
+import { useAuth } from "../useAuth";
 import type { ConversationWithDetails } from "@/types/chat";
 
 export interface SidebarData {

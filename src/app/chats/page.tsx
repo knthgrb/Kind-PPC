@@ -1,9 +1,10 @@
 "use client";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useUserConversations } from "@/hooks/useUserConversations";
+import { useUserConversations } from "@/hooks/chats/useUserConversations";
 import { useAuth } from "@/hooks/useAuth";
 import { ChatService } from "@/services/chat/chatService";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 export default function ChatsPage() {
   const router = useRouter();
@@ -50,14 +51,7 @@ export default function ChatsPage() {
   }, [conversations, isLoading, router, user?.id]);
 
   if (isChatLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading chat...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading chat..." variant="fullscreen" />;
   }
 
   if (conversations.length === 0) {
@@ -76,11 +70,9 @@ export default function ChatsPage() {
   }
 
   return (
-    <div className="flex items-center justify-center h-screen">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-        <p className="text-gray-600">Redirecting to conversation...</p>
-      </div>
-    </div>
+    <LoadingSpinner
+      message="Redirecting to conversation..."
+      variant="fullscreen"
+    />
   );
 }

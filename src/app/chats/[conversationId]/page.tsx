@@ -4,9 +4,10 @@ import { useParams, useRouter } from "next/navigation";
 import { LuSearch } from "react-icons/lu";
 import { FaChevronLeft } from "react-icons/fa";
 import LimitAlertModal from "@/components/LimitAlertModal";
-import { useChatUI } from "@/hooks/useChatUI";
+import LoadingSpinner from "@/components/LoadingSpinner";
+import { useChatUI } from "@/hooks/chats/useChatUI";
 import { useAuth } from "@/hooks/useAuth";
-import { useSidebarMonitoring } from "@/hooks/useSidebarMonitoring";
+import { useSidebarMonitoring } from "@/hooks/chats/useSidebarMonitoring";
 import { ChatService } from "@/services/chat/chatService";
 import { RealtimeService } from "@/services/chat/realtimeService";
 import { formatTimestamp, getStatusColor } from "@/utils/chatUtils";
@@ -410,10 +411,7 @@ export default function ChatUI() {
       {/* Loading overlay - only show when both sidebar and chat window are loading */}
       {shouldShowFullLoading && (
         <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading chat...</p>
-          </div>
+          <LoadingSpinner message="Loading chat..." variant="default" />
         </div>
       )}
 
@@ -436,9 +434,11 @@ export default function ChatUI() {
 
           <div className="overflow-y-auto">
             {isSidebarLoading ? (
-              <div className="text-center text-[0.663rem] text-[#757589] py-4">
-                Loading...
-              </div>
+              <LoadingSpinner
+                message="Loading conversations..."
+                size="sm"
+                variant="minimal"
+              />
             ) : conversationsError ? (
               <div className="text-center text-[0.663rem] text-red-500 py-4">
                 Error loading conversations: {conversationsError.message}
@@ -520,9 +520,11 @@ export default function ChatUI() {
           {/* Messages */}
           <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-[#f5f6fa] mr-1 mb-2 min-h-0">
             {isLoadingMessages && messages.length === 0 ? (
-              <div className="text-center text-[0.663rem] text-[#757589] py-4">
-                Loading messages...
-              </div>
+              <LoadingSpinner
+                message="Loading messages..."
+                size="sm"
+                variant="minimal"
+              />
             ) : messagesError ? (
               <div className="text-center text-[0.663rem] text-red-500 py-4">
                 Error loading messages: {messagesError.message}
@@ -548,9 +550,11 @@ export default function ChatUI() {
                     }}
                   >
                     {isLoadingMore && (
-                      <div className="text-center text-[0.663rem] text-[#757589] py-2">
-                        Loading older messages...
-                      </div>
+                      <LoadingSpinner
+                        message="Loading older messages..."
+                        size="sm"
+                        variant="minimal"
+                      />
                     )}
                   </div>
                 )}

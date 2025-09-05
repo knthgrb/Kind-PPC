@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import { useUserConversations } from "./useUserConversations";
 import { useConversationDetails } from "./useConversationDetails";
 import { useChat } from "./useChat";
-import { useAuth } from "./useAuth";
+import { useAuth } from "../useAuth";
 import type {
   ConversationWithDetails,
   User,

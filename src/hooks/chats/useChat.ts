@@ -11,7 +11,7 @@ import {
   type ChatMessage,
 } from "@/services/chat/realtimeService";
 import { useInfiniteMessages } from "./useInfiniteMessages";
-import { useAuth } from "./useAuth";
+import { useAuth } from "../useAuth";
 import type { MessageWithUser } from "@/types/chat";
 
 export interface UseChatOptions {
