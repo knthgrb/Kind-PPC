@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ChatService } from "@/services/chat/chatService";
+import { BlockingService } from "@/services/chat/blockingService";
 import {
   RealtimeService,
   type ChatMessage,
@@ -221,6 +222,22 @@ export function useInfiniteMessages({
       setSendError(null);
 
       try {
+        // Check if the other user is blocked before sending
+        const otherUserId = await ChatService.getOtherUserId(
+          conversationId,
+          user.id
+        );
+        if (otherUserId) {
+          const isBlocked = await BlockingService.isUserBlocked(
+            user.id,
+            otherUserId
+          );
+          if (isBlocked) {
+            setSendError(new Error("Cannot send message to blocked user"));
+            return;
+          }
+        }
+
         // First save to database
         const newMessage = await ChatService.sendMessage(
           conversationId,

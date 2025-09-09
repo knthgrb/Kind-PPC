@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "@/styles/globals.css";
 import InstallPrompt from "@/components/pwa/InstallPrompt";
 import PushNotificationManager from "@/components/pwa/PushNotificationManager";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 
 // Import the required fonts
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -45,8 +46,10 @@ export default function RootLayout({
         suppressHydrationWarning
         className={`font-sans ${plusJakartaSans.variable} ${geistSans.variable} ${geistMono.variable} ${barlowCondensed.variable} antialiased`}
       >
-        <InstallPrompt />
-        {children}
+        <NotificationProvider>
+          <InstallPrompt />
+          {children}
+        </NotificationProvider>
       </body>
     </html>
   );
