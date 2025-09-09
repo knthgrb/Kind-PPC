@@ -182,15 +182,27 @@ export function useChat({
     loadConversation();
   }, [loadConversation]);
 
+  // Mark as read when conversation is viewed
   useEffect(() => {
-    if (autoMarkAsRead && conversationId && user?.id) {
+    if (autoMarkAsRead && conversationId && user?.id && messages.length > 0) {
       const timer = setTimeout(() => {
         markAsRead();
-      }, 1000);
+      }, 500); // Reduced delay for faster read status
 
       return () => clearTimeout(timer);
     }
-  }, [autoMarkAsRead, conversationId, user?.id, messages.length, markAsRead]);
+  }, [autoMarkAsRead, conversationId, user?.id, markAsRead]);
+
+  // Also mark as read when messages change (new messages arrive)
+  useEffect(() => {
+    if (autoMarkAsRead && conversationId && user?.id && messages.length > 0) {
+      const timer = setTimeout(() => {
+        markAsRead();
+      }, 200);
+
+      return () => clearTimeout(timer);
+    }
+  }, [messages.length, autoMarkAsRead, conversationId, user?.id, markAsRead]);
 
   return {
     // Messages

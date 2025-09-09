@@ -458,6 +458,37 @@ export class ChatService {
   }
 
   /**
+   * Get the other user ID from a conversation
+   */
+  static async getOtherUserId(
+    conversationId: string,
+    currentUserId: string
+  ): Promise<string | null> {
+    const supabase = createClient();
+
+    const { data, error } = await supabase
+      .from("conversations")
+      .select(
+        `
+        matches!inner(
+          kindbossing_id,
+          kindtao_id
+        )
+      `
+      )
+      .eq("id", conversationId)
+      .single();
+
+    if (error) {
+      console.error("Error getting other user ID:", error);
+      return null;
+    }
+
+    const { kindbossing_id, kindtao_id } = data.matches;
+    return kindbossing_id === currentUserId ? kindtao_id : kindbossing_id;
+  }
+
+  /**
    * Get the conversation where the user last sent a message (with caching)
    */
   static async getLastSentConversation(userId: string) {
