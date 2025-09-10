@@ -1,6 +1,6 @@
 "use server";
 
-import { FamilyProfileService } from "@/services/FamilyProfileService";
+import { upsertFamilyProfile } from "./upsert-family-profile";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -47,10 +47,7 @@ export async function saveWorkEnvironment(formData: FormData) {
     // Special requirements is optional for now - allow empty string
 
     // Save to database
-    const { error } = await FamilyProfileService.upsertFamilyProfile(
-      user.id,
-      data
-    );
+    const { error } = await upsertFamilyProfile(user.id, data);
 
     if (error) {
       return { success: false, error: error.message || "Failed to save data" };

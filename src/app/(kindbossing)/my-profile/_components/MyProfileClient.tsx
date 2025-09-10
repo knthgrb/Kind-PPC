@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import PostedJobGrid from "./PostedJobsGrid";
 import { FiLogOut } from "react-icons/fi";
 import { LuPencil } from "react-icons/lu";
@@ -24,6 +25,7 @@ export default function MyProfileClient({
   page,
   totalPages,
 }: MyProfileClientProps) {
+  const router = useRouter();
   const [editingProfile, setEditingProfile] = useState(false);
   const [form, setForm] = useState({
     first_name: user.first_name || "",
@@ -251,7 +253,18 @@ export default function MyProfileClient({
 
         {/* Posted Jobs */}
         <div className="lg:col-span-12">
-          <Card title="Posted Jobs">
+          <Card
+            title="Posted Jobs"
+            right={
+              <button
+                onClick={() => router.push("/post-job")}
+                className="w-10 h-10 rounded-full bg-white flex items-center justify-center hover:bg-gray-200"
+                aria-label="Add new job"
+              >
+                <Image src="/icons/plus.png" alt="Add" width={20} height={20} />
+              </button>
+            }
+          >
             <PostedJobGrid
               jobs={postedJobs}
               familyId={familyId}

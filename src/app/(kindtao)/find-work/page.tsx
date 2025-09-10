@@ -1,4 +1,4 @@
-import { fetchJobs, fetchJobFilterOptions } from "@/services/jobs/fetchJobs";
+import { JobService } from "@/services/JobService";
 import JobsCarousel from "./_components/JobsCarousel";
 import JobSwipeWrapper from "./_components/JobSwipeWrapper";
 
@@ -28,8 +28,8 @@ export default async function FindWorkPage({
   };
 
   const [jobs, filterOptions] = await Promise.all([
-    fetchJobs(filters),
-    fetchJobFilterOptions(),
+    JobService.fetchJobs(filters),
+    JobService.fetchJobFilterOptions(),
   ]);
 
   return (
