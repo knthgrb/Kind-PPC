@@ -73,7 +73,7 @@ export default function AdminHeader() {
             { label: "Employees", href: "/profile-verification" },
             { label: "Payslip", href: "/error" },
             { label: "Gov't Benefits", href: "/error" },
-            { label: "Documents", href: "/error" },
+            { label: "Documents", href: "/profile-verification" },
           ].map((item) => (
             <Link
               key={item.label}
@@ -199,19 +199,19 @@ export default function AdminHeader() {
           {/* Menu Links */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 justify-items-center text-center">
             {[
-              "Dashboard",
-              "Employees",
-              "Payslip",
-              "Gov't Benefits",
-              "Documents",
+              { label: "Dashboard", href: "/dashboard" },
+              { label: "Employees", href: "/profile-verification" },
+              { label: "Payslip", href: "/error" },
+              { label: "Gov't Benefits", href: "/error" },
+              { label: "Documents", href: "/profile-verification" },
             ].map((item) => (
               <Link
-                key={item}
-                href={`/${item.toLowerCase().replace(/ /g, "-")}`}
+                key={item.label}
+                href={item.href}
                 className="hover:text-red-600"
                 onClick={() => setMenuOpen(false)}
               >
-                {item}
+                {item.label}
               </Link>
             ))}
           </div>
