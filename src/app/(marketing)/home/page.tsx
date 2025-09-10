@@ -13,15 +13,12 @@ import {
   pricingList,
   faqs,
 } from "@/lib/marketing/homeData";
-import {
-  fetchJobFilterOptions,
-  fetchLatestJobs,
-} from "@/services/jobs/fetchJobs";
+import { JobService } from "@/services/JobService";
 
 export default async function Home() {
   const [{ locations, jobTypes, payTypes }, latestJobs] = await Promise.all([
-    fetchJobFilterOptions(),
-    fetchLatestJobs(8),
+    JobService.fetchJobFilterOptions(),
+    JobService.fetchLatestJobs(8),
   ]);
 
   return (

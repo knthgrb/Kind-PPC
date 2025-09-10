@@ -6,7 +6,7 @@ import StepperFooter from "@/components/StepperFooter";
 import { JobPost, SalaryRate } from "@/types/jobPosts";
 import { amounts, units } from "@/lib/jobs";
 import Dropdown from "@/components/dropdown/Dropdown";
-import { updateJobPost } from "@/services/jobs/(kindBossing)/updateJobPost";
+import { updateJobPost } from "@/app/_actions/jobs/update-job";
 
 export default function JobForm({ job }: { job: JobPost }) {
   const router = useRouter();
