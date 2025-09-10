@@ -24,8 +24,11 @@ export function useAuth() {
     // Get initial user - set loading to false immediately after getting user
     const getInitialUser = async () => {
       try {
-        const { data: { user }, error } = await supabase.auth.getUser();
-        
+        const {
+          data: { user },
+          error,
+        } = await supabase.auth.getUser();
+
         if (error) {
           console.error("Error getting user:", error);
           setUser(null);
@@ -34,44 +37,46 @@ export function useAuth() {
           setUser(user);
           setLoading(false);
           setInitialized(true);
-          
+
           // Get user metadata if user exists
           if (user) {
-                      console.log("User found, checking for metadata...");
-          console.log("Full user object:", user);
-          console.log("Raw user metadata available:", user.user_metadata);
-          console.log("User metadata available:", user.user_metadata);
-          console.log("App metadata available:", user.app_metadata);
-            
+            console.log("User found, checking for metadata...");
+
             // First, try to get from user_metadata immediately
             const authMetadata = user.user_metadata;
             if (authMetadata?.first_name || authMetadata?.last_name) {
               const immediateMetadata = {
                 id: user.id,
-                first_name: authMetadata.first_name || '',
-                last_name: authMetadata.last_name || '',
-                email: user.email || '',
-                role: authMetadata.role || 'kindtao'
+                first_name: authMetadata.first_name || "",
+                last_name: authMetadata.last_name || "",
+                email: user.email || "",
+                role: authMetadata.role || "kindtao",
               };
-              console.log("Using user metadata immediately:", immediateMetadata);
+              console.log(
+                "Using user metadata immediately:",
+                immediateMetadata
+              );
               setUserMetadata(immediateMetadata);
             } else {
               // Fallback to database query
-              console.log("Fetching user metadata from database for user ID:", user.id);
-              
+              console.log(
+                "Fetching user metadata from database for user ID:",
+                user.id
+              );
+
               const { data: metadata, error: metadataError } = await supabase
                 .from("users")
                 .select("id, first_name, last_name, email, role")
                 .eq("id", user.id)
                 .single();
-              
+
               if (metadataError) {
                 console.error("Error getting user metadata:", metadataError);
                 console.error("Metadata error details:", {
                   message: metadataError.message,
                   details: metadataError.details,
                   hint: metadataError.hint,
-                  code: metadataError.code
+                  code: metadataError.code,
                 });
               } else {
                 console.log("User metadata loaded from database:", metadata);
@@ -92,43 +97,50 @@ export function useAuth() {
     getInitialUser();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       setUser(session?.user ?? null);
       setLoading(false);
       setInitialized(true);
-      
+
       if (session?.user) {
         // Get user metadata when user logs in
         try {
           console.log("Auth state change - user found:", session.user.id);
-          console.log("Auth state change - full user object:", session.user);
-          console.log("Auth state change - raw user metadata:", session.user.user_metadata);
-          console.log("Auth state change - user metadata:", session.user.user_metadata);
-          console.log("Auth state change - app metadata:", session.user.app_metadata);
-          
+
           // First, try to get from user_metadata immediately
           const authMetadata = session.user.user_metadata;
           if (authMetadata?.first_name || authMetadata?.last_name) {
             const immediateMetadata = {
               id: session.user.id,
-              first_name: authMetadata.first_name || '',
-              last_name: authMetadata.last_name || '',
-              email: session.user.email || '',
-              role: authMetadata.role || 'kindtao'
+              first_name: authMetadata.first_name || "",
+              last_name: authMetadata.last_name || "",
+              email: session.user.email || "",
+              role: authMetadata.role || "kindtao",
             };
-            console.log("Auth change - using user metadata immediately:", immediateMetadata);
+            console.log(
+              "Auth change - using user metadata immediately:",
+              immediateMetadata
+            );
             setUserMetadata(immediateMetadata);
           } else {
             // Fallback to database query
-            console.log("Auth state change - fetching metadata from database for user ID:", session.user.id);
+            console.log(
+              "Auth state change - fetching metadata from database for user ID:",
+              session.user.id
+            );
             const { data: metadata, error: metadataError } = await supabase
               .from("users")
               .select("id, first_name, last_name, email, role")
               .eq("id", session.user.id)
               .single();
-            
+
             if (metadataError) {
-              console.error("Error getting user metadata on auth change:", metadataError);
+              console.error(
+                "Error getting user metadata on auth change:",
+                metadataError
+              );
               setUserMetadata(null);
             } else {
               console.log("User metadata loaded on auth change:", metadata);
@@ -163,7 +175,7 @@ export function useAuth() {
       user,
       userMetadata,
       loading,
-      initialized
-    }
+      initialized,
+    },
   };
 }

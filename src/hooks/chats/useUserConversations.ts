@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { ChatService } from "@/services/chat/chatService";
 import { BlockingService } from "@/services/chat/blockingService";
 import { useAuth } from "../useAuth";
@@ -24,16 +24,28 @@ export function useUserConversations({}: UseUserConversationsOptions = {}): UseU
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
+  // ✅ ADDED: Ref to prevent duplicate calls without dependency loop
+  const isLoadingRef = useRef(false);
+
   const loadConversations = useCallback(async () => {
     if (!user?.id) {
       setConversations([]);
       return;
     }
 
+    // ✅ FIXED: Use ref to prevent duplicate calls without dependency loop
+    if (isLoadingRef.current) {
+      console.log("⏳ Conversations already loading, skipping duplicate call");
+      return;
+    }
+
+    isLoadingRef.current = true;
     setIsLoading(true);
     setError(null);
 
     try {
+      console.log("📊 Loading conversations for user:", user.id);
+
       // Get all conversations
       const conversationsData = await ChatService.getUserConversations(user.id);
 
@@ -51,13 +63,15 @@ export function useUserConversations({}: UseUserConversationsOptions = {}): UseU
       });
 
       setConversations(filteredConversations);
+      console.log(`✅ Loaded ${filteredConversations.length} conversations`);
     } catch (error) {
       console.error("Error loading conversations:", error);
       setError(error as Error);
     } finally {
+      isLoadingRef.current = false;
       setIsLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id]); // ✅ FIXED: Removed isLoading dependency to prevent loop
 
   const refreshConversations = useCallback(async () => {
     await loadConversations();

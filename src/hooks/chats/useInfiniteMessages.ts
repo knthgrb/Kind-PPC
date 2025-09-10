@@ -54,6 +54,96 @@ export function useInfiniteMessages({
   const lastLoadTimeRef = useRef<number>(0);
   const scrollDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
+  // ✅ ADDED: Request deduplication to prevent duplicate API calls
+  const pendingRequests = useRef<Set<string>>(new Set());
+  const requestCache = useRef<Map<string, { data: any; timestamp: number }>>(
+    new Map()
+  );
+  const CACHE_DURATION = 5000; // 5 seconds cache
+
+  // ✅ ADDED: Call monitoring to track backend usage
+  const callCount = useRef(0);
+  const callHistory = useRef<
+    Array<{ type: string; timestamp: number; conversationId: string }>
+  >([]);
+
+  const logCall = useCallback((type: string, conversationId: string) => {
+    callCount.current += 1;
+    callHistory.current.push({
+      type,
+      timestamp: Date.now(),
+      conversationId,
+    });
+
+    // Keep only last 50 calls for monitoring
+    if (callHistory.current.length > 50) {
+      callHistory.current = callHistory.current.slice(-50);
+    }
+
+    console.log(
+      `📊 Backend Call #${callCount.current}: ${type} for conversation ${conversationId}`
+    );
+
+    // Warn if too many calls in short time
+    const recentCalls = callHistory.current.filter(
+      (call) =>
+        Date.now() - call.timestamp < 10000 &&
+        call.conversationId === conversationId
+    );
+    if (recentCalls.length > 10) {
+      console.warn(
+        `⚠️ HIGH CALL FREQUENCY: ${recentCalls.length} calls in 10s for conversation ${conversationId}`
+      );
+    }
+  }, []);
+
+  // ✅ ADDED: Deduplicated request function to prevent duplicate API calls
+  const makeDeduplicatedRequest = useCallback(
+    async <T>(key: string, requestFn: () => Promise<T>): Promise<T> => {
+      // Check cache first
+      const cached = requestCache.current.get(key);
+      if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+        console.log("📦 Using cached request:", key);
+        return cached.data;
+      }
+
+      // Check if request is already pending
+      if (pendingRequests.current.has(key)) {
+        console.log("⏳ Request already pending:", key);
+        // Wait for pending request to complete
+        return new Promise((resolve) => {
+          const checkPending = () => {
+            const cached = requestCache.current.get(key);
+            if (cached) {
+              resolve(cached.data);
+            } else {
+              setTimeout(checkPending, 100);
+            }
+          };
+          checkPending();
+        });
+      }
+
+      // Make new request
+      pendingRequests.current.add(key);
+      console.log("🚀 Making new request:", key);
+
+      try {
+        const result = await requestFn();
+        requestCache.current.set(key, { data: result, timestamp: Date.now() });
+
+        // ✅ ADDED: Log successful call
+        const conversationId = key.split("-")[1];
+        logCall("API_REQUEST", conversationId);
+
+        return result;
+      } finally {
+        pendingRequests.current.delete(key);
+      }
+    },
+    []
+  );
+
   // Convert database message to ChatMessage format
   const convertToChatMessage = useCallback((message: any): ChatMessage => {
     return {
@@ -69,7 +159,7 @@ export function useInfiniteMessages({
     };
   }, []);
 
-  // Load initial messages
+  // Load initial messages with deduplication
   const loadInitialMessages = useCallback(async () => {
     if (!conversationId || isLoadingRef.current) return;
 
@@ -79,15 +169,13 @@ export function useInfiniteMessages({
     currentOffset.current = 0;
 
     try {
-      // Load latest messages first (most recent at the bottom)
-      const dbMessages = await ChatService.fetchMessagesWithUsers(
-        conversationId,
-        pageSize,
-        0
+      // ✅ FIXED: Use deduplicated request to prevent duplicate API calls
+      const requestKey = `messages-${conversationId}-${pageSize}-0`;
+      const dbMessages = await makeDeduplicatedRequest(requestKey, () =>
+        ChatService.fetchMessagesWithUsers(conversationId, pageSize, 0)
       );
 
       const chatMessages = dbMessages.map(convertToChatMessage);
-
       chatMessages.reverse();
 
       setMessages(chatMessages);
@@ -103,7 +191,13 @@ export function useInfiniteMessages({
         isLoadingRef.current = false;
       }, 100);
     }
-  }, [conversationId, pageSize, convertToChatMessage, onMessage]);
+  }, [
+    conversationId,
+    pageSize,
+    convertToChatMessage,
+    onMessage,
+    makeDeduplicatedRequest,
+  ]);
 
   // Load more messages (older ones)
   const loadMoreMessages = useCallback(async () => {
@@ -128,10 +222,14 @@ export function useInfiniteMessages({
     const isAtTop = currentScrollTop === 0;
 
     try {
-      const dbMessages = await ChatService.fetchMessagesWithUsers(
-        conversationId,
-        pageSize,
-        currentOffset.current
+      // ✅ FIXED: Use deduplicated request to prevent duplicate API calls
+      const requestKey = `messages-${conversationId}-${pageSize}-${currentOffset.current}`;
+      const dbMessages = await makeDeduplicatedRequest(requestKey, () =>
+        ChatService.fetchMessagesWithUsers(
+          conversationId,
+          pageSize,
+          currentOffset.current
+        )
       );
 
       if (dbMessages.length === 0) {
@@ -345,28 +443,19 @@ export function useInfiniteMessages({
     [hasMore, loadMoreMessages]
   );
 
-  // Function to set up observer
+  // Function to set up observer (stabilized dependencies to prevent loops)
   const setupObserver = useCallback(() => {
     const element = loadMoreRef.current || sentinelElementRef.current;
     if (element && hasMore) {
       console.log("Setting up observer via setupObserver function");
       loadMoreRefCallback(element);
     }
-  }, [hasMore, loadMoreRefCallback]);
+  }, [hasMore]); // ✅ FIXED: Removed loadMoreRefCallback dependency
 
-  // Set up observer when the ref is available
+  // Set up observer when the ref is available (removed retry loop)
   useEffect(() => {
     setupObserver();
-
-    // Retry after a short delay if observer wasn't set up
-    const retryTimeout = setTimeout(() => {
-      if (!observerRef.current && hasMore) {
-        console.log("Retrying observer setup after delay");
-        setupObserver();
-      }
-    }, 500);
-
-    return () => clearTimeout(retryTimeout);
+    // ✅ FIXED: Removed retry timeout to prevent loops
   }, [setupObserver, hasMore]);
 
   // Load initial messages when conversation changes
@@ -380,13 +469,13 @@ export function useInfiniteMessages({
     }
   }, [conversationId, loadInitialMessages]);
 
-  // Re-observe when hasMore changes or when messages change
+  // Re-observe when hasMore changes (removed loadMoreRefCallback dependency to prevent loop)
   useEffect(() => {
     if (loadMoreRef.current && hasMore) {
       console.log("Setting up observer via useEffect");
       loadMoreRefCallback(loadMoreRef.current);
     }
-  }, [hasMore, loadMoreRefCallback]);
+  }, [hasMore]); // ✅ FIXED: Removed loadMoreRefCallback dependency
 
   // Debug: Log when loadMoreRef changes
   useEffect(() => {
@@ -434,7 +523,7 @@ export function useInfiniteMessages({
     };
   }, [hasMore, debouncedLoadMore]);
 
-  // Set up realtime subscription with debouncing
+  // ✅ FIXED: Simplified realtime subscription to prevent loops
   useEffect(() => {
     if (!conversationId) {
       // Clean up previous subscription if conversationId is null
@@ -448,64 +537,49 @@ export function useInfiniteMessages({
       return;
     }
 
-    // Clear any existing timeout
-    if (subscriptionTimeoutRef.current) {
-      clearTimeout(subscriptionTimeoutRef.current);
+    // Only subscribe if this is a new conversation
+    if (conversationId === currentConversationIdRef.current) {
+      return;
     }
 
-    // Debounce subscription changes to prevent rapid switching
-    subscriptionTimeoutRef.current = setTimeout(() => {
-      // Only subscribe if this is still the current conversation
-      if (conversationId === currentConversationIdRef.current) {
-        return;
+    // Clean up previous subscription
+    if (currentConversationIdRef.current && subscriptionRef.current) {
+      RealtimeService.unsubscribeFromMessages(currentConversationIdRef.current);
+      subscriptionRef.current = false;
+    }
+
+    // Set new conversation ID and subscribe
+    currentConversationIdRef.current = conversationId;
+    subscriptionRef.current = true;
+
+    console.log(
+      "🚀 Setting up realtime subscription for conversation:",
+      conversationId
+    );
+
+    RealtimeService.subscribeToMessages(
+      conversationId,
+      handleRealtimeMessage,
+      (error) => {
+        console.error("❌ Realtime subscription error:", error);
+        setError(error);
       }
-
-      // Clean up previous subscription
-      if (currentConversationIdRef.current && subscriptionRef.current) {
-        RealtimeService.unsubscribeFromMessages(
-          currentConversationIdRef.current
-        );
-        subscriptionRef.current = false;
-      }
-
-      // Set new conversation ID
-      currentConversationIdRef.current = conversationId;
-      subscriptionRef.current = true;
-
-      console.log(
-        "🚀 Setting up realtime subscription for conversation:",
-        conversationId
-      );
-      RealtimeService.subscribeToMessages(
-        conversationId,
-        handleRealtimeMessage,
-        (error) => {
-          console.error("❌ Realtime subscription error:", error);
-          // Only set error if this is still the current conversation
-          if (conversationId === currentConversationIdRef.current) {
-            setError(error);
-          }
-        }
-      )
-        .then(() => {
-          console.log("✅ Realtime subscription established");
-        })
-        .catch((err) => {
-          console.error("❌ Failed to establish realtime subscription:", err);
-        });
-    }, 100); // 100ms debounce
+    )
+      .then(() => {
+        console.log("✅ Realtime subscription established");
+      })
+      .catch((err) => {
+        console.error("❌ Failed to establish realtime subscription:", err);
+      });
 
     return () => {
-      if (subscriptionTimeoutRef.current) {
-        clearTimeout(subscriptionTimeoutRef.current);
-      }
       if (conversationId === currentConversationIdRef.current) {
         RealtimeService.unsubscribeFromMessages(conversationId);
         subscriptionRef.current = false;
         currentConversationIdRef.current = null;
       }
     };
-  }, [conversationId, handleRealtimeMessage]);
+  }, [conversationId]); // ✅ FIXED: Removed handleRealtimeMessage dependency to prevent loops
 
   // Cleanup observer and timeouts on unmount
   useEffect(() => {
