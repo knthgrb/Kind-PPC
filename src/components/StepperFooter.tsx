@@ -4,12 +4,13 @@
 import Image from "next/image";
 
 type StepperFooterProps = {
-  onBack?: () => void;        // if undefined ⇒ Back button disabled
-  onNext?: () => void;        // if undefined ⇒ Next button disabled
+  onBack?: () => void; // if undefined ⇒ Back button disabled
+  onNext?: () => void; // if undefined ⇒ Next button disabled
   backLabel?: string;
   nextLabel?: string;
   showBack?: boolean;
   showNext?: boolean;
+  isSubmit?: boolean; // if true, Next button becomes submit button
 };
 
 export default function StepperFooter({
@@ -19,6 +20,7 @@ export default function StepperFooter({
   nextLabel = "Next",
   showBack = true,
   showNext = true,
+  isSubmit = false,
 }: StepperFooterProps) {
   const disabledCls = "opacity-50 cursor-not-allowed";
 
@@ -42,13 +44,13 @@ export default function StepperFooter({
 
       {showNext && (
         <button
-          type="button"
-          onClick={onNext}
-          disabled={!onNext}
-          aria-disabled={!onNext}
+          type={isSubmit ? "submit" : "button"}
+          onClick={isSubmit ? undefined : onNext}
+          disabled={isSubmit ? false : !onNext}
+          aria-disabled={isSubmit ? false : !onNext}
           className={[
             "w-[188px] h-[43px] rounded-md bg-[#CB0000] text-white flex items-center justify-center gap-2",
-            !onNext ? disabledCls : "",
+            !isSubmit && !onNext ? disabledCls : "",
           ].join(" ")}
         >
           <span>{nextLabel}</span>

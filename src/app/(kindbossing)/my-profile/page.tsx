@@ -1,24 +1,26 @@
 import { redirect } from "next/navigation";
-import { fetchUserProfile } from "@/services/profile/fetchUserProfile";
-import { fetchPaginatedKindBossingPosts } from "@/services/jobs/(kindBossing)/fetchPaginatedKindBossingPosts";
+import { ProfileService } from "@/services/ProfileService";
+import { JobService } from "@/services/JobService";
 import MyProfileClient from "./_components/MyProfileClient";
-import { fetchFamilyIdByUserId } from "@/services/family/fetchFamilyProfile";
+import { FamilyProfileService } from "@/services/FamilyProfileService";
 
 export default async function MyProfilePage({
   searchParams,
 }: {
   searchParams: { page?: string };
 }) {
-  const profileData = await fetchUserProfile();
+  const profileData = await ProfileService.fetchUserProfile();
   if (!profileData) redirect("/login");
 
-  const familyId = await fetchFamilyIdByUserId(profileData.id);
-  if (!familyId) redirect("/login");
+  const { data: familyProfile } = await FamilyProfileService.getFamilyProfile(
+    profileData.id
+  );
+  if (!familyProfile) redirect("/login");
 
   const page = Number(searchParams?.page) || 1;
   const pageSize = 8;
 
-  const { jobs, total } = await fetchPaginatedKindBossingPosts(
+  const { jobs, total } = await JobService.fetchPaginatedKindBossingPosts(
     profileData.id,
     page,
     pageSize
@@ -27,7 +29,7 @@ export default async function MyProfilePage({
   return (
     <MyProfileClient
       user={profileData}
-      familyId={familyId}
+      familyId={familyProfile.id}
       postedJobs={jobs}
       page={page}
       totalPages={Math.ceil(total / pageSize)}

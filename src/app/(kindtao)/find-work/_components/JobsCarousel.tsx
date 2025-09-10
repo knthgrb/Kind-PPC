@@ -7,7 +7,7 @@ import JobSearch, { Filters } from "@/components/jobs/JobSearch";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa6";
-import { fetchJobsClient } from "@/services/jobs/fetchJobs";
+import { JobService } from "@/services/JobService";
 
 import "swiper/css";
 import "swiper/css/navigation";
@@ -64,7 +64,7 @@ export default function JobsCarousel({
     if (loadingMore || !hasMore) return;
     setLoadingMore(true);
     try {
-      const more = await fetchJobsClient({
+      const more = await JobService.fetchJobsClient({
         location: filters.location,
         jobType: filters.jobType,
         payType: filters.payType as any,
@@ -101,7 +101,7 @@ export default function JobsCarousel({
     const run = async () => {
       setLoadingMore(true);
       try {
-        const first = await fetchJobsClient({
+        const first = await JobService.fetchJobsClient({
           location: filters.location,
           jobType: filters.jobType,
           payType: filters.payType as any,

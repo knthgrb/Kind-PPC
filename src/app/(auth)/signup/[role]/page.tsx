@@ -35,7 +35,7 @@ export default function SignUpPage({
     }
   };
 
-  const roleTitle = role === "bossing" ? "kindBossing" : "kindTao";
+  const roleTitle = role === "kindbossing" ? "kindBossing" : "kindTao";
 
   return (
     <main className="min-h-screen flex items-center justify-center px-4">
@@ -90,7 +90,7 @@ export default function SignUpPage({
           </div>
 
           {/* Business name - only for bossing */}
-          {role === "bossing" && (
+          {role === "kindbossing" && (
             <div>
               <label
                 htmlFor="businessName"

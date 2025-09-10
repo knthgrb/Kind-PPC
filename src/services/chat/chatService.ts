@@ -484,7 +484,11 @@ export class ChatService {
       return null;
     }
 
-    const { kindbossing_id, kindtao_id } = data.matches;
+    // data.matches is likely an array, so get the first element
+    const { kindbossing_id, kindtao_id } =
+      Array.isArray(data.matches) && data.matches.length > 0
+        ? data.matches[0]
+        : { kindbossing_id: undefined, kindtao_id: undefined };
     return kindbossing_id === currentUserId ? kindtao_id : kindbossing_id;
   }
 

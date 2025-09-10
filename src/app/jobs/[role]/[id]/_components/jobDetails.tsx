@@ -6,7 +6,8 @@ import { LuPencil } from "react-icons/lu";
 import { PiTrash } from "react-icons/pi";
 import DeleteJobPostModal from "./deleteJobPostModal";
 import { JobPost } from "@/types/jobPosts";
-import { deactivateJobPost } from "@/services/jobs/(kindBossing)/deactivateJobPost";
+import { deactivateJobPost } from "@/app/_actions/jobs/deactivate-job";
+import { IoChevronBackOutline } from "react-icons/io5";
 
 export default function JobDetails({
   job,
@@ -31,6 +32,16 @@ export default function JobDetails({
 
   return (
     <section className="w-full max-w-3xl rounded-2xl border border-[#DFDFDF] shadow-sm p-6 md:p-8">
+      {/* Back to Profile link */}
+      <div className="mb-4">
+        <button
+          onClick={() => router.push("/my-profile")}
+          className="text-red-600 hover:text-red-800 text-sm font-medium transition-colors flex items-center gap-1"
+        >
+          <IoChevronBackOutline /> Back to Profile
+        </button>
+      </div>
+
       {/* Header with title + actions */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="postJobH1">Job Details</h1>

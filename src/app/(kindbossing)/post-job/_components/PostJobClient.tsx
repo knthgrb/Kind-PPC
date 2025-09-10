@@ -5,7 +5,7 @@ import { useState } from "react";
 import ContinueModal from "@/components/ContinueModal";
 import StepperFooter from "@/components/StepperFooter";
 import Dropdown from "@/components/dropdown/Dropdown";
-import { postJob } from "@/services/jobs/(kindBossing)/postJobService";
+import { postJob } from "@/app/_actions/jobs/post-job";
 
 type PostJobClientProps = {
   familyId: string;
@@ -73,7 +73,7 @@ export default function PostJobClient({ familyId }: PostJobClientProps) {
         icon: "/icons/checkCircleOTP.png",
         onAction: () => {
           setModalOpen(false);
-          router.push(`/jobs/${job.id}`);
+          router.push(`/jobs/kindbossing/${job.id}`);
         },
       });
       setModalOpen(true);
