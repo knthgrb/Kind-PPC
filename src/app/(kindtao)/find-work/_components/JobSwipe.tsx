@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { JobPost } from "@/types/jobPosts";
 import JobCardMobile from "@/components/jobs/JobCardMobile";
 import JobSearch, { Filters } from "@/components/jobs/JobSearch";
-import { fetchJobsClient } from "@/services/jobs/fetchJobs";
+import { JobService } from "@/services/JobService";
 
 type JobSwipeProps = {
   initialJobs: JobPost[];
@@ -72,7 +72,7 @@ export default function JobSwipe({
     setFilters(newFilters);
     setLoading(true);
     try {
-      const filteredJobs = await fetchJobsClient({
+      const filteredJobs = await JobService.fetchJobsClient({
         location: newFilters.location,
         jobType: newFilters.jobType,
         payType: newFilters.payType as any,
@@ -95,7 +95,7 @@ export default function JobSwipe({
     if (loading || !hasMore) return;
     setLoading(true);
     try {
-      const more = await fetchJobsClient({
+      const more = await JobService.fetchJobsClient({
         location: filters.location,
         jobType: filters.jobType,
         payType: filters.payType as any,

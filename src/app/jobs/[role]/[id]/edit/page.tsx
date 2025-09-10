@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { fetchJobById } from "@/services/jobs/fetchJobById";
+import { JobService } from "@/services/JobService";
 import JobForm from "../_components/jobForm";
 
 export default async function EditJobPage({
@@ -7,7 +7,7 @@ export default async function EditJobPage({
 }: {
   params: { role: string; id: string };
 }) {
-  const job = await fetchJobById(params.id);
+  const job = await JobService.fetchById(params.id);
 
   if (!job) redirect("/my-profile");
 
