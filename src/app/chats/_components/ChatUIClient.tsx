@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo, memo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { LuSearch } from "react-icons/lu";
 import { FaChevronLeft } from "react-icons/fa";
+import EmojiPicker from "emoji-picker-react";
 import LimitAlertModal from "@/components/LimitAlertModal";
 import BlockUserModal from "./BlockUserModal";
 import ReportUserModal, { ReportData } from "./ReportUserModal";
@@ -85,21 +86,21 @@ const ConversationItem = memo(
         </div>
         <div className="ml-2 flex-1 min-w-0">
           <h4
-            className={`text-[0.663rem] font-medium text-[#212529] truncate ${
+            className={`text-[clamp(0.663rem,0.8rem,0.9rem)] font-medium text-[#212529] truncate ${
               hasUnread ? "font-bold" : ""
             }`}
           >
             {`${otherUser.first_name} ${otherUser.last_name}`}
           </h4>
           <p
-            className={`text-[0.663rem] text-[#757589] truncate ${
+            className={`text-[clamp(0.663rem,0.8rem,0.9rem)] text-[#757589] truncate ${
               hasUnread ? "font-bold" : ""
             }`}
           >
             {lastMessageText}
           </p>
         </div>
-        <span className="text-[0.663rem] text-[#757589] ml-1 whitespace-nowrap">
+        <span className="text-[clamp(0.663rem,0.8rem,0.9rem)] text-[#757589] ml-1 whitespace-nowrap">
           {lastMessageTimestamp
             ? formatTimestamp(lastMessageTimestamp, "sidebar")
             : ""}
@@ -130,6 +131,9 @@ export default function ChatUIClient({
 
   // Dropdown menu
   const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  // Emoji picker
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
 
   // Get conversation ID from props or URL params
   const conversationId =
@@ -395,6 +399,7 @@ export default function ChatUIClient({
     try {
       await sendChatMessage(newMessage.trim());
       setNewMessage("");
+      setEmojiPickerOpen(false); // Close emoji picker after sending
       // Sidebar will be updated automatically via the useEffect that watches messages
     } catch (error) {
       console.error("Error sending message:", error);
@@ -403,6 +408,12 @@ export default function ChatUIClient({
         showError("Cannot send message to blocked user");
       }
     }
+  };
+
+  // Handle emoji selection from the emoji picker
+  const handleEmojiClick = (emojiObject: any) => {
+    setNewMessage((prev) => prev + emojiObject.emoji);
+    setEmojiPickerOpen(false);
   };
 
   // Block user handler
@@ -476,20 +487,23 @@ export default function ChatUIClient({
     }
   };
 
-  // Close dropdown when clicking outside
+  // Close dropdown and emoji picker when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownOpen) {
-        const target = event.target as Element;
-        if (!target.closest(".dropdown-container")) {
-          setDropdownOpen(false);
-        }
+      const target = event.target as Element;
+
+      if (dropdownOpen && !target.closest(".dropdown-container")) {
+        setDropdownOpen(false);
+      }
+
+      if (emojiPickerOpen && !target.closest(".emoji-picker-container")) {
+        setEmojiPickerOpen(false);
       }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [dropdownOpen]);
+  }, [dropdownOpen, emojiPickerOpen]);
 
   // Memoize user objects to prevent unnecessary re-renders
   const activeUser = useMemo(() => {
@@ -516,7 +530,7 @@ export default function ChatUIClient({
   }, [user]);
 
   return (
-    <div className="mx-auto w-full max-w-3xl lg:max-w-5xl xl:max-w-7xl shadow-xl/20 rounded-xl relative">
+    <div className="mx-auto w-full max-w-3xl lg:max-w-5xl xl:max-w-[1800px] shadow-xl/20 rounded-xl relative px-4 lg:px-6 xl:px-8">
       {/* Loading overlay - only show when both sidebar and chat window are loading */}
       {shouldShowFullLoading && (
         <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center">
@@ -536,10 +550,12 @@ export default function ChatUIClient({
             <input
               type="text"
               placeholder="Search here..."
-              className="flex-1 bg-transparent text-[0.669rem] text-[#55585b] outline-none"
+              className="flex-1 bg-transparent text-[clamp(0.669rem,0.8rem,0.9rem)] text-[#55585b] outline-none"
             />
           </div>
-          <p className="text-[0.663rem] text-[#8D8D8D] mb-2">Recent Chats</p>
+          <p className="text-[clamp(0.663rem,0.8rem,0.9rem)] text-[#8D8D8D] mb-2">
+            Recent Chats
+          </p>
 
           <div className="overflow-y-auto">
             {isSidebarLoading ? (
@@ -549,11 +565,11 @@ export default function ChatUIClient({
                 variant="minimal"
               />
             ) : conversationsError ? (
-              <div className="text-center text-[0.663rem] text-red-500 py-4">
+              <div className="text-center text-[clamp(0.663rem,0.8rem,0.9rem)] text-red-500 py-4">
                 Error loading conversations: {conversationsError.message}
               </div>
             ) : sortedConversations.length === 0 ? (
-              <div className="text-center text-[0.663rem] text-[#757589] py-4">
+              <div className="text-center text-[clamp(0.663rem,0.8rem,0.9rem)] text-[#757589] py-4">
                 No conversations yet
               </div>
             ) : (
@@ -603,10 +619,12 @@ export default function ChatUIClient({
                 />
               </div>
               <div className="ml-3">
-                <h3 className="text-[0.663rem] font-medium text-[#212529]">
+                <h3 className="text-[clamp(0.663rem,0.8rem,0.9rem)] font-medium text-[#212529]">
                   {`${activeUser.first_name} ${activeUser.last_name}`}
                 </h3>
-                <p className="text-[0.663rem] text-[#757589]">Offline</p>
+                <p className="text-[clamp(0.663rem,0.8rem,0.9rem)] text-[#757589]">
+                  Offline
+                </p>
               </div>
             </div>
 
@@ -663,11 +681,11 @@ export default function ChatUIClient({
                 variant="minimal"
               />
             ) : messagesError ? (
-              <div className="text-center text-[0.663rem] text-red-500 py-4">
+              <div className="text-center text-[clamp(0.663rem,0.8rem,0.9rem)] text-red-500 py-4">
                 Error loading messages: {messagesError.message}
               </div>
             ) : messages.length === 0 ? (
-              <div className="text-center text-[0.663rem] text-[#757589] py-4">
+              <div className="text-center text-[clamp(0.663rem,0.8rem,0.9rem)] text-[#757589] py-4">
                 No messages yet. Start the conversation!
               </div>
             ) : (
@@ -725,7 +743,7 @@ export default function ChatUIClient({
                         }`}
                       >
                         <p
-                          className={`text-[0.663rem] mt-1 pb-3 flex items-center justify-between gap-2 ${
+                          className={`text-[clamp(0.663rem,0.8rem,0.9rem)] mt-1 pb-3 flex items-center justify-between gap-2 ${
                             isSent ? "text-white" : "text-[#757589]"
                           }`}
                         >
@@ -733,7 +751,9 @@ export default function ChatUIClient({
                           <span>{formatTimestamp(msg.created_at, "chat")}</span>
                         </p>
 
-                        <p className="text-[0.663rem]">{msg.content}</p>
+                        <p className="text-[clamp(0.663rem,0.8rem,0.9rem)]">
+                          {msg.content}
+                        </p>
                       </div>
                       {isSent && (
                         <img
@@ -768,16 +788,42 @@ export default function ChatUIClient({
               <input
                 type="text"
                 placeholder="Type message here..."
-                className="flex-1 p-2 outline-none text-[0.663rem] text-[#757589]"
+                className="flex-1 p-2 outline-none text-[clamp(0.663rem,0.8rem,0.9rem)] text-[#757589]"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                onFocus={() => setEmojiPickerOpen(false)}
               />
-              <img
-                src="/icons/emoji.png"
-                alt="emoji"
-                className="w-4 h-4 cursor-pointer"
-              />
+              <div className="relative emoji-picker-container">
+                <img
+                  src="/icons/emoji.png"
+                  alt="emoji"
+                  className="w-4 h-4 cursor-pointer"
+                  onClick={() => setEmojiPickerOpen(!emojiPickerOpen)}
+                />
+                {emojiPickerOpen && (
+                  <>
+                    {/* Dark overlay */}
+                    <div
+                      className="fixed inset-0 bg-black/20 z-40"
+                      onClick={() => setEmojiPickerOpen(false)}
+                    />
+                    {/* Emoji picker positioned to the left of the emoji icon */}
+                    <div className="absolute bottom-8 -left-[300px] z-50 shadow-lg rounded-lg overflow-hidden">
+                      <EmojiPicker
+                        onEmojiClick={handleEmojiClick}
+                        width={300}
+                        height={400}
+                        previewConfig={{
+                          showPreview: false,
+                        }}
+                        skinTonesDisabled={true}
+                        searchDisabled={false}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
 
             {/* send icon */}
