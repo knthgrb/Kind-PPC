@@ -8,7 +8,10 @@ import EmojiPicker from "emoji-picker-react";
 import LimitAlertModal from "@/components/LimitAlertModal";
 import BlockUserModal from "./BlockUserModal";
 import ReportUserModal, { ReportData } from "./ReportUserModal";
+import FileAttachmentModal from "./FileAttachmentModal";
+import FileMessage from "./FileMessage";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import { FileUploadService } from "@/services/chat/fileUploadService";
 import { useChatUI } from "@/hooks/chats/useChatUI";
 import { useAuth } from "@/hooks/useAuth";
 import { useSidebarMonitoring } from "@/hooks/chats/useSidebarMonitoring";
@@ -134,6 +137,10 @@ export default function ChatUIClient({
 
   // Emoji picker
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
+
+  // File attachment
+  const [fileModalOpen, setFileModalOpen] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   // Get conversation ID from props or URL params
   const conversationId =
@@ -415,6 +422,45 @@ export default function ChatUIClient({
     setNewMessage((prev) => prev + emojiObject.emoji);
     setEmojiPickerOpen(false);
   };
+
+  // Handle file selection and upload
+  const handleFileSelect = useCallback(
+    async (files: File[]) => {
+      if (files.length === 0) {
+        return;
+      }
+
+      if (!selectedConversationId) {
+        showError("Please select a conversation first.");
+        return;
+      }
+
+      try {
+        const uploadedFiles = await FileUploadService.uploadMultipleFiles(
+          files,
+          selectedConversationId,
+          (progress) => {
+            console.log("Upload progress:", progress);
+          }
+        );
+
+        for (let i = 0; i < uploadedFiles.length; i++) {
+          const fileMetadata = uploadedFiles[i];
+          await sendChatMessage(
+            `📎 ${fileMetadata.fileName}`,
+            fileMetadata.mimeType,
+            fileMetadata.url
+          );
+        }
+
+        setSelectedFiles([]);
+      } catch (error) {
+        console.error("Error in file upload process:", error);
+        showError("Failed to upload files. Please try again.");
+      }
+    },
+    [selectedConversationId, sendChatMessage, showError]
+  );
 
   // Block user handler
   const handleBlockUser = async () => {
@@ -751,9 +797,19 @@ export default function ChatUIClient({
                           <span>{formatTimestamp(msg.created_at, "chat")}</span>
                         </p>
 
-                        <p className="text-[clamp(0.663rem,0.8rem,0.9rem)]">
-                          {msg.content}
-                        </p>
+                        {msg.file_url && msg.message_type !== "text" ? (
+                          <FileMessage
+                            fileUrl={msg.file_url}
+                            fileName={msg.content.replace("📎 ", "")}
+                            fileSize={0}
+                            mimeType={msg.message_type}
+                            isSent={isSent}
+                          />
+                        ) : (
+                          <p className="text-[clamp(0.663rem,0.8rem,0.9rem)]">
+                            {msg.content}
+                          </p>
+                        )}
                       </div>
                       {isSent && (
                         <img
@@ -776,12 +832,14 @@ export default function ChatUIClient({
           <hr className="text-gray-200" />
           {/* Input */}
           <div className="p-3 flex items-center gap-2 bg-[#f5f6fa]">
-            {/* plus icon */}
-            <img
-              src="/icons/plus.png"
-              alt="plus"
-              className="ml-2 w-4 h-4 cursor-pointer"
-            />
+            {/* File attachment button */}
+            <button
+              onClick={() => setFileModalOpen(true)}
+              className="p-2 bg-[#f5f6f9] rounded hover:bg-gray-200 cursor-pointer"
+              title="Attach files"
+            >
+              <img src="/icons/plus.png" alt="attach" className="w-4 h-4" />
+            </button>
 
             {/* message input */}
             <div className="flex-1 flex items-center px-2">
@@ -874,6 +932,14 @@ export default function ChatUIClient({
             : "Unknown User"
         }
         isLoading={isReporting}
+      />
+
+      {/* File Attachment Modal */}
+      <FileAttachmentModal
+        open={fileModalOpen}
+        onClose={() => setFileModalOpen(false)}
+        onFilesSelected={handleFileSelect}
+        conversationId={selectedConversationId || ""}
       />
     </div>
   );

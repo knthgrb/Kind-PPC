@@ -70,8 +70,8 @@ export function useChat({
         conversation_id: chatMessage.conversationId,
         sender_id: chatMessage.user.id,
         content: chatMessage.content,
-        message_type: "text" as const,
-        file_url: null,
+        message_type: chatMessage.messageType as any,
+        file_url: chatMessage.fileUrl,
         status: "sent" as const,
         read_at: null,
         created_at: chatMessage.createdAt,
@@ -151,7 +151,7 @@ export function useChat({
   // Send message
   const sendMessage = useCallback(
     async (content: string, messageType: string = "text", fileUrl?: string) => {
-      await sendChatMessage(content);
+      await sendChatMessage(content, messageType, fileUrl);
     },
     [sendChatMessage]
   );

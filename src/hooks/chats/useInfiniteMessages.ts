@@ -23,7 +23,11 @@ export interface UseInfiniteMessagesReturn {
   error: Error | null;
   loadMore: () => void;
   loadMoreRef: (node: HTMLDivElement | null) => void;
-  sendMessage: (content: string) => Promise<void>;
+  sendMessage: (
+    content: string,
+    messageType?: string,
+    fileUrl?: string
+  ) => Promise<void>;
   isSending: boolean;
   sendError: Error | null;
 }
@@ -156,6 +160,8 @@ export function useInfiniteMessages({
       },
       createdAt: message.created_at,
       conversationId: message.conversation_id,
+      messageType: message.message_type,
+      fileUrl: message.file_url,
     };
   }, []);
 
@@ -311,7 +317,7 @@ export function useInfiniteMessages({
 
   // Send message function
   const sendMessage = useCallback(
-    async (content: string) => {
+    async (content: string, messageType: string = "text", fileUrl?: string) => {
       if (!conversationId || !user?.id || !content.trim()) {
         return;
       }
@@ -341,7 +347,8 @@ export function useInfiniteMessages({
           conversationId,
           user.id,
           content.trim(),
-          "text"
+          messageType,
+          fileUrl
         );
 
         // Convert to ChatMessage format

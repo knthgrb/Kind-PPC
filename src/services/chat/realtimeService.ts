@@ -12,6 +12,8 @@ export interface ChatMessage {
   };
   createdAt: string;
   conversationId: string;
+  messageType: string;
+  fileUrl: string | null;
 }
 
 export interface RealtimeMessageEvent {
@@ -285,6 +287,8 @@ export class RealtimeService {
       },
       createdAt: message.created_at,
       conversationId: message.conversation_id,
+      messageType: message.message_type,
+      fileUrl: message.file_url,
     };
   }
 
