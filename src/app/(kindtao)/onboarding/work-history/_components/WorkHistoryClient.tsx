@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { MONTHS, WORK_HISTORY_YEARS } from "@/constants/onboarding";
 import { WorkEntry } from "@/types/onboarding";
-import { formatDateRange } from "@/helpers/dateUtils";
+import { formatDateRange } from "@/utils/dateUtils";
 import Dropdown from "@/components/dropdown/Dropdown";
 import StepperFooter from "@/components/StepperFooter";
 import { createClient } from "@/utils/supabase/client";
@@ -40,30 +40,49 @@ export default function WorkHistoryClient() {
     const loadExistingData = async () => {
       try {
         const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (!user) return;
 
         const { data: profileData } = await supabase
-          .from('helper_profiles')
-          .select('work_experience')
-          .eq('user_id', user.id)
+          .from("helper_profiles")
+          .select("work_experience")
+          .eq("user_id", user.id)
           .single();
 
-        if (profileData?.work_experience && Array.isArray(profileData.work_experience)) {
-          const workEntries = profileData.work_experience.map((exp: Record<string, unknown>) => ({
-            jobTitle: String(exp.jobTitle || exp.employer || ''),
-            company: String(exp.company || ''),
-            startMonth: exp.startDate ? new Date(String(exp.startDate)).toLocaleDateString('en-US', { month: 'long' }) : '',
-            startYear: exp.startDate ? new Date(String(exp.startDate)).getFullYear().toString() : '',
-            endMonth: exp.endDate ? new Date(String(exp.endDate)).toLocaleDateString('en-US', { month: 'long' }) : '',
-            endYear: exp.endDate ? new Date(String(exp.endDate)).getFullYear().toString() : '',
-            description: String(exp.description || ''),
-            expanded: false
-          }));
+        if (
+          profileData?.work_experience &&
+          Array.isArray(profileData.work_experience)
+        ) {
+          const workEntries = profileData.work_experience.map(
+            (exp: Record<string, unknown>) => ({
+              jobTitle: String(exp.jobTitle || exp.employer || ""),
+              company: String(exp.company || ""),
+              startMonth: exp.startDate
+                ? new Date(String(exp.startDate)).toLocaleDateString("en-US", {
+                    month: "long",
+                  })
+                : "",
+              startYear: exp.startDate
+                ? new Date(String(exp.startDate)).getFullYear().toString()
+                : "",
+              endMonth: exp.endDate
+                ? new Date(String(exp.endDate)).toLocaleDateString("en-US", {
+                    month: "long",
+                  })
+                : "",
+              endYear: exp.endDate
+                ? new Date(String(exp.endDate)).getFullYear().toString()
+                : "",
+              description: String(exp.description || ""),
+              expanded: false,
+            })
+          );
           setEntries(workEntries);
         }
       } catch (error) {
-        console.error('Error loading existing data:', error);
+        console.error("Error loading existing data:", error);
       } finally {
         setIsLoading(false);
       }
@@ -153,9 +172,11 @@ export default function WorkHistoryClient() {
 
     try {
       const supabase = createClient();
-      
+
       // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         setSaveError("User not authenticated");
         return;
@@ -165,42 +186,48 @@ export default function WorkHistoryClient() {
       console.log("💼 Work entries:", entries);
 
       // Convert entries to the format expected by the database
-      const workExperience = entries.map(entry => ({
+      const workExperience = entries.map((entry) => ({
         jobTitle: entry.jobTitle,
         company: entry.company,
-        startDate: `${entry.startYear}-${entry.startMonth.padStart(2, '0')}-01`,
-        endDate: entry.endYear && entry.endMonth ? `${entry.endYear}-${entry.endMonth.padStart(2, '0')}-01` : null,
+        startDate: `${entry.startYear}-${entry.startMonth.padStart(2, "0")}-01`,
+        endDate:
+          entry.endYear && entry.endMonth
+            ? `${entry.endYear}-${entry.endMonth.padStart(2, "0")}-01`
+            : null,
         description: entry.description,
-        duration: formatDateRange(entry.startMonth, entry.startYear, entry.endMonth, entry.endYear)
+        duration: formatDateRange(
+          entry.startMonth,
+          entry.startYear,
+          entry.endMonth,
+          entry.endYear
+        ),
       }));
 
       // Check if helper_profile exists, if not create it
       const { data: existingProfile } = await supabase
-        .from('helper_profiles')
-        .select('id')
-        .eq('user_id', user.id)
+        .from("helper_profiles")
+        .select("id")
+        .eq("user_id", user.id)
         .single();
 
       let saveResult;
       if (existingProfile) {
         // Update existing profile with work experience
         saveResult = await supabase
-          .from('helper_profiles')
+          .from("helper_profiles")
           .update({
             work_experience: workExperience,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           })
-          .eq('user_id', user.id);
+          .eq("user_id", user.id);
       } else {
         // Create new profile with work experience
-        saveResult = await supabase
-          .from('helper_profiles')
-          .insert({
-            user_id: user.id,
-            work_experience: workExperience,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          });
+        saveResult = await supabase.from("helper_profiles").insert({
+          user_id: user.id,
+          work_experience: workExperience,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
       }
 
       if (saveResult.error) {
@@ -211,10 +238,9 @@ export default function WorkHistoryClient() {
 
       console.log("✅ Work history saved successfully!");
       console.log("📊 Updated helper_profiles table with work_experience");
-      
+
       // Redirect to next stage
       router.push("/onboarding/document-upload");
-      
     } catch (err) {
       console.error("❌ Unexpected error saving work history:", err);
       setSaveError("An unexpected error occurred. Please try again.");

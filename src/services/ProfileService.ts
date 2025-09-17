@@ -125,7 +125,7 @@ export class ProfileService {
       return null;
     }
 
-    return data as UserProfile;
+    return data as unknown as UserProfile;
   }
 
   /**

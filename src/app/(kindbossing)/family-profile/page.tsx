@@ -1,20 +1,4 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/utils/supabase/server";
-import { FamilyProfileService } from "@/services/FamilyProfileService";
-
 export default async function FamilyOnboarding() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const progress = await FamilyProfileService.checkFamilyOnboardingProgress(
-    user.id
-  );
-  if (progress.isComplete) redirect("/kindbossing-dashboard");
-  if (progress.nextStage) redirect(progress.nextStage);
-
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-4xl mx-auto">

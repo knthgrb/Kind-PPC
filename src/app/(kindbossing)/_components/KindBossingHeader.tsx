@@ -6,12 +6,12 @@ import { LuBell } from "react-icons/lu";
 import { FaRegEnvelope } from "react-icons/fa";
 import { FaChevronDown } from "react-icons/fa6";
 import { FiMenu, FiX, FiUser, FiLogOut } from "react-icons/fi";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export default function KindBossingHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const { user, userMetadata, loading, signOut, isAuthenticated } = useAuth();
+  const { user, loading, signOut, isAuthenticated } = useAuthStore();
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   const handleSignOut = async () => {
@@ -21,11 +21,11 @@ export default function KindBossingHeader() {
   };
 
   const getUserDisplayName = () => {
-    if (userMetadata?.first_name && userMetadata?.last_name) {
-      return `${userMetadata.first_name} ${userMetadata.last_name}`;
+    if (user?.user_metadata?.first_name && user?.user_metadata?.last_name) {
+      return `${user.user_metadata.first_name} ${user.user_metadata.last_name}`;
     }
-    if (userMetadata?.first_name) {
-      return userMetadata.first_name;
+    if (user?.user_metadata?.first_name) {
+      return user.user_metadata.first_name;
     }
     if (user?.email) {
       return user.email.split("@")[0];
@@ -107,9 +107,9 @@ export default function KindBossingHeader() {
                   <div className="text-lg font-semibold text-gray-900 leading-tight">
                     {getUserDisplayName()}
                   </div>
-                  {userMetadata?.role && (
+                  {user?.user_metadata?.role && (
                     <div className="text-xs text-gray-500 capitalize">
-                      {userMetadata.role}
+                      {user.user_metadata.role}
                     </div>
                   )}
                 </div>
@@ -181,9 +181,9 @@ export default function KindBossingHeader() {
                 <div className="text-[#1a1a3b] font-medium text-[clamp(1rem,3vw,1.125rem)]">
                   {getUserDisplayName()}
                 </div>
-                {userMetadata?.role && (
+                {user?.user_metadata?.role && (
                   <div className="text-xs text-gray-500 capitalize">
-                    {userMetadata.role}
+                    {user.user_metadata.role}
                   </div>
                 )}
               </div>

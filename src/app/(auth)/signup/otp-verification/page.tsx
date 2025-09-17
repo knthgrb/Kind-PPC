@@ -35,7 +35,7 @@ export default function OtpVerificationPage() {
         onClose={() => setModalOpen(false)}
         onAction={() => {
           setModalOpen(false);
-          router.push("/profile/complete");
+          router.push("/login");
         }}
         title="Account Created"
         description="Your account has been successfully created"

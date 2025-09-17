@@ -5,6 +5,7 @@ import "@/styles/globals.css";
 import InstallPrompt from "@/components/pwa/InstallPrompt";
 import PushNotificationManager from "@/components/pwa/PushNotificationManager";
 import { NotificationProvider } from "@/contexts/NotificationContext";
+import AuthProvider from "@/components/AuthProvider";
 
 // Import the required fonts
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -47,8 +48,10 @@ export default function RootLayout({
         className={`font-sans ${plusJakartaSans.variable} ${geistSans.variable} ${geistMono.variable} ${barlowCondensed.variable} antialiased`}
       >
         <NotificationProvider>
-          <InstallPrompt />
-          {children}
+          <AuthProvider>
+            <InstallPrompt />
+            {children}
+          </AuthProvider>
         </NotificationProvider>
       </body>
     </html>

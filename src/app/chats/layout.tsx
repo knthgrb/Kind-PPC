@@ -1,7 +1,7 @@
 "use client";
 
 import "@/styles/globals.css";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthStore } from "@/stores/useAuthStore";
 import AdminHeader from "@/app/(admin)/_components/AdminHeader";
 import KindBossingHeader from "@/app/(kindbossing)/_components/KindBossingHeader";
 import KindTaoHeader from "@/app/(marketing)/_components/Header";
@@ -13,7 +13,7 @@ export default function ChatsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { userMetadata, loading } = useAuth();
+  const { userMetadata, loading } = useAuthStore();
   const role = userMetadata?.role;
 
   // Show loading state while fetching user data

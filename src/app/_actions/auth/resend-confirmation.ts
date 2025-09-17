@@ -1,30 +1,26 @@
 "use server";
 
-import { AuthService } from "@/services/AuthService";
+import { logger } from "@/utils/logger";
+import { AuthService } from "@/services/server/AuthService";
 
 export async function resendConfirmationEmail(email: string) {
   try {
-    const supabase = await AuthService.createClient();
-    
-    const { error } = await supabase.auth.resend({
-      type: 'signup',
-      email: email,
-    });
+    const { error } = await AuthService.resendConfirmationEmail(email);
 
     if (error) {
-      console.error("Error resending confirmation email:", error);
-      return { 
-        success: false, 
-        error: error.message || "Failed to resend confirmation email" 
+      logger.error("Error resending confirmation email:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to resend confirmation email",
       };
     }
 
     return { success: true };
   } catch (error) {
-    console.error("Unexpected error resending confirmation email:", error);
-    return { 
-      success: false, 
-      error: "An unexpected error occurred" 
+    logger.error("Unexpected error resending confirmation email:", error);
+    return {
+      success: false,
+      error: "An unexpected error occurred",
     };
   }
 }

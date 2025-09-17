@@ -51,11 +51,10 @@ export class OnboardingDataService {
    */
   static async savePersonalInfo(userId: string, data: PersonalInfoData) {
     const supabase = await createClient();
-    
+
     try {
-      const { error } = await supabase
-        .from("users")
-        .update({
+      const { error } = await supabase.auth.updateUser({
+        data: {
           first_name: data.first_name,
           last_name: data.last_name,
           phone: data.phone,
@@ -65,10 +64,9 @@ export class OnboardingDataService {
           city: data.city,
           province: data.province,
           postal_code: data.postal_code,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", userId);
-
+          updated_at: new Date().toISOString(),
+        },
+      });
       if (error) {
         console.error("Error saving personal info:", error);
         return { success: false, error: error.message };
@@ -84,9 +82,12 @@ export class OnboardingDataService {
   /**
    * Save skills and availability to helper_profiles table
    */
-  static async saveSkillsAvailability(userId: string, data: SkillsAvailabilityData) {
+  static async saveSkillsAvailability(
+    userId: string,
+    data: SkillsAvailabilityData
+  ) {
     const supabase = await createClient();
-    
+
     try {
       // Check if helper profile already exists
       const { data: existingProfile, error: checkError } = await supabase
@@ -95,7 +96,7 @@ export class OnboardingDataService {
         .eq("user_id", userId)
         .single();
 
-      if (checkError && checkError.code !== 'PGRST116') {
+      if (checkError && checkError.code !== "PGRST116") {
         console.error("Error checking existing profile:", checkError);
         return { success: false, error: checkError.message };
       }
@@ -115,7 +116,7 @@ export class OnboardingDataService {
             is_available_live_in: data.is_available_live_in,
             preferred_work_radius: data.preferred_work_radius,
             bio: data.bio,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           })
           .eq("user_id", userId);
 
@@ -125,21 +126,19 @@ export class OnboardingDataService {
         }
       } else {
         // Create new profile
-        const { error } = await supabase
-          .from("helper_profiles")
-          .insert({
-            user_id: userId,
-            skills: data.skills,
-            experience_years: data.experience_years,
-            preferred_job_types: data.preferred_job_types,
-            languages_spoken: data.languages_spoken,
-            salary_expectation_min: data.salary_expectation_min,
-            salary_expectation_max: data.salary_expectation_max,
-            availability_schedule: data.availability_schedule,
-            is_available_live_in: data.is_available_live_in,
-            preferred_work_radius: data.preferred_work_radius,
-            bio: data.bio
-          });
+        const { error } = await supabase.from("helper_profiles").insert({
+          user_id: userId,
+          skills: data.skills,
+          experience_years: data.experience_years,
+          preferred_job_types: data.preferred_job_types,
+          languages_spoken: data.languages_spoken,
+          salary_expectation_min: data.salary_expectation_min,
+          salary_expectation_max: data.salary_expectation_max,
+          availability_schedule: data.availability_schedule,
+          is_available_live_in: data.is_available_live_in,
+          preferred_work_radius: data.preferred_work_radius,
+          bio: data.bio,
+        });
 
         if (error) {
           console.error("Error creating skills availability profile:", error);
@@ -159,7 +158,7 @@ export class OnboardingDataService {
    */
   static async saveWorkHistory(userId: string, data: WorkHistoryData) {
     const supabase = await createClient();
-    
+
     try {
       const { error } = await supabase
         .from("helper_profiles")
@@ -167,7 +166,7 @@ export class OnboardingDataService {
           work_experience: data.work_experience,
           educational_background: data.educational_background,
           certifications: data.certifications,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq("user_id", userId);
 
@@ -186,14 +185,17 @@ export class OnboardingDataService {
   /**
    * Save document uploads to user_verifications table
    */
-  static async saveDocuments(userId: string, documents: {
-    valid_id_url?: string;
-    barangay_clearance_url?: string;
-    clinic_certificate_url?: string;
-    additional_documents?: string[];
-  }) {
+  static async saveDocuments(
+    userId: string,
+    documents: {
+      valid_id_url?: string;
+      barangay_clearance_url?: string;
+      clinic_certificate_url?: string;
+      additional_documents?: string[];
+    }
+  ) {
     const supabase = await createClient();
-    
+
     try {
       // Check if verification record already exists
       const { data: existingVerification, error: checkError } = await supabase
@@ -202,7 +204,7 @@ export class OnboardingDataService {
         .eq("user_id", userId)
         .single();
 
-      if (checkError && checkError.code !== 'PGRST116') {
+      if (checkError && checkError.code !== "PGRST116") {
         console.error("Error checking existing verification:", checkError);
         return { success: false, error: checkError.message };
       }
@@ -216,7 +218,7 @@ export class OnboardingDataService {
             barangay_clearance_url: documents.barangay_clearance_url,
             clinic_certificate_url: documents.clinic_certificate_url,
             additional_documents: documents.additional_documents,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           })
           .eq("user_id", userId);
 
@@ -226,15 +228,13 @@ export class OnboardingDataService {
         }
       } else {
         // Create new verification record
-        const { error } = await supabase
-          .from("user_verifications")
-          .insert({
-            user_id: userId,
-            valid_id_url: documents.valid_id_url,
-            barangay_clearance_url: documents.barangay_clearance_url,
-            clinic_certificate_url: documents.clinic_certificate_url,
-            additional_documents: documents.additional_documents
-          });
+        const { error } = await supabase.from("user_verifications").insert({
+          user_id: userId,
+          valid_id_url: documents.valid_id_url,
+          barangay_clearance_url: documents.barangay_clearance_url,
+          clinic_certificate_url: documents.clinic_certificate_url,
+          additional_documents: documents.additional_documents,
+        });
 
         if (error) {
           console.error("Error creating verification record:", error);
@@ -254,12 +254,14 @@ export class OnboardingDataService {
    */
   static async getCurrentOnboardingData(userId: string) {
     const supabase = await createClient();
-    
+
     try {
       // Get user data
       const { data: userData, error: userError } = await supabase
         .from("users")
-        .select("first_name, last_name, phone, date_of_birth, gender, address, city, province, postal_code")
+        .select(
+          "first_name, last_name, phone, date_of_birth, gender, address, city, province, postal_code"
+        )
         .eq("id", userId)
         .single();
 
@@ -271,16 +273,21 @@ export class OnboardingDataService {
       // Get helper profile data
       const { data: helperData, error: helperError } = await supabase
         .from("helper_profiles")
-        .select("skills, experience_years, preferred_job_types, languages_spoken, salary_expectation_min, salary_expectation_max, availability_schedule, is_available_live_in, preferred_work_radius, bio, work_experience, educational_background, certifications")
+        .select(
+          "skills, experience_years, preferred_job_types, languages_spoken, salary_expectation_min, salary_expectation_max, availability_schedule, is_available_live_in, preferred_work_radius, bio, work_experience, educational_background, certifications"
+        )
         .eq("user_id", userId)
         .single();
 
       // Get verification data
-      const { data: verificationData, error: verificationError } = await supabase
-        .from("user_verifications")
-        .select("valid_id_url, barangay_clearance_url, clinic_certificate_url, additional_documents")
-        .eq("user_id", userId)
-        .single();
+      const { data: verificationData, error: verificationError } =
+        await supabase
+          .from("user_verifications")
+          .select(
+            "valid_id_url, barangay_clearance_url, clinic_certificate_url, additional_documents"
+          )
+          .eq("user_id", userId)
+          .single();
 
       return {
         success: true,
@@ -288,8 +295,8 @@ export class OnboardingDataService {
           personalInfo: userData,
           skillsAvailability: helperData || {},
           workHistory: helperData?.work_experience || [],
-          documents: verificationData || {}
-        }
+          documents: verificationData || {},
+        },
       };
     } catch (error) {
       console.error("Unexpected error getting onboarding data:", error);
@@ -300,7 +307,10 @@ export class OnboardingDataService {
   /**
    * Validate onboarding data before saving
    */
-  static validatePersonalInfo(data: PersonalInfoData): { isValid: boolean; errors: string[] } {
+  static validatePersonalInfo(data: PersonalInfoData): {
+    isValid: boolean;
+    errors: string[];
+  } {
     const errors: string[] = [];
 
     if (!data.first_name?.trim()) errors.push("First name is required");
@@ -314,42 +324,58 @@ export class OnboardingDataService {
 
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
-  static validateSkillsAvailability(data: SkillsAvailabilityData): { isValid: boolean; errors: string[] } {
+  static validateSkillsAvailability(data: SkillsAvailabilityData): {
+    isValid: boolean;
+    errors: string[];
+  } {
     const errors: string[] = [];
 
-    if (!data.skills || data.skills.length === 0) errors.push("At least one skill is required");
-    if (data.experience_years < 0) errors.push("Experience years cannot be negative");
-    if (!data.preferred_job_types || data.preferred_job_types.length === 0) errors.push("At least one preferred job type is required");
-    if (!data.languages_spoken || data.languages_spoken.length === 0) errors.push("At least one language is required");
-    if (data.preferred_work_radius < 1) errors.push("Work radius must be at least 1 km");
+    if (!data.skills || data.skills.length === 0)
+      errors.push("At least one skill is required");
+    if (data.experience_years < 0)
+      errors.push("Experience years cannot be negative");
+    if (!data.preferred_job_types || data.preferred_job_types.length === 0)
+      errors.push("At least one preferred job type is required");
+    if (!data.languages_spoken || data.languages_spoken.length === 0)
+      errors.push("At least one language is required");
+    if (data.preferred_work_radius < 1)
+      errors.push("Work radius must be at least 1 km");
 
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
-  static validateWorkHistory(data: WorkHistoryData): { isValid: boolean; errors: string[] } {
+  static validateWorkHistory(data: WorkHistoryData): {
+    isValid: boolean;
+    errors: string[];
+  } {
     const errors: string[] = [];
 
-    if (!data.work_experience || data.work_experience.length === 0) errors.push("At least one work experience entry is required");
+    if (!data.work_experience || data.work_experience.length === 0)
+      errors.push("At least one work experience entry is required");
 
     if (data.work_experience) {
       data.work_experience.forEach((exp, index) => {
-        if (!exp.employer?.trim()) errors.push(`Work experience ${index + 1}: Employer is required`);
-        if (!exp.duration?.trim()) errors.push(`Work experience ${index + 1}: Duration is required`);
-        if (!exp.description?.trim()) errors.push(`Work experience ${index + 1}: Description is required`);
-        if (!exp.job_type?.trim()) errors.push(`Work experience ${index + 1}: Job type is required`);
+        if (!exp.employer?.trim())
+          errors.push(`Work experience ${index + 1}: Employer is required`);
+        if (!exp.duration?.trim())
+          errors.push(`Work experience ${index + 1}: Duration is required`);
+        if (!exp.description?.trim())
+          errors.push(`Work experience ${index + 1}: Description is required`);
+        if (!exp.job_type?.trim())
+          errors.push(`Work experience ${index + 1}: Job type is required`);
       });
     }
 
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
     };
   }
 }

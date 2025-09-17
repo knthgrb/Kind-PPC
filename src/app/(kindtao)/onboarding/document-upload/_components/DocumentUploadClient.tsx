@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import StepperFooter from "@/components/StepperFooter";
+import { UserService } from "@/services/client/UserService";
+import { logger } from "@/utils/logger";
 
 interface UploadedDocument {
   id: string;
@@ -12,21 +14,43 @@ interface UploadedDocument {
   fileSize: number;
   mimeType: string;
   uploadProgress: number;
-  status: 'uploading' | 'success' | 'error';
+  status: "uploading" | "success" | "error";
   errorMessage?: string;
 }
 
 const DOCUMENT_TYPES = [
-  { value: 'profile_photo', label: 'Profile Photo', description: 'Clear photo of your face' },
-  { value: 'id_document', label: 'ID Document', description: 'Government-issued ID or passport' },
-  { value: 'certificate', label: 'Professional Certificate', description: 'Training or certification documents' },
-  { value: 'background_check', label: 'Background Check', description: 'Police clearance or background verification' },
-  { value: 'medical_certificate', label: 'Medical Certificate', description: 'Health clearance certificate' }
+  {
+    value: "profile_photo",
+    label: "Profile Photo",
+    description: "Clear photo of your face",
+  },
+  {
+    value: "id_document",
+    label: "ID Document",
+    description: "Government-issued ID or passport",
+  },
+  {
+    value: "certificate",
+    label: "Professional Certificate",
+    description: "Training or certification documents",
+  },
+  {
+    value: "background_check",
+    label: "Background Check",
+    description: "Police clearance or background verification",
+  },
+  {
+    value: "medical_certificate",
+    label: "Medical Certificate",
+    description: "Health clearance certificate",
+  },
 ];
 
 export default function DocumentUploadClient() {
   const router = useRouter();
-  const [uploadedDocuments, setUploadedDocuments] = useState<UploadedDocument[]>([]);
+  const [uploadedDocuments, setUploadedDocuments] = useState<
+    UploadedDocument[]
+  >([]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [user, setUser] = useState<{ id: string; email: string } | null>(null);
@@ -38,39 +62,40 @@ export default function DocumentUploadClient() {
   useEffect(() => {
     const checkAuthAndLoadDocuments = async () => {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (user && user.email) {
-        console.log('User authenticated:', user.id, user.email);
         setUser({ id: user.id, email: user.email });
-        
+
         // Load existing documents
         try {
           const { data: existingDocs } = await supabase
-            .from('user_documents')
-            .select('*')
-            .eq('user_id', user.id);
+            .from("user_documents")
+            .select("*")
+            .eq("user_id", user.id);
 
           if (existingDocs && existingDocs.length > 0) {
-            const docs = existingDocs.map(doc => ({
+            const docs = existingDocs.map((doc) => ({
               id: doc.id,
               documentType: doc.document_type,
               fileName: doc.file_name,
               fileSize: doc.file_size,
               mimeType: doc.mime_type,
               uploadProgress: 100,
-              status: 'success' as const
+              status: "success" as const,
             }));
             setUploadedDocuments(docs);
           }
         } catch (error) {
-          console.error('Error loading existing documents:', error);
+          console.error("Error loading existing documents:", error);
         }
       } else {
-        console.log('No user found');
+        console.log("No user found");
         setSaveError("User not authenticated. Please log in again.");
       }
-      
+
       setIsLoading(false);
       setIsLoadingDocuments(false);
     };
@@ -79,21 +104,25 @@ export default function DocumentUploadClient() {
   }, []);
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
     const supabase = createClient();
-    
+
     // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       setSaveError("User not authenticated");
       return;
@@ -101,33 +130,33 @@ export default function DocumentUploadClient() {
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      
+
       // Create unique document entry
       const documentId = crypto.randomUUID();
       const newDocument: UploadedDocument = {
         id: documentId,
-        documentType: 'other', // Will be updated when user selects type
+        documentType: "other", // Will be updated when user selects type
         fileName: file.name,
         fileSize: file.size,
         mimeType: file.type,
         uploadProgress: 0,
-        status: 'uploading'
+        status: "uploading",
       };
 
-      setUploadedDocuments(prev => [...prev, newDocument]);
+      setUploadedDocuments((prev) => [...prev, newDocument]);
 
       try {
         // Create storage path
-        const fileExt = file.name.split('.').pop();
+        const fileExt = file.name.split(".").pop();
         const fileName = `${documentId}.${fileExt}`;
         const filePath = `documents/${user.id}/${fileName}`;
 
         // Upload to Supabase Storage
         const { error } = await supabase.storage
-          .from('documents')
+          .from("documents")
           .upload(filePath, file, {
-            cacheControl: '3600',
-            upsert: false
+            cacheControl: "3600",
+            upsert: false,
           });
 
         if (error) {
@@ -135,57 +164,60 @@ export default function DocumentUploadClient() {
         }
 
         // Update document with success status
-        setUploadedDocuments(prev => 
-          prev.map(doc => 
-            doc.id === documentId 
-              ? { ...doc, status: 'success', uploadProgress: 100 }
+        setUploadedDocuments((prev) =>
+          prev.map((doc) =>
+            doc.id === documentId
+              ? { ...doc, status: "success", uploadProgress: 100 }
               : doc
           )
         );
 
         // Save document metadata to database
         const { error: dbError } = await supabase
-          .from('user_documents')
+          .from("user_documents")
           .insert({
             user_id: user.id,
             document_type: newDocument.documentType,
             file_name: file.name,
             file_path: filePath,
             file_size: file.size,
-            mime_type: file.type
+            mime_type: file.type,
           });
 
         if (dbError) {
-          console.error('Database insert error:', dbError);
-          console.error('User ID being used:', user.id);
-          console.error('User ID type:', typeof user.id);
-          console.error('Auth UID from Supabase:', await supabase.auth.getUser());
-          
+          console.error("Database insert error:", dbError);
+          console.error("User ID being used:", user.id);
+          console.error("User ID type:", typeof user.id);
+          console.error(
+            "Auth UID from Supabase:",
+            await supabase.auth.getUser()
+          );
+
           // Update document status to error
-          setUploadedDocuments(prev => 
-            prev.map(doc => 
-              doc.id === documentId 
-                ? { 
-                    ...doc, 
-                    status: 'error', 
-                    errorMessage: `Database error: ${dbError.message}`
+          setUploadedDocuments((prev) =>
+            prev.map((doc) =>
+              doc.id === documentId
+                ? {
+                    ...doc,
+                    status: "error",
+                    errorMessage: `Database error: ${dbError.message}`,
                   }
                 : doc
             )
           );
         } else {
-          console.log('Document metadata saved to database successfully');
+          console.log("Document metadata saved to database successfully");
         }
-
       } catch (error) {
-        console.error('Upload error:', error);
-        setUploadedDocuments(prev => 
-          prev.map(doc => 
-            doc.id === documentId 
-              ? { 
-                  ...doc, 
-                  status: 'error', 
-                  errorMessage: error instanceof Error ? error.message : 'Upload failed'
+        console.error("Upload error:", error);
+        setUploadedDocuments((prev) =>
+          prev.map((doc) =>
+            doc.id === documentId
+              ? {
+                  ...doc,
+                  status: "error",
+                  errorMessage:
+                    error instanceof Error ? error.message : "Upload failed",
                 }
               : doc
           )
@@ -195,57 +227,63 @@ export default function DocumentUploadClient() {
 
     // Clear file input
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
-  const updateDocumentType = async (documentId: string, documentType: string) => {
-    setUploadedDocuments(prev => 
-      prev.map(doc => 
-        doc.id === documentId 
-          ? { ...doc, documentType }
-          : doc
+  const updateDocumentType = async (
+    documentId: string,
+    documentType: string
+  ) => {
+    setUploadedDocuments((prev) =>
+      prev.map((doc) =>
+        doc.id === documentId ? { ...doc, documentType } : doc
       )
     );
 
     // Update in database
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (user) {
       await supabase
-        .from('user_documents')
+        .from("user_documents")
         .update({ document_type: documentType })
-        .eq('user_id', user.id)
-        .eq('file_name', uploadedDocuments.find(d => d.id === documentId)?.fileName);
+        .eq("user_id", user.id)
+        .eq(
+          "file_name",
+          uploadedDocuments.find((d) => d.id === documentId)?.fileName
+        );
     }
   };
 
   const removeDocument = async (documentId: string) => {
-    const document = uploadedDocuments.find(d => d.id === documentId);
+    const document = uploadedDocuments.find((d) => d.id === documentId);
     if (!document) return;
 
     const supabase = createClient();
-    
+
     try {
       // Delete from storage
-      await supabase.storage
-        .from('documents')
-        .remove([document.fileName]);
+      await supabase.storage.from("documents").remove([document.fileName]);
 
       // Delete from database
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
         await supabase
-          .from('user_documents')
+          .from("user_documents")
           .delete()
-          .eq('user_id', user.id)
-          .eq('file_name', document.fileName);
+          .eq("user_id", user.id)
+          .eq("file_name", document.fileName);
       }
 
       // Remove from state
-      setUploadedDocuments(prev => prev.filter(d => d.id !== documentId));
+      setUploadedDocuments((prev) => prev.filter((d) => d.id !== documentId));
     } catch (error) {
-      console.error('Error removing document:', error);
+      console.error("Error removing document:", error);
     }
   };
 
@@ -255,12 +293,12 @@ export default function DocumentUploadClient() {
       return;
     }
 
-    if (uploadedDocuments.some(doc => doc.status === 'uploading')) {
+    if (uploadedDocuments.some((doc) => doc.status === "uploading")) {
       setSaveError("Please wait for all uploads to complete");
       return;
     }
 
-    if (uploadedDocuments.some(doc => doc.status === 'error')) {
+    if (uploadedDocuments.some((doc) => doc.status === "error")) {
       setSaveError("Please fix any upload errors before continuing");
       return;
     }
@@ -269,10 +307,34 @@ export default function DocumentUploadClient() {
     setSaveError(null);
 
     try {
-      // All documents are uploaded successfully
+      const { data: user, error: userError } =
+        await UserService.getCurrentUser();
+
+      if (userError || !user) {
+        setSaveError("User not authenticated");
+        return;
+      }
+
+      // Set has_finished_onboarding to true in user metadata
+      const supabase = createClient();
+      const { error: updateError } = await supabase.auth.updateUser({
+        data: {
+          has_completed_onboarding: true,
+        },
+      });
+
+      if (updateError) {
+        logger.error("Error updating user metadata:", updateError);
+        setSaveError("Failed to complete onboarding. Please try again.");
+        return;
+      }
+
+      logger.info("Onboarding completed successfully");
+
       // Redirect to profile page
-      router.push("/profile");
-    } catch {
+      router.push("/jobs");
+    } catch (error) {
+      logger.error("Error completing onboarding:", error);
       setSaveError("An unexpected error occurred. Please try again.");
     } finally {
       setIsSaving(false);
@@ -285,7 +347,9 @@ export default function DocumentUploadClient() {
       {(isLoading || isLoadingDocuments) && (
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-md mb-6">
           <p className="text-blue-600 text-sm">
-            {isLoading ? 'Checking authentication...' : 'Loading your documents...'}
+            {isLoading
+              ? "Checking authentication..."
+              : "Loading your documents..."}
           </p>
         </div>
       )}
@@ -294,7 +358,8 @@ export default function DocumentUploadClient() {
       <div className="mb-6">
         <label className="block mb-2 stepsLabel">Upload Documents</label>
         <p className="text-sm text-gray-600 mb-4">
-          Please upload the required documents to complete your profile verification.
+          Please upload the required documents to complete your profile
+          verification.
         </p>
 
         {/* File Upload Area */}
@@ -313,12 +378,16 @@ export default function DocumentUploadClient() {
             onClick={() => fileInputRef.current?.click()}
             disabled={!user || isLoading}
             className={`px-4 py-2 rounded-md transition-colors ${
-              !user || isLoading 
-                ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
-                : 'bg-blue-600 text-white hover:bg-blue-700'
+              !user || isLoading
+                ? "bg-gray-400 text-gray-600 cursor-not-allowed"
+                : "bg-blue-600 text-white hover:bg-blue-700"
             }`}
           >
-            {!user ? 'Please log in first' : isLoading ? 'Loading...' : 'Choose Files'}
+            {!user
+              ? "Please log in first"
+              : isLoading
+              ? "Loading..."
+              : "Choose Files"}
           </button>
           <p className="text-sm text-gray-500 mt-2">
             Supported formats: JPG, PNG, PDF, DOC, DOCX (Max 10MB per file)
@@ -335,9 +404,11 @@ export default function DocumentUploadClient() {
               <div
                 key={document.id}
                 className={`p-4 border rounded-lg ${
-                  document.status === 'success' ? 'border-green-200 bg-green-50' :
-                  document.status === 'error' ? 'border-red-200 bg-red-50' :
-                  'border-gray-200 bg-gray-50'
+                  document.status === "success"
+                    ? "border-green-200 bg-green-50"
+                    : document.status === "error"
+                    ? "border-red-200 bg-red-50"
+                    : "border-gray-200 bg-gray-50"
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -348,16 +419,18 @@ export default function DocumentUploadClient() {
                         ({formatFileSize(document.fileSize)})
                       </span>
                     </div>
-                    
+
                     {/* Document Type Selection */}
                     <div className="mt-2">
                       <select
                         value={document.documentType}
-                        onChange={(e) => updateDocumentType(document.id, e.target.value)}
+                        onChange={(e) =>
+                          updateDocumentType(document.id, e.target.value)
+                        }
                         className="text-sm border border-gray-300 rounded px-2 py-1"
                       >
                         <option value="">Select document type</option>
-                        {DOCUMENT_TYPES.map(type => (
+                        {DOCUMENT_TYPES.map((type) => (
                           <option key={type.value} value={type.value}>
                             {type.label}
                           </option>
@@ -367,25 +440,29 @@ export default function DocumentUploadClient() {
 
                     {/* Status and Progress */}
                     <div className="mt-2">
-                      {document.status === 'uploading' && (
+                      {document.status === "uploading" && (
                         <div className="flex items-center gap-2">
                           <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div 
+                            <div
                               className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                               style={{ width: `${document.uploadProgress}%` }}
                             ></div>
                           </div>
-                          <span className="text-sm text-blue-600">Uploading...</span>
+                          <span className="text-sm text-blue-600">
+                            Uploading...
+                          </span>
                         </div>
                       )}
-                      
-                      {document.status === 'success' && (
-                        <span className="text-sm text-green-600">✓ Uploaded successfully</span>
+
+                      {document.status === "success" && (
+                        <span className="text-sm text-green-600">
+                          ✓ Uploaded successfully
+                        </span>
                       )}
-                      
-                      {document.status === 'error' && (
+
+                      {document.status === "error" && (
                         <span className="text-sm text-red-600">
-                          ✗ {document.errorMessage || 'Upload failed'}
+                          ✗ {document.errorMessage || "Upload failed"}
                         </span>
                       )}
                     </div>
