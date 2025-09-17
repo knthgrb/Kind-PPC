@@ -4,18 +4,19 @@ import React, { useState } from "react";
 import { formatMMDDYYYY } from "@/utils/dateFormatter";
 import SupabaseImage from "@/components/SupabaseImage";
 import { UserWithDocuments } from "@/services/ProfileVerificationService";
-import { createClient } from "@/utils/supabase/client";
+import { useNotifications } from "@/contexts/NotificationContext";
 
 interface UserDetailsPopupProps {
   user: UserWithDocuments | null;
   isOpen: boolean;
   onClose: () => void;
-  onApprove: (documentId: string) => void;
-  onReject: (documentId: string) => void;
+  onApprove: (documentId: string) => Promise<{ success: boolean; error: string | null }>;
+  onReject: (documentId: string) => Promise<{ success: boolean; error: string | null }>;
 }
 
 export default function UserDetailsPopup({ user, isOpen, onClose, onApprove, onReject }: UserDetailsPopupProps) {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const { showSuccess, showError } = useNotifications();
 
   if (!isOpen || !user) return null;
 
@@ -75,12 +76,30 @@ export default function UserDetailsPopup({ user, isOpen, onClose, onApprove, onR
     return publicUrl;
   };
 
-  const handleApprove = (documentId: string) => {
-    onApprove(documentId);
+  const handleApprove = async (documentId: string) => {
+    try {
+      const result = await onApprove(documentId);
+      if (result?.success) {
+        showSuccess("Document approved successfully!");
+      } else {
+        showError(result?.error || "Failed to approve document. Please try again.");
+      }
+    } catch {
+      showError("Failed to approve document. Please try again.");
+    }
   };
 
-  const handleReject = (documentId: string) => {
-    onReject(documentId);
+  const handleReject = async (documentId: string) => {
+    try {
+      const result = await onReject(documentId);
+      if (result?.success) {
+        showSuccess("Document rejected successfully!");
+      } else {
+        showError(result?.error || "Failed to reject document. Please try again.");
+      }
+    } catch {
+      showError("Failed to reject document. Please try again.");
+    }
   };
 
   return (
@@ -238,39 +257,32 @@ export default function UserDetailsPopup({ user, isOpen, onClose, onApprove, onR
 
                       {/* Action Buttons */}
                       <div className="flex-shrink-0 flex flex-col space-y-2">
-                        {document.verification_status === 'pending' && (
-                          <>
-                            <button
-                              onClick={() => handleApprove(document.id)}
-                              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                            >
-                              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => handleReject(document.id)}
-                              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                            >
-                              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                              Reject
-                            </button>
-                          </>
-                        )}
-                        <a
-                          href={document.file_path}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        <button
+                          onClick={() => handleApprove(document.id)}
+                          className={`inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                            document.verification_status === 'approved' 
+                              ? 'bg-green-500 hover:bg-green-600 focus:ring-green-500' 
+                              : 'bg-green-600 hover:bg-green-700 focus:ring-green-500'
+                          }`}
                         >
                           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>
-                          View
-                        </a>
+                          {document.verification_status === 'approved' ? 'Re-approve' : 'Approve'}
+                        </button>
+                        <button
+                          onClick={() => handleReject(document.id)}
+                          className={`inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                            document.verification_status === 'rejected' 
+                              ? 'bg-red-500 hover:bg-red-600 focus:ring-red-500' 
+                              : 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
+                          }`}
+                        >
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          {document.verification_status === 'rejected' ? 'Re-reject' : 'Reject'}
+                        </button>
                       </div>
                     </div>
                   </div>

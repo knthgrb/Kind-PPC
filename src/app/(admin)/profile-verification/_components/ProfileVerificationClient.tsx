@@ -7,8 +7,8 @@ import { UserWithDocuments } from "@/services/ProfileVerificationService";
 
 interface ProfileVerificationClientProps {
   users: UserWithDocuments[];
-  onApprove: (documentId: string) => void;
-  onReject: (documentId: string) => void;
+  onApprove: (documentId: string) => Promise<{ success: boolean; error: string | null }>;
+  onReject: (documentId: string) => Promise<{ success: boolean; error: string | null }>;
 }
 
 export default function ProfileVerificationClient({ 
