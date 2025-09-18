@@ -11,7 +11,7 @@ import {
   type ChatMessage,
 } from "@/services/chat/realtimeService";
 import { useInfiniteMessages } from "./useInfiniteMessages";
-import { useAuthStore } from "../../stores/useAuthStore";
+import { useAuth } from "@/hooks/useAuth";
 import type { MessageWithUser } from "@/types/chat";
 
 export interface UseChatOptions {
@@ -53,7 +53,7 @@ export function useChat({
   conversationId,
   autoMarkAsRead = true,
 }: UseChatOptions): UseChatReturn {
-  const { user } = useAuthStore();
+  const { user } = useAuth();
 
   // Conversation state
   const [conversation, setConversation] = useState<Conversation | null>(null);

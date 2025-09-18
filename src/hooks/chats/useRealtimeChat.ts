@@ -6,7 +6,7 @@ import {
   type ChatMessage,
 } from "@/services/chat/realtimeService";
 import { ChatService } from "@/services/chat/chatService";
-import { useAuthStore } from "@/stores/useAuthStore";
+import { useAuth } from "@/hooks/useAuth";
 
 export interface UseRealtimeChatOptions {
   conversationId: string | null;
@@ -28,7 +28,7 @@ export function useRealtimeChat({
   onMessage,
   messages: initialMessages = [],
 }: UseRealtimeChatOptions): UseRealtimeChatReturn {
-  const { user, userMetadata } = useAuthStore();
+  const { user, userMetadata } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);

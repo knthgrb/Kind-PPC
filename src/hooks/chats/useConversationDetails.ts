@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { ChatService } from "@/services/chat/chatService";
-import { useAuthStore } from "../../stores/useAuthStore";
+import { useAuth } from "@/hooks/useAuth";
 import type { ConversationWithDetails, User } from "@/types/chat";
 
 export interface UseConversationDetailsOptions {
@@ -21,7 +21,7 @@ export interface UseConversationDetailsReturn {
 export function useConversationDetails({
   conversationId,
 }: UseConversationDetailsOptions): UseConversationDetailsReturn {
-  const { user } = useAuthStore();
+  const { user } = useAuth();
   const [conversation, setConversation] =
     useState<ConversationWithDetails | null>(null);
   const [isLoading, setIsLoading] = useState(false);
