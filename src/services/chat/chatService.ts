@@ -115,7 +115,7 @@ export class ChatService {
   }
 
   /**
-   * Fetch messages with user details in a single query (solves N+1 problem)
+   * Fetch messages with user details using server actions
    */
   static async fetchMessagesWithUsers(
     conversationId: string,
@@ -124,20 +124,10 @@ export class ChatService {
   ) {
     const supabase = createClient();
 
-    const { data, error } = await supabase
+    // First get the messages
+    const { data: messages, error } = await supabase
       .from("messages")
-      .select(
-        `
-        *,
-        sender:users!messages_sender_id_fkey(
-          id,
-          first_name,
-          last_name,
-          profile_image_url,
-          role
-        )
-      `
-      )
+      .select("*")
       .eq("conversation_id", conversationId)
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
@@ -146,7 +136,47 @@ export class ChatService {
       throw error;
     }
 
-    return data;
+    if (!messages || messages.length === 0) {
+      return [];
+    }
+
+    // Get unique sender IDs
+    const senderIds = [...new Set(messages.map((msg) => msg.sender_id))];
+
+    // Fetch user details using server action
+    const { getMessageSenders } = await import(
+      "@/actions/user/get-message-senders"
+    );
+    const { data: userMap, error: userError } = await getMessageSenders(
+      senderIds
+    );
+
+    if (userError) {
+      console.error("Error fetching user details:", userError);
+      // Return messages with fallback user data
+      return messages.map((message) => ({
+        ...message,
+        sender: {
+          id: message.sender_id,
+          first_name: "Unknown",
+          last_name: "User",
+          profile_image_url: null,
+          role: "kindtao",
+        },
+      }));
+    }
+
+    // Combine messages with user data
+    return messages.map((message) => ({
+      ...message,
+      sender: userMap.get(message.sender_id) || {
+        id: message.sender_id,
+        first_name: "Unknown",
+        last_name: "User",
+        profile_image_url: null,
+        role: "kindtao",
+      },
+    }));
   }
 
   /**
@@ -219,7 +249,7 @@ export class ChatService {
   }
 
   /**
-   * Get conversation by ID
+   * Get conversation by ID with user details using server actions
    */
   static async getConversation(conversationId: string) {
     const supabase = createClient();
@@ -231,9 +261,7 @@ export class ChatService {
         *,
         matches!inner(
           *,
-          job_posts(*),
-          kindbossing:users!matches_kindbossing_id_fkey(*),
-          kindtao:users!matches_kindtao_id_fkey(*)
+          job_posts(*)
         )
       `
       )
@@ -244,11 +272,44 @@ export class ChatService {
       throw error;
     }
 
-    return data;
+    if (!data || !data.matches) {
+      throw new Error("Conversation not found");
+    }
+
+    // Get user details using server action
+    const { getConversationUsers } = await import(
+      "@/actions/user/get-conversation-users"
+    );
+    const { data: users, error: userError } = await getConversationUsers(
+      data.matches.kindbossing_id,
+      data.matches.kindtao_id
+    );
+
+    if (userError) {
+      console.error("Error fetching user details:", userError);
+      // Return conversation with null user data
+      return {
+        ...data,
+        matches: {
+          ...data.matches,
+          kindbossing: null,
+          kindtao: null,
+        },
+      };
+    }
+
+    return {
+      ...data,
+      matches: {
+        ...data.matches,
+        kindbossing: users.kindbossing,
+        kindtao: users.kindtao,
+      },
+    };
   }
 
   /**
-   * Get conversations for a user
+   * Get conversations for a user with user details using server actions
    */
   static async getUserConversations(userId: string) {
     const supabase = createClient();
@@ -277,9 +338,7 @@ export class ChatService {
         *,
         matches!inner(
           *,
-          job_posts(*),
-          kindbossing:users!matches_kindbossing_id_fkey(*),
-          kindtao:users!matches_kindtao_id_fkey(*)
+          job_posts(*)
         )
       `
       )
@@ -290,7 +349,82 @@ export class ChatService {
       throw error;
     }
 
-    return data;
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    // Get user details for all unique users in these conversations
+    const allUserIds = new Set<string>();
+
+    data.forEach((conversation) => {
+      if (conversation.matches) {
+        allUserIds.add(conversation.matches.kindbossing_id);
+        allUserIds.add(conversation.matches.kindtao_id);
+      }
+    });
+
+    // Fetch all user details using server action
+    const { getMultipleUsers } = await import(
+      "@/actions/user/get-multiple-users"
+    );
+    const { data: userResults, error: userError } = await getMultipleUsers(
+      Array.from(allUserIds)
+    );
+
+    if (userError) {
+      console.error("Error fetching user details:", userError);
+      // Return conversations with null user data
+      return data.map((conversation) => ({
+        ...conversation,
+        matches: {
+          ...conversation.matches,
+          kindbossing: null,
+          kindtao: null,
+        },
+      }));
+    }
+
+    // Create user map
+    const userMap = new Map();
+    userResults.forEach(({ id, user }) => {
+      if (user) {
+        userMap.set(id, {
+          id: user.id,
+          first_name: user.user_metadata?.first_name || "",
+          last_name: user.user_metadata?.last_name || "",
+          profile_image_url: user.user_metadata?.profile_image_url || null,
+          role: user.user_metadata?.role || "kindtao",
+          email: user.email || "",
+          phone: user.user_metadata?.phone || null,
+          date_of_birth: user.user_metadata?.date_of_birth || null,
+          gender: user.user_metadata?.gender || null,
+          address: user.user_metadata?.full_address || null,
+          city: user.user_metadata?.city || null,
+          province: user.user_metadata?.province || null,
+          postal_code: user.user_metadata?.postal_code || null,
+          is_verified: user.user_metadata?.verification_status === "approved",
+          verification_status:
+            user.user_metadata?.verification_status || "pending",
+          subscription_tier: user.user_metadata?.subscription_tier || "free",
+          subscription_expires_at: null,
+          swipe_credits: user.user_metadata?.swipe_credits || 0,
+          boost_credits: user.user_metadata?.boost_credits || 0,
+          last_active: user.updated_at || new Date().toISOString(),
+          created_at: user.created_at || new Date().toISOString(),
+          updated_at: user.updated_at || new Date().toISOString(),
+        });
+      }
+    });
+
+    // Transform conversations with user data
+    return data.map((conversation) => ({
+      ...conversation,
+      matches: {
+        ...conversation.matches,
+        kindbossing: userMap.get(conversation.matches.kindbossing_id) || null,
+        kindtao: userMap.get(conversation.matches.kindtao_id) || null,
+      },
+    }));
   }
 
   /**
@@ -338,22 +472,20 @@ export class ChatService {
   }
 
   /**
-   * Get user details by ID
+   * Get user details by ID using server action
    */
   static async getUserDetails(userId: string) {
-    const supabase = createClient();
-
-    const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("id", userId)
-      .single();
+    const { getMultipleUsers } = await import(
+      "@/actions/user/get-multiple-users"
+    );
+    const { data, error } = await getMultipleUsers([userId]);
 
     if (error) {
       throw error;
     }
 
-    return data;
+    // Return the first user or null if not found
+    return data.length > 0 ? data[0].user : null;
   }
 
   /**

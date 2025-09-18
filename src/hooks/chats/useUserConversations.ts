@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ChatService } from "@/services/chat/chatService";
 import { BlockingService } from "@/services/chat/blockingService";
-import { useAuth } from "../useAuth";
+import { useAuthStore } from "@/stores/useAuthStore";
 import type { ConversationWithDetails } from "@/types/chat";
 export interface UseUserConversationsOptions {
   // Using realtime subscriptions instead of polling
@@ -17,7 +17,7 @@ export interface UseUserConversationsReturn {
 }
 
 export function useUserConversations({}: UseUserConversationsOptions = {}): UseUserConversationsReturn {
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const [conversations, setConversations] = useState<ConversationWithDetails[]>(
     []
   );

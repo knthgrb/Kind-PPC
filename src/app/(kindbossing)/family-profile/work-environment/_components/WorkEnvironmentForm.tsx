@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import StepperFooter from "@/components/StepperFooter";
-import { saveWorkEnvironment } from "@/app/_actions/family-profile/save-work-environment";
+import { saveWorkEnvironment } from "@/actions/family-profile/save-work-environment";
 
 interface InitialFormData {
   household_description: string;

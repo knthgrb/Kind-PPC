@@ -2,7 +2,7 @@ import Stepper from "@/components/Stepper";
 import PreferencesForm from "./_components/PreferencesForm";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
-import { FamilyProfileService } from "@/services/FamilyProfileService";
+import { FamilyProfileService } from "@/services/client/FamilyOnboardingService";
 
 export default async function PreferencesPage() {
   const supabase = await createClient();

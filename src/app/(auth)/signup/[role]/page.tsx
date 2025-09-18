@@ -2,37 +2,97 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { signup } from "@/app/_actions/auth/signup";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { signup } from "@/actions/auth/signup";
+import { useParams } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
+import { logger } from "@/utils/logger";
+import { AuthService } from "@/services/client/AuthService";
 
-export default function SignUpPage({
-  params,
-}: {
-  params: Promise<{ role: string }>;
-}) {
-  const [role, setRole] = useState<string>("");
+// Schema for validation
+const signUpSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  businessName: z.string().optional(),
+  email: z.string().email("Please enter a valid email address"),
+  phone: z
+    .string()
+    .min(10, "Please enter a valid phone number")
+    .max(10, "Please enter a valid phone number")
+    .regex(/^9[0-9]{9}$/, "Please enter a valid phone number"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  role: z.enum(["kindbossing", "kindtao"]),
+});
+
+type SignUpFormData = z.infer<typeof signUpSchema>;
+
+export default function SignUpPage() {
+  const params = useParams();
+  const role = params.role as string;
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
 
-  // Get role from params when component mounts
+  // Initialize react-hook-form with Zod resolver
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    setValue,
+  } = useForm<SignUpFormData>({
+    resolver: zodResolver(signUpSchema),
+    defaultValues: {
+      role: "kindtao", // Default value
+    },
+  });
+
+  // Update role when it's available
   useEffect(() => {
-    params.then(({ role }) => setRole(role));
-  }, [params]);
+    if (role) {
+      setValue("role", role as "kindbossing" | "kindtao");
+    }
+  }, [role, setValue]);
 
-  const handleSubmit = async (formData: FormData) => {
+  const onSubmit = async (data: SignUpFormData) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // Add the role to the form data
-      formData.append("role", role);
-      await signup(formData);
+      // Create FormData for the server action
+      const formData = new FormData();
+      formData.append("firstName", data.firstName);
+      formData.append("lastName", data.lastName);
+      formData.append("email", data.email);
+      formData.append("phone", data.phone);
+      formData.append("password", data.password);
+      formData.append("role", data.role);
+
+      if (data.businessName) {
+        formData.append("businessName", data.businessName);
+      }
+
+      const result = await signup(formData);
+
+      if (result && !result.success) {
+        setError(
+          result.error || "An error occurred during signup. Please try again."
+        );
+      }
     } catch (err) {
       setError("An error occurred during signup. Please try again.");
+    } finally {
       setIsLoading(false);
     }
+  };
+
+  // Add this function to handle Google OAuth
+  const handleGoogleSignIn = async () => {
+    const { error } = await AuthService.signInWithGoogle(
+      `${window.location.origin}/oauth/google/callback?role=${role}`
+    );
+    if (error) logger.error("Error:", error);
   };
 
   const roleTitle = role === "kindbossing" ? "kindBossing" : "kindTao";
@@ -45,7 +105,8 @@ export default function SignUpPage({
         {/* Google SSO */}
         <button
           type="button"
-          className="w-full rounded-md border border-[#D8D8D8] h-12 px-4 flex items-center justify-center gap-3 mb-8"
+          onClick={() => handleGoogleSignIn()}
+          className="w-full rounded-md border cursor-pointer border-[#D8D8D8] h-12 px-4 flex items-center justify-center gap-3 mb-8"
         >
           <Image
             src="/icons/google_ic.png"
@@ -57,7 +118,7 @@ export default function SignUpPage({
           <span className="registerInput">Continue with Google</span>
         </button>
 
-        <form action={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* Name row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
@@ -66,12 +127,18 @@ export default function SignUpPage({
               </label>
               <input
                 id="firstName"
-                name="firstName"
                 type="text"
                 placeholder="First name"
-                required
-                className="registerInput w-full rounded-md border-[1px] border-[#ADADAD] px-4 h-12"
+                className={`registerInput w-full rounded-md border-[1px] px-4 h-12 ${
+                  errors.firstName ? "border-red-500" : "border-[#ADADAD]"
+                }`}
+                {...register("firstName")}
               />
+              {errors.firstName && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.firstName.message}
+                </p>
+              )}
             </div>
 
             <div>
@@ -80,16 +147,22 @@ export default function SignUpPage({
               </label>
               <input
                 id="lastName"
-                name="lastName"
                 type="text"
                 placeholder="Last Name"
-                required
-                className="registerInput w-full rounded-md border-[1px] border-[#ADADAD] px-4 h-12"
+                className={`registerInput w-full rounded-md border-[1px] px-4 h-12 ${
+                  errors.lastName ? "border-red-500" : "border-[#ADADAD]"
+                }`}
+                {...register("lastName")}
               />
+              {errors.lastName && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.lastName.message}
+                </p>
+              )}
             </div>
           </div>
 
-          {/* Business name - only for bossing */}
+          {/* Business name - only for kindbossing */}
           {role === "kindbossing" && (
             <div>
               <label
@@ -100,12 +173,18 @@ export default function SignUpPage({
               </label>
               <input
                 id="businessName"
-                name="businessName"
                 type="text"
                 placeholder="BrightCare Homes"
-                required
-                className="registerInput w-full rounded-md border-[1px] border-[#ADADAD] px-4 h-12"
+                className={`registerInput w-full rounded-md border-[1px] px-4 h-12 ${
+                  errors.businessName ? "border-red-500" : "border-[#ADADAD]"
+                }`}
+                {...register("businessName")}
               />
+              {errors.businessName && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.businessName.message}
+                </p>
+              )}
             </div>
           )}
 
@@ -116,12 +195,18 @@ export default function SignUpPage({
             </label>
             <input
               id="email"
-              name="email"
               type="email"
               placeholder="Username or email address"
-              required
-              className="registerInput w-full rounded-md border-[1px] border-[#ADADAD] px-4 h-12"
+              className={`registerInput w-full rounded-md border-[1px] px-4 h-12 ${
+                errors.email ? "border-red-500" : "border-[#ADADAD]"
+              }`}
+              {...register("email")}
             />
+            {errors.email && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors.email.message}
+              </p>
+            )}
           </div>
 
           {/* Phone */}
@@ -141,28 +226,34 @@ export default function SignUpPage({
               </div>
               <input
                 id="phone"
-                name="phone"
                 type="tel"
                 placeholder="9XXXXXXXXX"
-                required
                 maxLength={10}
-                pattern="^9[0-9]{9}$"
-                title="Please enter a valid Philippine mobile number starting with 9 (e.g., 9096862170)"
-                className="registerInput flex-1 rounded-md border-[1px] border-[#ADADAD] px-4 h-12"
-                onChange={(e) => {
-                  // Remove any non-digit characters
-                  const value = e.target.value.replace(/\D/g, "");
-                  // Ensure it starts with 9
-                  if (value && !value.startsWith("9")) {
-                    e.target.value = "9" + value.replace(/^9/, "");
-                  }
-                  e.target.value = value;
-                }}
+                className={`registerInput flex-1 rounded-md border-[1px] px-4 h-12 ${
+                  errors.phone ? "border-red-500" : "border-[#ADADAD]"
+                }`}
+                {...register("phone", {
+                  onChange: (e) => {
+                    // Remove any non-digit characters
+                    const value = e.target.value.replace(/\D/g, "");
+                    // Ensure it starts with 9
+                    if (value && !value.startsWith("9")) {
+                      e.target.value = "9" + value.replace(/^9/, "");
+                    }
+                    e.target.value = value;
+                  },
+                })}
               />
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              Format: 9XXXXXXXXX (e.g., 9096862170)
-            </p>
+            {errors.phone ? (
+              <p className="text-red-500 text-xs mt-1">
+                {errors.phone.message}
+              </p>
+            ) : (
+              <p className="text-xs text-gray-500 mt-1">
+                Format: 9XXXXXXXXX (e.g., 9096862170)
+              </p>
+            )}
           </div>
 
           {/* Password */}
@@ -172,13 +263,18 @@ export default function SignUpPage({
             </label>
             <input
               id="password"
-              name="password"
               type="password"
               placeholder="Password"
-              required
-              minLength={6}
-              className="registerInput w-full rounded-md border-[1px] border-[#ADADAD] px-4 h-12"
+              className={`registerInput w-full rounded-md border-[1px] px-4 h-12 ${
+                errors.password ? "border-red-500" : "border-[#ADADAD]"
+              }`}
+              {...register("password")}
             />
+            {errors.password && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors.password.message}
+              </p>
+            )}
           </div>
 
           {/* Error message */}
@@ -190,10 +286,10 @@ export default function SignUpPage({
           <div className="flex justify-center">
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isSubmitting || isLoading}
               className="h-12 w-[233px] rounded-md cursor-pointer px-4 bg-[#CB0000] text-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? "Creating Account..." : "Register"}
+              {isSubmitting || isLoading ? "Creating Account..." : "Register"}
             </button>
           </div>
         </form>

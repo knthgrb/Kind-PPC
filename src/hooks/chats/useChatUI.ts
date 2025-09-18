@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import { useUserConversations } from "./useUserConversations";
 import { useConversationDetails } from "./useConversationDetails";
 import { useChat } from "./useChat";
-import { useAuth } from "../useAuth";
+import { useAuthStore } from "@/stores/useAuthStore";
 import type {
   ConversationWithDetails,
   User,
@@ -62,7 +62,7 @@ export function useChatUI({
   selectedConversationId,
   autoMarkAsRead = true,
 }: UseChatUIOptions): UseChatUIReturn {
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const [currentConversationId, setCurrentConversationId] = useState<
     string | null
   >(selectedConversationId);

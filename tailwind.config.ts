@@ -12,6 +12,7 @@ module.exports = {
         foreground: "var(--foreground)",
         lightBg: "#ffffff",
         darkBg: "#0a0a0a",
+        brandColor: "#CB0000",
 
         redAccent: "rgba(204, 0, 0, 1)",
         textPrimary: "#05264e",

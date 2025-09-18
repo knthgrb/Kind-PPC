@@ -6,7 +6,7 @@ import {
   RealtimeService,
   type ChatMessage,
 } from "@/services/chat/realtimeService";
-import { useAuth } from "../useAuth";
+import { useAuthStore } from "@/stores/useAuthStore";
 import type { ConversationWithDetails } from "@/types/chat";
 
 export interface UseSidebarUpdatesOptions {
@@ -25,7 +25,7 @@ export function useSidebarUpdates({
   selectedConversationId,
   conversationTimestamps,
 }: UseSidebarUpdatesOptions): UseSidebarUpdatesReturn {
-  const { user } = useAuth();
+  const { user } = useAuthStore();
 
   // Refresh sidebar data (simplified - just for initial load)
   const refreshSidebar = useCallback(async () => {

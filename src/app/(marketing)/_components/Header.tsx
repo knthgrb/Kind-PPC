@@ -3,61 +3,57 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { FiMenu, FiX, FiUser, FiLogOut } from "react-icons/fi";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { useRouter } from "next/navigation";
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const { user, userMetadata, loading, signOut, isAuthenticated, debug } = useAuth();
+  const { user, loading, signOut, isAuthenticated } = useAuthStore();
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   const handleSignOut = async () => {
     await signOut();
     setUserMenuOpen(false);
     setMenuOpen(false);
+    router.push("/login");
   };
 
   const getUserDisplayName = () => {
-    console.log("Header - getUserDisplayName called with:", { 
-      userMetadata, 
-      userEmail: user?.email,
-      debug 
-    });
-    
     // Prioritize full name like on profile page
-    if (userMetadata?.first_name && userMetadata?.last_name) {
-      console.log("Using full name:", `${userMetadata.first_name} ${userMetadata.last_name}`);
-      return `${userMetadata.first_name} ${userMetadata.last_name}`;
+    if (user?.user_metadata?.first_name && user?.user_metadata?.last_name) {
+      return `${user.user_metadata.first_name} ${user.user_metadata.last_name}`;
     }
-    if (userMetadata?.first_name) {
-      console.log("Using first name:", userMetadata.first_name);
-      return userMetadata.first_name;
+    if (user?.user_metadata?.first_name) {
+      return user.user_metadata.first_name;
     }
-    
+
     // Fallback to user email if metadata is still loading
     if (user?.email) {
-      console.log("Using email fallback:", user.email.split('@')[0]);
-      return user.email.split('@')[0];
+      return user.email.split("@")[0];
     }
-    
-    console.log("Using default fallback: User");
-    return 'User';
+
+    return "User";
   };
 
   // Close user menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(event.target as Node)
+      ) {
         setUserMenuOpen(false);
       }
     };
 
     if (userMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [userMenuOpen]);
 
@@ -112,14 +108,14 @@ export default function Header() {
                   <div className="text-lg font-semibold text-gray-900 leading-tight">
                     {getUserDisplayName()}
                   </div>
-                  {userMetadata?.role && (
+                  {user?.user_metadata?.role && (
                     <div className="text-xs text-gray-500 capitalize">
-                      {userMetadata.role}
+                      {user.user_metadata.role}
                     </div>
                   )}
                 </div>
               </button>
-              
+
               {/* User Dropdown Menu */}
               {userMenuOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
@@ -151,7 +147,7 @@ export default function Header() {
             </div>
           ) : (
             <>
-              <Link href="/register">
+              <Link href="/signup">
                 <button className="px-6 py-2 bg-white text-lg cursor-pointer">
                   Register
                 </button>
@@ -234,9 +230,9 @@ export default function Header() {
                     <div className="text-xl font-semibold text-gray-900 leading-tight">
                       {getUserDisplayName()}
                     </div>
-                    {userMetadata?.role && (
+                    {user?.user_metadata?.role && (
                       <div className="text-sm text-gray-500 capitalize">
-                        {userMetadata.role}
+                        {user.user_metadata.role}
                       </div>
                     )}
                   </div>

@@ -14,7 +14,7 @@ import Chip from "@/components/Chip";
 import RedButton from "@/components/ui/RedButton";
 import GhostButton from "@/components/ui/GhostButton";
 import type { UserProfile } from "@/types/userProfile";
-import { capitalizeWords } from "@/helpers/capitalize";
+import { capitalizeWords } from "@/utils/capitalize";
 import SupabaseImage from "@/components/SupabaseImage";
 
 interface ProfileClientProps {

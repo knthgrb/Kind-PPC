@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ChatService } from "@/services/chat/chatService";
 import { RealtimeService } from "@/services/chat/realtimeService";
-import { useAuth } from "../useAuth";
+import { useAuthStore } from "@/stores/useAuthStore";
 import type { ConversationWithDetails } from "@/types/chat";
 
 export interface SidebarData {
@@ -32,7 +32,7 @@ export function useSidebarMonitoring({
   conversations,
   selectedConversationId,
 }: UseSidebarMonitoringOptions): UseSidebarMonitoringReturn {
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const [sidebarData, setSidebarData] = useState<SidebarData>({
     lastMessages: new Map(),
     unreadCounts: new Map(),

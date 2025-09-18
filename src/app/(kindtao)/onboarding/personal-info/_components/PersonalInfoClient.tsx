@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getDaysInMonth, getMonths, generateYears } from "@/helpers/dateUtils";
+import { getDaysInMonth, getMonths, generateYears } from "@/utils/dateUtils";
 import { GENDER_OPTIONS, LOCATION_OPTIONS } from "@/constants/onboarding";
 import { PersonalInfoForm } from "@/types/onboarding";
 import Dropdown from "@/components/dropdown/Dropdown";
