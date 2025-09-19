@@ -11,8 +11,9 @@ import {
   type ChatMessage,
 } from "@/services/chat/realtimeService";
 import { useInfiniteMessages } from "./useInfiniteMessages";
-import { useAuth } from "../useAuth";
+import { useAuthStore } from "@/stores/useAuthStore";
 import type { MessageWithUser } from "@/types/chat";
+import { convertToMessageWithUser } from "@/utils/chatMessageUtils";
 
 export interface UseChatOptions {
   conversationId: string | null;
@@ -53,7 +54,7 @@ export function useChat({
   conversationId,
   autoMarkAsRead = true,
 }: UseChatOptions): UseChatReturn {
-  const { user } = useAuth();
+  const { user } = useAuthStore();
 
   // Conversation state
   const [conversation, setConversation] = useState<Conversation | null>(null);
@@ -62,44 +63,10 @@ export function useChat({
     null
   );
 
-  // Convert ChatMessage to MessageWithUser format
-  const convertToMessageWithUser = useCallback(
+  // Use shared message conversion utility
+  const convertMessage = useCallback(
     (chatMessage: ChatMessage): MessageWithUser => {
-      return {
-        id: chatMessage.id,
-        conversation_id: chatMessage.conversationId,
-        sender_id: chatMessage.user.id,
-        content: chatMessage.content,
-        message_type: "text" as const,
-        file_url: null,
-        status: "sent" as const,
-        read_at: null,
-        created_at: chatMessage.createdAt,
-        sender: {
-          id: chatMessage.user.id,
-          first_name: chatMessage.user.name.split(" ")[0] || "",
-          last_name: chatMessage.user.name.split(" ").slice(1).join(" ") || "",
-          email: "",
-          role: "kindtao" as const,
-          profile_image_url: chatMessage.user.avatar || null,
-          phone: null,
-          date_of_birth: null,
-          gender: null,
-          address: null,
-          city: null,
-          province: null,
-          postal_code: null,
-          is_verified: false,
-          verification_status: "pending",
-          subscription_tier: "free",
-          subscription_expires_at: null,
-          swipe_credits: 0,
-          boost_credits: 0,
-          last_active: new Date().toISOString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-      };
+      return convertToMessageWithUser(chatMessage);
     },
     []
   );
@@ -122,8 +89,8 @@ export function useChat({
 
   // Convert ChatMessages to MessageWithUser format with memoization
   const messages = useMemo(
-    () => chatMessages.map(convertToMessageWithUser),
-    [chatMessages, convertToMessageWithUser]
+    () => chatMessages.map(convertMessage),
+    [chatMessages, convertMessage]
   );
 
   // Load conversation details
@@ -151,7 +118,7 @@ export function useChat({
   // Send message
   const sendMessage = useCallback(
     async (content: string, messageType: string = "text", fileUrl?: string) => {
-      await sendChatMessage(content);
+      await sendChatMessage(content, messageType, fileUrl);
     },
     [sendChatMessage]
   );
@@ -182,27 +149,16 @@ export function useChat({
     loadConversation();
   }, [loadConversation]);
 
-  // Mark as read when conversation is viewed
+  // Combined mark as read effects to prevent duplicate calls
   useEffect(() => {
     if (autoMarkAsRead && conversationId && user?.id && messages.length > 0) {
       const timer = setTimeout(() => {
         markAsRead();
-      }, 500); // Reduced delay for faster read status
+      }, 300); // Single delay for both cases
 
       return () => clearTimeout(timer);
     }
-  }, [autoMarkAsRead, conversationId, user?.id, markAsRead]);
-
-  // Also mark as read when messages change (new messages arrive)
-  useEffect(() => {
-    if (autoMarkAsRead && conversationId && user?.id && messages.length > 0) {
-      const timer = setTimeout(() => {
-        markAsRead();
-      }, 200);
-
-      return () => clearTimeout(timer);
-    }
-  }, [messages.length, autoMarkAsRead, conversationId, user?.id, markAsRead]);
+  }, [autoMarkAsRead, conversationId, user?.id, messages.length, markAsRead]);
 
   return {
     // Messages

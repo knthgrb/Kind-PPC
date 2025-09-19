@@ -4,12 +4,14 @@ type ToggleButtonProps = {
   toggled?: boolean;
   defaultToggled?: boolean;
   onToggle?: (toggled: boolean) => void;
+  disabled?: boolean;
 };
 
 export default function ToggleButton({
   toggled: controlledToggled,
   defaultToggled = false,
   onToggle,
+  disabled = false,
 }: ToggleButtonProps) {
   const [uncontrolledToggled, setUncontrolledToggled] =
     React.useState(defaultToggled);
@@ -18,6 +20,8 @@ export default function ToggleButton({
   const toggled = isControlled ? controlledToggled : uncontrolledToggled;
 
   const handleClick = () => {
+    if (disabled) return;
+
     if (!isControlled) {
       setUncontrolledToggled((prev) => !prev);
     }
@@ -29,8 +33,11 @@ export default function ToggleButton({
   return (
     <div className="toggle-btn-container">
       <button
-        className={`toggle-btn ${toggled ? "toggled" : ""}`}
+        className={`toggle-btn ${toggled ? "toggled" : ""} ${
+          disabled ? "disabled" : ""
+        }`}
         onClick={handleClick}
+        disabled={disabled}
       >
         <div className="thumb" />
       </button>

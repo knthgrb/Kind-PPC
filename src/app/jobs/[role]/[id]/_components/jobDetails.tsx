@@ -6,7 +6,7 @@ import { LuPencil } from "react-icons/lu";
 import { PiTrash } from "react-icons/pi";
 import DeleteJobPostModal from "./deleteJobPostModal";
 import { JobPost } from "@/types/jobPosts";
-import { deactivateJobPost } from "@/app/_actions/jobs/deactivate-job";
+import { deactivateJobPost } from "@/actions/jobs/deactivate-job";
 import { IoChevronBackOutline } from "react-icons/io5";
 
 export default function JobDetails({

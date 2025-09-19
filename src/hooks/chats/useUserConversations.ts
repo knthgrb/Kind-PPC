@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { ChatService } from "@/services/chat/chatService";
 import { BlockingService } from "@/services/chat/blockingService";
-import { useAuth } from "../useAuth";
+import { useAuthStore } from "@/stores/useAuthStore";
 import type { ConversationWithDetails } from "@/types/chat";
 export interface UseUserConversationsOptions {
   // Using realtime subscriptions instead of polling
@@ -17,12 +17,15 @@ export interface UseUserConversationsReturn {
 }
 
 export function useUserConversations({}: UseUserConversationsOptions = {}): UseUserConversationsReturn {
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const [conversations, setConversations] = useState<ConversationWithDetails[]>(
     []
   );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+
+  // Ref to prevent duplicate calls without dependency loop
+  const isLoadingRef = useRef(false);
 
   const loadConversations = useCallback(async () => {
     if (!user?.id) {
@@ -30,6 +33,12 @@ export function useUserConversations({}: UseUserConversationsOptions = {}): UseU
       return;
     }
 
+    // Use ref to prevent duplicate calls without dependency loop
+    if (isLoadingRef.current) {
+      return;
+    }
+
+    isLoadingRef.current = true;
     setIsLoading(true);
     setError(null);
 
@@ -52,9 +61,9 @@ export function useUserConversations({}: UseUserConversationsOptions = {}): UseU
 
       setConversations(filteredConversations);
     } catch (error) {
-      console.error("Error loading conversations:", error);
       setError(error as Error);
     } finally {
+      isLoadingRef.current = false;
       setIsLoading(false);
     }
   }, [user?.id]);

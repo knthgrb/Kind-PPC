@@ -2,7 +2,7 @@ import Stepper from "@/components/Stepper";
 import WorkEnvironmentForm from "./_components/WorkEnvironmentForm";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
-import { FamilyProfileService } from "@/services/FamilyProfileService";
+import { FamilyProfileService } from "@/services/client/FamilyOnboardingService";
 
 export default async function WorkEnvironmentPage() {
   const supabase = await createClient();

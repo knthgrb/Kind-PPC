@@ -2,8 +2,8 @@ import Stepper from "@/components/Stepper";
 import HouseholdInfoForm from "./_components/HouseholdInfoForm";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
-import { FamilyProfileService } from "@/services/FamilyProfileService";
-import { FamilyProfile } from "@/types/familyProfile";
+import { FamilyOnboardingService } from "@/services/client/FamilyOnboardingService";
+import { FamilyService } from "@/services/client/FamilyService";
 
 export default async function HouseholdInfoPage() {
   const supabase = await createClient();
@@ -12,14 +12,14 @@ export default async function HouseholdInfoPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const progress = await FamilyProfileService.checkFamilyOnboardingProgress(
+  const progress = await FamilyOnboardingService.checkFamilyOnboardingProgress(
     user.id
   );
   if (progress.isComplete) redirect("/kindbossing-dashboard");
 
   // Fetch existing family profile data on the server
   const { data: existingProfile, error: profileError } =
-    await FamilyProfileService.getFamilyProfile(user.id);
+    await FamilyService.getFamilyProfile(user.id);
 
   // Prepare initial form data
   const initialFormData = {

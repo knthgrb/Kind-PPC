@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { createClient as createClientClient } from "@/utils/supabase/client";
-import { JobPost, SalaryRate, JobPostInput } from "@/types/jobPosts";
+import { JobPost, SalaryRate } from "@/types/jobPosts";
+import { JobMatchingService, JobWithMatchingScore } from "./JobMatchingService";
 
 export type JobFilters = {
   location?: string;
@@ -245,12 +246,12 @@ export class JobService {
     );
 
     const locationsSet = new Set<string>();
-    (locationsData ?? []).forEach((row: any) => {
-      if (row.location) locationsSet.add(row.location as string);
+    (locationsData ?? []).forEach((row: { location?: string }) => {
+      if (row.location) locationsSet.add(row.location);
     });
     const jobTypesSet = new Set<string>();
-    (jobTypesData ?? []).forEach((row: any) => {
-      if (row.job_type) jobTypesSet.add(row.job_type as string);
+    (jobTypesData ?? []).forEach((row: { job_type?: string }) => {
+      if (row.job_type) jobTypesSet.add(row.job_type);
     });
 
     const locations = [
@@ -274,5 +275,27 @@ export class JobService {
     filters?: Omit<JobFilters, "limit" | "offset" | "page">
   ): Promise<JobPost[]> {
     return this.fetchJobs({ ...filters, limit });
+  }
+
+  /**
+   * Fetch matched jobs for KindTao users using matching algorithm
+   */
+  static async fetchMatchedJobs(
+    userId: string,
+    limit: number = 20,
+    offset: number = 0
+  ): Promise<JobWithMatchingScore[]> {
+    return JobMatchingService.getMatchedJobs(userId, limit, offset);
+  }
+
+  /**
+   * Fetch matched jobs for KindTao users using matching algorithm (client-side)
+   */
+  static async fetchMatchedJobsClient(
+    userId: string,
+    limit: number = 20,
+    offset: number = 0
+  ): Promise<JobWithMatchingScore[]> {
+    return JobMatchingService.getMatchedJobsClient(userId, limit, offset);
   }
 }

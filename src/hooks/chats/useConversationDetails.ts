@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { ChatService } from "@/services/chat/chatService";
-import { useAuth } from "../useAuth";
+import { useAuthStore } from "@/stores/useAuthStore";
 import type { ConversationWithDetails, User } from "@/types/chat";
 
 export interface UseConversationDetailsOptions {
@@ -21,7 +21,7 @@ export interface UseConversationDetailsReturn {
 export function useConversationDetails({
   conversationId,
 }: UseConversationDetailsOptions): UseConversationDetailsReturn {
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const [conversation, setConversation] =
     useState<ConversationWithDetails | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -42,7 +42,6 @@ export function useConversationDetails({
       );
       setConversation(conversationData);
     } catch (error) {
-      console.error("Error loading conversation details:", error);
       setError(error as Error);
     } finally {
       setIsLoading(false);

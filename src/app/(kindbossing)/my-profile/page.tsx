@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { ProfileService } from "@/services/ProfileService";
 import { JobService } from "@/services/JobService";
 import MyProfileClient from "./_components/MyProfileClient";
-import { FamilyProfileService } from "@/services/FamilyProfileService";
+import { FamilyProfileService } from "@/services/client/FamilyOnboardingService";
 
 export default async function MyProfilePage({
   searchParams,

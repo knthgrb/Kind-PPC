@@ -5,7 +5,7 @@ import { useState } from "react";
 import ContinueModal from "@/components/ContinueModal";
 import StepperFooter from "@/components/StepperFooter";
 import Dropdown from "@/components/dropdown/Dropdown";
-import { postJob } from "@/app/_actions/jobs/post-job";
+import { postJob } from "@/actions/jobs/post-job";
 
 type PostJobClientProps = {
   familyId: string;

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import StepperFooter from "@/components/StepperFooter";
-import { savePreferences } from "@/app/_actions/family-profile/save-preferences";
+import { savePreferences } from "@/actions/family-profile/save-preferences";
 
 const LANGUAGE_OPTIONS = [
   { value: "English", label: "English" },

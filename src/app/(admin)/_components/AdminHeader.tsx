@@ -6,26 +6,29 @@ import { LuBell } from "react-icons/lu";
 import { FaRegEnvelope } from "react-icons/fa";
 import { FaChevronDown } from "react-icons/fa6";
 import { FiMenu, FiX, FiUser, FiLogOut } from "react-icons/fi";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { useRouter } from "next/navigation";
 
 export default function AdminHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const { user, userMetadata, loading, signOut, isAuthenticated } = useAuth();
+  const { user, loading, signOut, isAuthenticated } = useAuthStore();
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   const handleSignOut = async () => {
     await signOut();
     setUserMenuOpen(false);
     setMenuOpen(false);
+    router.push("/login");
   };
 
   const getUserDisplayName = () => {
-    if (userMetadata?.first_name && userMetadata?.last_name) {
-      return `${userMetadata.first_name} ${userMetadata.last_name}`;
+    if (user?.user_metadata?.first_name && user?.user_metadata?.last_name) {
+      return `${user.user_metadata.first_name} ${user.user_metadata.last_name}`;
     }
-    if (userMetadata?.first_name) {
-      return userMetadata.first_name;
+    if (user?.user_metadata?.first_name) {
+      return user.user_metadata.first_name;
     }
     if (user?.email) {
       return user.email.split("@")[0];
@@ -73,7 +76,7 @@ export default function AdminHeader() {
             { label: "Employees", href: "/profile-verification" },
             { label: "Payslip", href: "/error" },
             { label: "Gov't Benefits", href: "/error" },
-            { label: "Documents", href: "/error" },
+            { label: "Documents", href: "/profile-verification" },
           ].map((item) => (
             <Link
               key={item.label}
@@ -106,9 +109,9 @@ export default function AdminHeader() {
                   <div className="text-lg font-semibold text-gray-900 leading-tight">
                     {getUserDisplayName()}
                   </div>
-                  {userMetadata?.role && (
+                  {user?.role && (
                     <div className="text-xs text-gray-500 capitalize">
-                      {userMetadata.role}
+                      {user.role}
                     </div>
                   )}
                 </div>
@@ -179,9 +182,9 @@ export default function AdminHeader() {
                 <div className="text-[#1a1a3b] font-medium text-[clamp(1rem,3vw,1.125rem)]">
                   {getUserDisplayName()}
                 </div>
-                {userMetadata?.role && (
+                {user?.role && (
                   <div className="text-xs text-gray-500 capitalize">
-                    {userMetadata.role}
+                    {user.role}
                   </div>
                 )}
               </div>
@@ -199,19 +202,19 @@ export default function AdminHeader() {
           {/* Menu Links */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 justify-items-center text-center">
             {[
-              "Dashboard",
-              "Employees",
-              "Payslip",
-              "Gov't Benefits",
-              "Documents",
+              { label: "Dashboard", href: "/dashboard" },
+              { label: "Employees", href: "/profile-verification" },
+              { label: "Payslip", href: "/error" },
+              { label: "Gov't Benefits", href: "/error" },
+              { label: "Documents", href: "/profile-verification" },
             ].map((item) => (
               <Link
-                key={item}
-                href={`/${item.toLowerCase().replace(/ /g, "-")}`}
+                key={item.label}
+                href={item.href}
                 className="hover:text-red-600"
                 onClick={() => setMenuOpen(false)}
               >
-                {item}
+                {item.label}
               </Link>
             ))}
           </div>

@@ -3,13 +3,13 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUserConversations } from "@/hooks/chats/useUserConversations";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { ChatService } from "@/services/chat/chatService";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
 export default function ChatsClient() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const { conversations, isLoading } = useUserConversations({});
 
   // Unified loading state
@@ -41,7 +41,6 @@ export default function ChatsClient() {
           // Redirect to the default conversation
           router.push(`/chats/${defaultConversationId}`);
         } catch (error) {
-          console.error("Error getting last sent conversation:", error);
           // Fallback to first conversation
           router.push(`/chats/${conversations[0].id}`);
         }

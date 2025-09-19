@@ -19,10 +19,28 @@ self.addEventListener("push", function (event) {
 });
 
 self.addEventListener("notificationclick", function (event) {
-  console.log("Notification click received.");
+  console.log("Notification click received:", event);
   event.notification.close();
-  // Use the current origin instead of hardcoded port
-  const urlToOpen = new URL("/", self.location.origin).href;
-  console.log("Opening URL:", urlToOpen);
-  event.waitUntil(clients.openWindow(urlToOpen));
+
+  const data = event.notification.data;
+  const action = event.action;
+
+  // Handle different notification actions
+  if (action === "view" && data && data.conversationId) {
+    // Navigate to specific chat conversation
+    const urlToOpen = new URL(
+      `/chats/${data.conversationId}`,
+      self.location.origin
+    ).href;
+    console.log("Opening chat URL:", urlToOpen);
+    event.waitUntil(clients.openWindow(urlToOpen));
+  } else if (action === "dismiss") {
+    // Just close the notification (already done above)
+    console.log("Notification dismissed");
+  } else {
+    // Default action - open home page
+    const urlToOpen = new URL("/", self.location.origin).href;
+    console.log("Opening home URL:", urlToOpen);
+    event.waitUntil(clients.openWindow(urlToOpen));
+  }
 });

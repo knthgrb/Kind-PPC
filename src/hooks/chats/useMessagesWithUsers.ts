@@ -50,7 +50,6 @@ export function useMessagesWithUsers({
       try {
         const userData = await ChatService.getUserDetails(userId);
         if (!userData) {
-          console.error("No user data returned for:", userId);
           return null;
         }
 
@@ -58,7 +57,6 @@ export function useMessagesWithUsers({
         setUserCache((prev) => new Map(prev).set(userId, userData));
         return userData;
       } catch (error) {
-        console.error("Error fetching user details:", error);
         return null;
       }
     },
@@ -122,27 +120,17 @@ export function useMessagesWithUsers({
   // Wrapper functions that maintain the same interface
   const addMessage = useCallback((message: Message) => {
     // Messages are now handled by the realtime system
-    console.log("addMessage called but handled by realtime system:", message);
   }, []);
 
   const updateMessage = useCallback(
     (messageId: string, updates: Partial<Message>) => {
       // Messages are now handled by the realtime system
-      console.log(
-        "updateMessage called but handled by realtime system:",
-        messageId,
-        updates
-      );
     },
     []
   );
 
   const removeMessage = useCallback((messageId: string) => {
     // Messages are now handled by the realtime system
-    console.log(
-      "removeMessage called but handled by realtime system:",
-      messageId
-    );
   }, []);
 
   const clearMessages = useCallback(() => {

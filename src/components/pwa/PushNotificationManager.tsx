@@ -3,7 +3,7 @@ import {
   sendNotification,
   subscribeUser,
   unsubscribeUser,
-} from "@/app/_actions/push-notification/push-notification";
+} from "@/actions/push-notification/push-notification";
 import { useEffect, useState } from "react";
 
 function urlBase64ToUint8Array(base64String: string) {

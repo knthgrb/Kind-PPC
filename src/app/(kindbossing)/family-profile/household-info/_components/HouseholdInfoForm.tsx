@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import StepperFooter from "@/components/StepperFooter";
-import { saveHouseholdInfo } from "@/app/_actions/family-profile/save-household-info";
+import { saveHouseholdInfo } from "@/actions/family-profile/save-household-info";
 
 interface InitialFormData {
   household_size: number;
