@@ -352,7 +352,7 @@ export function useInfiniteMessages({
 
         // Use server action that includes notification creation
         const { sendMessage: sendMessageAction } = await import(
-          "@/app/_actions/chat/send-message"
+          "@/actions/chat/send-message"
         );
         const newMessage = await sendMessageAction(
           conversationId,
