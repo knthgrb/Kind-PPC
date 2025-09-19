@@ -7,6 +7,7 @@ import {
 } from "@/services/chat/realtimeService";
 import { ChatService } from "@/services/chat/chatService";
 import { useAuthStore } from "@/stores/useAuthStore";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 
 export interface UseRealtimeChatOptions {
   conversationId: string | null;
@@ -28,7 +29,8 @@ export function useRealtimeChat({
   onMessage,
   messages: initialMessages = [],
 }: UseRealtimeChatOptions): UseRealtimeChatReturn {
-  const { user, userMetadata } = useAuthStore();
+  const { user } = useAuthStore();
+  const userMetadata = user?.user_metadata;
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -66,7 +68,6 @@ export function useRealtimeChat({
             chatMessages.push(chatMessage);
           }
         } catch (userError) {
-          console.error("Error fetching user details for message:", userError);
           // Add message with placeholder user data
           const chatMessage = RealtimeService.convertToChatMessage(message, {
             id: message.sender_id,
@@ -81,7 +82,6 @@ export function useRealtimeChat({
       setMessages(chatMessages);
       onMessage?.(chatMessages);
     } catch (err) {
-      console.error("Error loading initial messages:", err);
       setError(err as Error);
     } finally {
       setIsLoading(false);
@@ -107,7 +107,6 @@ export function useRealtimeChat({
 
   // Handle realtime errors
   const handleRealtimeError = useCallback((error: Error) => {
-    console.error("Realtime error:", error);
     setError(error);
   }, []);
 
@@ -135,7 +134,8 @@ export function useRealtimeChat({
           id: user.id,
           first_name: userMetadata?.first_name || "Unknown",
           last_name: userMetadata?.last_name || "User",
-          profile_image_url: (user as any).profile_image_url || null,
+          profile_image_url:
+            (user as { profile_image_url?: string }).profile_image_url || null,
         });
 
         // Add immediately for better UX
@@ -150,10 +150,6 @@ export function useRealtimeChat({
           conversationId
         );
         if (!isReady) {
-          console.warn(
-            "Channel not ready, attempting to create new subscription..."
-          );
-
           // Try to create a new subscription as fallback
           try {
             await RealtimeService.subscribeToMessages(
@@ -169,16 +165,9 @@ export function useRealtimeChat({
               conversationId
             );
             if (!retryReady) {
-              console.warn(
-                "Still not ready after retry, but message saved to database"
-              );
               return;
             }
           } catch (retryError) {
-            console.warn(
-              "Failed to create fallback subscription, but message saved to database:",
-              retryError
-            );
             return;
           }
         }
@@ -190,10 +179,9 @@ export function useRealtimeChat({
         try {
           await ChatService.updateMessageStatus(newMessage.id, "sent");
         } catch (error) {
-          console.error("Error updating message status to sent:", error);
+          // Silent error handling for status updates
         }
       } catch (err) {
-        console.error("Error sending message:", err);
         setSendError(err as Error);
       } finally {
         setIsSending(false);
@@ -210,7 +198,7 @@ export function useRealtimeChat({
     }
 
     let isMounted = true;
-    let currentChannel: any = null;
+    let currentChannel: RealtimeChannel | null = null;
 
     const setupSubscription = async () => {
       try {

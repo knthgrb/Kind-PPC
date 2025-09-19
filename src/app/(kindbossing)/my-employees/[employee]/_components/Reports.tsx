@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { HiOutlinePencil } from "react-icons/hi";
 import Image from "next/image";
 import Dropdown from "@/components/dropdown/Dropdown";
 
 /* ---------- Types ---------- */
 export type ReportRecord = {
-  id: string;
+  id?: string;
   title: string;
   issueType: string;
   notes: string;
@@ -25,12 +25,22 @@ function ReportForm({
 }) {
   const [form, setForm] = useState<ReportRecord>(
     initialData ?? {
-      id: crypto.randomUUID(),
       title: "",
       issueType: "",
       notes: "",
     }
   );
+
+  // Reset form when opening for new report (not editing)
+  React.useEffect(() => {
+    if (!initialData) {
+      setForm({
+        title: "",
+        issueType: "",
+        notes: "",
+      });
+    }
+  }, [initialData]);
 
   const handleChange = (field: keyof ReportRecord, value: any) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -38,7 +48,18 @@ function ReportForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(form);
+
+    // Save the form data first
+    const formData = { ...form };
+    onSave(formData);
+  };
+
+  const handleReset = () => {
+    setForm({
+      title: "",
+      issueType: "",
+      notes: "",
+    });
   };
 
   return (
@@ -84,10 +105,20 @@ function ReportForm({
       <div className="flex justify-center gap-2">
         <button
           type="button"
-          onClick={onCancel}
+          onClick={() => {
+            handleReset();
+            onCancel();
+          }}
           className="w-28 py-2 border border-[#ADADAD] font-bold bg-white rounded-lg focus:outline-none"
         >
           Cancel
+        </button>
+        <button
+          type="button"
+          onClick={handleReset}
+          className="w-28 py-2 border border-[#ADADAD] font-bold bg-white rounded-lg focus:outline-none"
+        >
+          Reset
         </button>
         <button
           type="submit"
@@ -104,7 +135,7 @@ function ReportForm({
 export default function Reports() {
   const [records, setRecords] = useState<ReportRecord[]>([
     {
-      id: crypto.randomUUID(),
+      id: "sample-1",
       title: "Sample Report",
       issueType: "Fraud",
       notes:
@@ -120,8 +151,10 @@ export default function Reports() {
       if (exists) {
         return prev.map((r) => (r.id === data.id ? data : r));
       }
-      return [...prev, data];
+      return [...prev, { ...data, id: Date.now().toString() }];
     });
+
+    // Always close the form after saving
     setShowForm(false);
     setEditing(null);
   };

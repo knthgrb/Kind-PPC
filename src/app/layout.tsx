@@ -3,9 +3,11 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "@/styles/globals.css";
 import InstallPrompt from "@/components/pwa/InstallPrompt";
-import PushNotificationManager from "@/components/pwa/PushNotificationManager";
-import { NotificationProvider } from "@/contexts/NotificationContext";
+import NotificationInitializer from "@/components/NotificationInitializer";
+import NotificationPrompt from "@/components/NotificationPrompt";
+import { ToastProvider } from "@/contexts/ToastContext";
 import AuthProvider from "@/components/AuthProvider";
+import ToastContainer from "@/components/Toast/ToastContainer";
 
 // Import the required fonts
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -47,12 +49,15 @@ export default function RootLayout({
         suppressHydrationWarning
         className={`font-sans ${plusJakartaSans.variable} ${geistSans.variable} ${geistMono.variable} ${barlowCondensed.variable} antialiased`}
       >
-        <NotificationProvider>
+        <ToastProvider>
           <AuthProvider>
             <InstallPrompt />
+            <NotificationInitializer />
+            <NotificationPrompt />
             {children}
+            <ToastContainer />
           </AuthProvider>
-        </NotificationProvider>
+        </ToastProvider>
       </body>
     </html>
   );

@@ -71,7 +71,6 @@ export class BlockingService {
         message: "User blocked successfully",
       };
     } catch (error) {
-      console.error("Error blocking user:", error);
       throw error;
     }
   }
@@ -91,7 +90,6 @@ export class BlockingService {
       .limit(1);
 
     if (error) {
-      console.error("Error checking if user is blocked:", error);
       return false;
     }
 
@@ -112,7 +110,6 @@ export class BlockingService {
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Error getting blocked users:", error);
       return [];
     }
 
@@ -160,7 +157,6 @@ export class BlockingService {
         message: "User unblocked successfully",
       };
     } catch (error) {
-      console.error("Error unblocking user:", error);
       throw error;
     }
   }

@@ -105,7 +105,6 @@ export default function ReportUserModal({
 
       onSubmit(formData);
     } catch (error) {
-      console.error("Error uploading files:", error);
       // Still submit the report without evidence
       onSubmit(form);
     } finally {

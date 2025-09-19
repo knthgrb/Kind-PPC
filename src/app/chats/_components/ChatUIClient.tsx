@@ -4,14 +4,18 @@ import { useState, useEffect, useCallback, useRef, useMemo, memo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { LuSearch } from "react-icons/lu";
 import { FaChevronLeft } from "react-icons/fa";
+import EmojiPicker from "emoji-picker-react";
 import LimitAlertModal from "@/components/LimitAlertModal";
 import BlockUserModal from "./BlockUserModal";
 import ReportUserModal, { ReportData } from "./ReportUserModal";
+import FileAttachmentModal from "./FileAttachmentModal";
+import FileMessage from "./FileMessage";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import { FileUploadService } from "@/services/chat/fileUploadService";
 import { useChatUI } from "@/hooks/chats/useChatUI";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useSidebarMonitoring } from "@/hooks/chats/useSidebarMonitoring";
-import { useNotifications } from "@/contexts/NotificationContext";
+import { useToast } from "@/contexts/ToastContext";
 import { ChatService } from "@/services/chat/chatService";
 import { RealtimeService } from "@/services/chat/realtimeService";
 import { BlockingService } from "@/services/chat/blockingService";
@@ -22,8 +26,39 @@ import type {
   User,
   MessageWithUser,
 } from "@/types/chat";
+import type { SidebarData } from "@/hooks/chats/useSidebarMonitoring";
+import { getOtherUser } from "@/utils/chatMessageUtils";
+import type { User as AuthUser } from "@/types/user";
 
 // Utility functions moved to src/utils/chatUtils.ts
+
+// Convert auth user to chat user
+function convertAuthUserToChatUser(authUser: AuthUser): User {
+  return {
+    id: authUser.id,
+    role: authUser.user_metadata.role,
+    email: authUser.user_metadata.email,
+    phone: authUser.user_metadata.phone || null,
+    first_name: authUser.user_metadata.first_name,
+    last_name: authUser.user_metadata.last_name,
+    date_of_birth: authUser.user_metadata.date_of_birth || null,
+    gender: authUser.user_metadata.gender || null,
+    profile_image_url: authUser.user_metadata.profile_image_url || null,
+    address: authUser.user_metadata.full_address || null,
+    city: authUser.user_metadata.city || null,
+    province: authUser.user_metadata.province || null,
+    postal_code: authUser.user_metadata.postal_code || null,
+    is_verified: false, // Default value
+    verification_status: authUser.user_metadata.verification_status,
+    subscription_tier: authUser.user_metadata.subscription_tier,
+    subscription_expires_at: null, // Default value
+    swipe_credits: authUser.user_metadata.swipe_credits,
+    boost_credits: authUser.user_metadata.boost_credits,
+    last_active: new Date().toISOString(), // Default value
+    created_at: authUser.created_at || new Date().toISOString(),
+    updated_at: authUser.updated_at || new Date().toISOString(),
+  };
+}
 
 // Memoized conversation item component to prevent unnecessary re-renders
 const ConversationItem = memo(
@@ -34,17 +69,15 @@ const ConversationItem = memo(
     selectedConversationId,
     onSelect,
   }: {
-    conversation: any;
-    currentUser: any;
-    sidebarData: any;
+    conversation: ConversationWithDetails;
+    currentUser: User;
+    sidebarData: SidebarData;
     selectedConversationId: string | null;
     onSelect: (id: string) => void;
   }) => {
     const otherUser = useMemo(() => {
-      return conversation.matches.kindbossing_id === currentUser.id
-        ? conversation.matches.kindtao
-        : conversation.matches.kindbossing;
-    }, [conversation.matches, currentUser.id]);
+      return getOtherUser(conversation, currentUser.id);
+    }, [conversation, currentUser.id]);
 
     const isActive = selectedConversationId === conversation.id;
     const unreadCount = sidebarData.unreadCounts.get(conversation.id) || 0;
@@ -74,7 +107,7 @@ const ConversationItem = memo(
           />
           <span
             className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${getStatusColor(
-              false // TODO: Implement online status
+              false
             )}`}
           />
           {hasUnread && (
@@ -85,21 +118,21 @@ const ConversationItem = memo(
         </div>
         <div className="ml-2 flex-1 min-w-0">
           <h4
-            className={`text-[0.663rem] font-medium text-[#212529] truncate ${
+            className={`text-[clamp(0.663rem,0.8rem,0.9rem)] font-medium text-[#212529] truncate ${
               hasUnread ? "font-bold" : ""
             }`}
           >
             {`${otherUser.first_name} ${otherUser.last_name}`}
           </h4>
           <p
-            className={`text-[0.663rem] text-[#757589] truncate ${
+            className={`text-[clamp(0.663rem,0.8rem,0.9rem)] text-[#757589] truncate ${
               hasUnread ? "font-bold" : ""
             }`}
           >
             {lastMessageText}
           </p>
         </div>
-        <span className="text-[0.663rem] text-[#757589] ml-1 whitespace-nowrap">
+        <span className="text-[clamp(0.663rem,0.8rem,0.9rem)] text-[#757589] ml-1 whitespace-nowrap">
           {lastMessageTimestamp
             ? formatTimestamp(lastMessageTimestamp, "sidebar")
             : ""}
@@ -114,8 +147,10 @@ ConversationItem.displayName = "ConversationItem";
 export default function ChatUIClient({
   conversationId: propConversationId,
 }: { conversationId?: string } = {}) {
-  const { user, userMetadata } = useAuth();
-  const { showSuccess, showError } = useNotifications();
+  const { user } = useAuthStore();
+  const userMetadata = user?.user_metadata;
+  const { showSuccess, showError } = useToast();
+  const toast = useToast();
   const params = useParams();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -130,6 +165,13 @@ export default function ChatUIClient({
 
   // Dropdown menu
   const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  // Emoji picker
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
+
+  // File attachment
+  const [fileModalOpen, setFileModalOpen] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   // Get conversation ID from props or URL params
   const conversationId =
@@ -163,8 +205,6 @@ export default function ChatUIClient({
     selectedConversationId,
     autoMarkAsRead: true,
   });
-
-  // Debug: Log what we're getting from useChatUI
 
   // Separate loading states to prevent flickering
   const isInitialLoading =
@@ -225,10 +265,12 @@ export default function ChatUIClient({
         user: {
           id: latestMessage.sender_id,
           name: `${latestMessage.sender.first_name} ${latestMessage.sender.last_name}`,
-          avatar: latestMessage.sender.profile_image_url,
+          avatar: latestMessage.sender.profile_image_url || undefined,
         },
         createdAt: latestMessage.created_at,
         conversationId: latestMessage.conversation_id,
+        messageType: latestMessage.message_type || "text",
+        fileUrl: latestMessage.file_url,
       };
 
       updateSelectedConversationSidebar(selectedConversationId, chatMessage);
@@ -282,7 +324,6 @@ export default function ChatUIClient({
           // Redirect to the default conversation
           router.push(`/chats/${defaultConversationId}`);
         } catch (error) {
-          console.error("Error getting last sent conversation:", error);
           // Fallback to first conversation
           const firstConversationId = conversations[0].id;
           setSelectedConversationId(firstConversationId);
@@ -346,7 +387,6 @@ export default function ChatUIClient({
   useEffect(() => {
     const messagesContainer = document.querySelector(".overflow-y-auto");
     if (!messagesContainer) {
-      console.warn("Messages container not found for scroll detection");
       return;
     }
 
@@ -354,12 +394,6 @@ export default function ChatUIClient({
       const { scrollTop, scrollHeight, clientHeight } = messagesContainer;
       const isAtBottom = scrollHeight - scrollTop - clientHeight < 100; // 100px threshold
       setShouldAutoScroll(isAtBottom);
-      console.log(
-        "Scroll detected - isAtBottom:",
-        isAtBottom,
-        "shouldAutoScroll:",
-        isAtBottom
-      );
     };
 
     messagesContainer.addEventListener("scroll", handleScroll);
@@ -370,13 +404,17 @@ export default function ChatUIClient({
   useEffect(() => {
     // Periodic cleanup of expired subscriptions
     const cleanupInterval = setInterval(() => {
-      RealtimeService.cleanupExpiredSubscriptions();
+      if (RealtimeService.cleanupExpiredSubscriptions) {
+        RealtimeService.cleanupExpiredSubscriptions();
+      }
     }, 5 * 60 * 1000); // Every 5 minutes
 
     return () => {
       clearInterval(cleanupInterval);
       // Cleanup all realtime channels when component unmounts
-      RealtimeService.cleanup();
+      if (RealtimeService.cleanup) {
+        RealtimeService.cleanup();
+      }
     };
   }, []);
 
@@ -395,15 +433,60 @@ export default function ChatUIClient({
     try {
       await sendChatMessage(newMessage.trim());
       setNewMessage("");
+      setEmojiPickerOpen(false); // Close emoji picker after sending
       // Sidebar will be updated automatically via the useEffect that watches messages
     } catch (error) {
-      console.error("Error sending message:", error);
       // Show error notification for blocked user
       if (error instanceof Error && error.message.includes("blocked user")) {
-        showError("Cannot send message to blocked user");
+        toast.showError(
+          "Message Failed",
+          "Cannot send message to blocked user"
+        );
       }
     }
   };
+
+  // Handle emoji selection from the emoji picker
+  const handleEmojiClick = (emojiObject: { emoji: string }) => {
+    setNewMessage((prev) => prev + emojiObject.emoji);
+    setEmojiPickerOpen(false);
+  };
+
+  // Handle file selection and upload
+  const handleFileSelect = useCallback(
+    async (files: File[]) => {
+      if (files.length === 0) {
+        return;
+      }
+
+      if (!selectedConversationId) {
+        showError("Please select a conversation first.");
+        return;
+      }
+
+      try {
+        const uploadedFiles = await FileUploadService.uploadMultipleFiles(
+          files,
+          selectedConversationId,
+          (progress) => {}
+        );
+
+        for (let i = 0; i < uploadedFiles.length; i++) {
+          const fileMetadata = uploadedFiles[i];
+          await sendChatMessage(
+            fileMetadata.fileName,
+            fileMetadata.mimeType,
+            fileMetadata.url
+          );
+        }
+
+        setSelectedFiles([]);
+      } catch (error) {
+        showError("Failed to upload files. Please try again.");
+      }
+    },
+    [selectedConversationId, sendChatMessage, showError]
+  );
 
   // Block user handler
   const handleBlockUser = async () => {
@@ -425,11 +508,13 @@ export default function ChatUIClient({
 
       // Close modal and redirect to chats list
       setBlockModalOpen(false);
-      showSuccess("User blocked successfully");
+      toast.showSuccess("User Blocked", "User has been blocked successfully");
       router.push("/chats");
     } catch (error) {
-      console.error("Error blocking user:", error);
-      showError("Failed to block user. Please try again.");
+      toast.showError(
+        "Block Failed",
+        "Failed to block user. Please try again."
+      );
     } finally {
       setIsBlocking(false);
     }
@@ -456,10 +541,15 @@ export default function ChatUIClient({
 
       // Close modal
       setReportModalOpen(false);
-      showSuccess("Report submitted successfully.");
+      toast.showSuccess(
+        "Report Submitted",
+        "Your report has been submitted successfully."
+      );
     } catch (error) {
-      console.error("Error reporting user:", error);
-      showError("Failed to submit report. Please try again.");
+      toast.showError(
+        "Report Failed",
+        "Failed to submit report. Please try again."
+      );
     } finally {
       setIsReporting(false);
     }
@@ -476,20 +566,23 @@ export default function ChatUIClient({
     }
   };
 
-  // Close dropdown when clicking outside
+  // Close dropdown and emoji picker when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownOpen) {
-        const target = event.target as Element;
-        if (!target.closest(".dropdown-container")) {
-          setDropdownOpen(false);
-        }
+      const target = event.target as Element;
+
+      if (dropdownOpen && !target.closest(".dropdown-container")) {
+        setDropdownOpen(false);
+      }
+
+      if (emojiPickerOpen && !target.closest(".emoji-picker-container")) {
+        setEmojiPickerOpen(false);
       }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [dropdownOpen]);
+  }, [dropdownOpen, emojiPickerOpen]);
 
   // Memoize user objects to prevent unnecessary re-renders
   const activeUser = useMemo(() => {
@@ -516,7 +609,7 @@ export default function ChatUIClient({
   }, [user]);
 
   return (
-    <div className="mx-auto w-full max-w-3xl lg:max-w-5xl xl:max-w-7xl shadow-xl/20 rounded-xl relative">
+    <div className="mx-auto w-full max-w-3xl lg:max-w-5xl xl:max-w-[1800px] shadow-xl/20 rounded-xl relative px-4 lg:px-6 xl:px-8">
       {/* Loading overlay - only show when both sidebar and chat window are loading */}
       {shouldShowFullLoading && (
         <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center">
@@ -536,10 +629,12 @@ export default function ChatUIClient({
             <input
               type="text"
               placeholder="Search here..."
-              className="flex-1 bg-transparent text-[0.669rem] text-[#55585b] outline-none"
+              className="flex-1 bg-transparent text-[clamp(0.669rem,0.8rem,0.9rem)] text-[#55585b] outline-none"
             />
           </div>
-          <p className="text-[0.663rem] text-[#8D8D8D] mb-2">Recent Chats</p>
+          <p className="text-[clamp(0.663rem,0.8rem,0.9rem)] text-[#8D8D8D] mb-2">
+            Recent Chats
+          </p>
 
           <div className="overflow-y-auto">
             {isSidebarLoading ? (
@@ -549,29 +644,32 @@ export default function ChatUIClient({
                 variant="minimal"
               />
             ) : conversationsError ? (
-              <div className="text-center text-[0.663rem] text-red-500 py-4">
+              <div className="text-center text-[clamp(0.663rem,0.8rem,0.9rem)] text-red-500 py-4">
                 Error loading conversations: {conversationsError.message}
               </div>
             ) : sortedConversations.length === 0 ? (
-              <div className="text-center text-[0.663rem] text-[#757589] py-4">
+              <div className="text-center text-[clamp(0.663rem,0.8rem,0.9rem)] text-[#757589] py-4">
                 No conversations yet
               </div>
             ) : (
-              sortedConversations.map((conversation) => (
-                <ConversationItem
-                  key={conversation.id}
-                  conversation={conversation}
-                  currentUser={currentUser}
-                  sidebarData={sidebarData}
-                  selectedConversationId={selectedConversationId}
-                  onSelect={(id) => {
-                    setSelectedConversationId(id);
-                    selectConversation(id);
-                    updateUrlWithConversation(id);
-                    setSidebarOpen(false); // close on mobile
-                  }}
-                />
-              ))
+              sortedConversations.map(
+                (conversation) =>
+                  user && (
+                    <ConversationItem
+                      key={conversation.id}
+                      conversation={conversation}
+                      currentUser={convertAuthUserToChatUser(user)}
+                      sidebarData={sidebarData}
+                      selectedConversationId={selectedConversationId}
+                      onSelect={(id) => {
+                        setSelectedConversationId(id);
+                        selectConversation(id);
+                        updateUrlWithConversation(id);
+                        setSidebarOpen(false); // close on mobile
+                      }}
+                    />
+                  )
+              )
             )}
           </div>
         </div>
@@ -598,15 +696,17 @@ export default function ChatUIClient({
                 />
                 <span
                   className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${getStatusColor(
-                    false // TODO: Implement online status
+                    false
                   )}`}
                 />
               </div>
               <div className="ml-3">
-                <h3 className="text-[0.663rem] font-medium text-[#212529]">
+                <h3 className="text-[clamp(0.663rem,0.8rem,0.9rem)] font-medium text-[#212529]">
                   {`${activeUser.first_name} ${activeUser.last_name}`}
                 </h3>
-                <p className="text-[0.663rem] text-[#757589]">Offline</p>
+                <p className="text-[clamp(0.663rem,0.8rem,0.9rem)] text-[#757589]">
+                  Offline // ! is_online not implemented yet
+                </p>
               </div>
             </div>
 
@@ -663,11 +763,11 @@ export default function ChatUIClient({
                 variant="minimal"
               />
             ) : messagesError ? (
-              <div className="text-center text-[0.663rem] text-red-500 py-4">
+              <div className="text-center text-[clamp(0.663rem,0.8rem,0.9rem)] text-red-500 py-4">
                 Error loading messages: {messagesError.message}
               </div>
             ) : messages.length === 0 ? (
-              <div className="text-center text-[0.663rem] text-[#757589] py-4">
+              <div className="text-center text-[clamp(0.663rem,0.8rem,0.9rem)] text-[#757589] py-4">
                 No messages yet. Start the conversation!
               </div>
             ) : (
@@ -680,9 +780,6 @@ export default function ChatUIClient({
                     className="h-1 w-full"
                     style={{ minHeight: "1px" }}
                     onClick={() => {
-                      console.log(
-                        "Sentinel clicked - manually triggering loadMore"
-                      );
                       loadMore();
                     }}
                   >
@@ -725,7 +822,7 @@ export default function ChatUIClient({
                         }`}
                       >
                         <p
-                          className={`text-[0.663rem] mt-1 pb-3 flex items-center justify-between gap-2 ${
+                          className={`text-[clamp(0.663rem,0.8rem,0.9rem)] mt-1 pb-3 flex items-center justify-between gap-2 ${
                             isSent ? "text-white" : "text-[#757589]"
                           }`}
                         >
@@ -733,7 +830,19 @@ export default function ChatUIClient({
                           <span>{formatTimestamp(msg.created_at, "chat")}</span>
                         </p>
 
-                        <p className="text-[0.663rem]">{msg.content}</p>
+                        {msg.file_url && msg.message_type !== "text" ? (
+                          <FileMessage
+                            fileUrl={msg.file_url}
+                            fileName={msg.content}
+                            fileSize={0}
+                            mimeType={msg.message_type}
+                            isSent={isSent}
+                          />
+                        ) : (
+                          <p className="text-[clamp(0.663rem,0.8rem,0.9rem)]">
+                            {msg.content}
+                          </p>
+                        )}
                       </div>
                       {isSent && (
                         <img
@@ -755,29 +864,75 @@ export default function ChatUIClient({
           </div>
           <hr className="text-gray-200" />
           {/* Input */}
-          <div className="p-3 flex items-center gap-2 bg-[#f5f6fa]">
-            {/* plus icon */}
-            <img
-              src="/icons/plus.png"
-              alt="plus"
-              className="ml-2 w-4 h-4 cursor-pointer"
-            />
+          <div className="p-3 flex items-center gap-2 bg-[#f5f6fa] relative">
+            {/* Disable overlay when sending */}
+            {isSending && (
+              <div className="absolute inset-0 bg-gray-300/30 backdrop-blur-[1px] z-10 rounded-lg" />
+            )}
+            {/* File attachment button */}
+            <button
+              onClick={() => setFileModalOpen(true)}
+              disabled={isSending}
+              className={`p-2 bg-[#f5f6f9] rounded hover:bg-gray-200 ${
+                isSending ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+              }`}
+              title="Attach files"
+            >
+              <img src="/icons/plus.png" alt="attach" className="w-4 h-4" />
+            </button>
 
             {/* message input */}
             <div className="flex-1 flex items-center px-2">
               <input
                 type="text"
                 placeholder="Type message here..."
-                className="flex-1 p-2 outline-none text-[0.663rem] text-[#757589]"
+                disabled={isSending}
+                className={`flex-1 p-2 outline-none text-[clamp(0.663rem,0.8rem,0.9rem)] text-[#757589] ${
+                  isSending ? "opacity-50 cursor-not-allowed" : ""
+                }`}
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                onKeyDown={(e) =>
+                  e.key === "Enter" && !isSending && sendMessage()
+                }
+                onFocus={() => setEmojiPickerOpen(false)}
               />
-              <img
-                src="/icons/emoji.png"
-                alt="emoji"
-                className="w-4 h-4 cursor-pointer"
-              />
+              <div className="relative emoji-picker-container">
+                <img
+                  src="/icons/emoji.png"
+                  alt="emoji"
+                  className={`w-4 h-4 ${
+                    isSending
+                      ? "cursor-not-allowed opacity-50"
+                      : "cursor-pointer"
+                  }`}
+                  onClick={() =>
+                    !isSending && setEmojiPickerOpen(!emojiPickerOpen)
+                  }
+                />
+                {emojiPickerOpen && (
+                  <>
+                    {/* Dark overlay */}
+                    <div
+                      className="fixed inset-0 bg-black/20 z-40"
+                      onClick={() => setEmojiPickerOpen(false)}
+                    />
+                    {/* Emoji picker positioned to the left of the emoji icon */}
+                    <div className="absolute bottom-8 -left-[300px] z-50 shadow-lg rounded-lg overflow-hidden">
+                      <EmojiPicker
+                        onEmojiClick={handleEmojiClick}
+                        width={300}
+                        height={400}
+                        previewConfig={{
+                          showPreview: false,
+                        }}
+                        skinTonesDisabled={true}
+                        searchDisabled={false}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
 
             {/* send icon */}
@@ -828,6 +983,14 @@ export default function ChatUIClient({
             : "Unknown User"
         }
         isLoading={isReporting}
+      />
+
+      {/* File Attachment Modal */}
+      <FileAttachmentModal
+        open={fileModalOpen}
+        onClose={() => setFileModalOpen(false)}
+        onFilesSelected={handleFileSelect}
+        conversationId={selectedConversationId || ""}
       />
     </div>
   );

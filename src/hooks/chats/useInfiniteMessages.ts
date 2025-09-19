@@ -8,6 +8,8 @@ import {
   type ChatMessage,
 } from "@/services/chat/realtimeService";
 import { useAuthStore } from "@/stores/useAuthStore";
+import type { MessageWithUser } from "@/types/chat";
+import { convertToChatMessage } from "@/utils/chatMessageUtils";
 
 export interface UseInfiniteMessagesOptions {
   conversationId: string | null;
@@ -23,7 +25,11 @@ export interface UseInfiniteMessagesReturn {
   error: Error | null;
   loadMore: () => void;
   loadMoreRef: (node: HTMLDivElement | null) => void;
-  sendMessage: (content: string) => Promise<void>;
+  sendMessage: (
+    content: string,
+    messageType?: string,
+    fileUrl?: string
+  ) => Promise<void>;
   isSending: boolean;
   sendError: Error | null;
 }
@@ -33,7 +39,8 @@ export function useInfiniteMessages({
   pageSize = 25,
   onMessage,
 }: UseInfiniteMessagesOptions): UseInfiniteMessagesReturn {
-  const { user, userMetadata } = useAuthStore();
+  const { user } = useAuthStore();
+  const userMetadata = user?.user_metadata;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -54,22 +61,95 @@ export function useInfiniteMessages({
   const lastLoadTimeRef = useRef<number>(0);
   const scrollDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Convert database message to ChatMessage format
-  const convertToChatMessage = useCallback((message: any): ChatMessage => {
-    return {
-      id: message.id,
-      content: message.content,
-      user: {
-        id: message.sender.id,
-        name: `${message.sender.first_name} ${message.sender.last_name}`,
-        avatar: message.sender.profile_image_url || undefined,
-      },
-      createdAt: message.created_at,
-      conversationId: message.conversation_id,
-    };
+  // Request deduplication to prevent duplicate API calls
+  const pendingRequests = useRef<Set<string>>(new Set());
+  const requestCache = useRef<
+    Map<string, { data: unknown; timestamp: number }>
+  >(new Map());
+  const CACHE_DURATION = 5000; // 5 seconds cache
+
+  // Call monitoring to track backend usage
+  const callCount = useRef(0);
+  const callHistory = useRef<
+    Array<{ type: string; timestamp: number; conversationId: string }>
+  >([]);
+
+  const logCall = useCallback((type: string, conversationId: string) => {
+    callCount.current += 1;
+    callHistory.current.push({
+      type,
+      timestamp: Date.now(),
+      conversationId,
+    });
+
+    // Keep only last 50 calls for monitoring
+    if (callHistory.current.length > 50) {
+      callHistory.current = callHistory.current.slice(-50);
+    }
+
+    // Warn if too many calls in short time
+    const recentCalls = callHistory.current.filter(
+      (call) =>
+        Date.now() - call.timestamp < 10000 &&
+        call.conversationId === conversationId
+    );
+    if (recentCalls.length > 10) {
+      // High call frequency detected - could implement rate limiting here
+    }
   }, []);
 
-  // Load initial messages
+  // Deduplicated request function to prevent duplicate API calls
+  const makeDeduplicatedRequest = useCallback(
+    async <T>(key: string, requestFn: () => Promise<T>): Promise<T> => {
+      // Check cache first
+      const cached = requestCache.current.get(key);
+      if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+        return cached.data as T;
+      }
+
+      // Check if request is already pending
+      if (pendingRequests.current.has(key)) {
+        // Wait for pending request to complete
+        return new Promise((resolve) => {
+          const checkPending = () => {
+            const cached = requestCache.current.get(key);
+            if (cached) {
+              resolve(cached.data as T);
+            } else {
+              setTimeout(checkPending, 100);
+            }
+          };
+          checkPending();
+        });
+      }
+
+      // Make new request
+      pendingRequests.current.add(key);
+
+      try {
+        const result = await requestFn();
+        requestCache.current.set(key, { data: result, timestamp: Date.now() });
+
+        const conversationId = key.split("-")[1];
+        logCall("API_REQUEST", conversationId);
+
+        return result;
+      } finally {
+        pendingRequests.current.delete(key);
+      }
+    },
+    []
+  );
+
+  // Use shared message conversion utility
+  const convertMessage = useCallback(
+    (message: MessageWithUser): ChatMessage => {
+      return convertToChatMessage(message, message.sender);
+    },
+    []
+  );
+
+  // Load initial messages with deduplication
   const loadInitialMessages = useCallback(async () => {
     if (!conversationId || isLoadingRef.current) return;
 
@@ -79,15 +159,13 @@ export function useInfiniteMessages({
     currentOffset.current = 0;
 
     try {
-      // Load latest messages first (most recent at the bottom)
-      const dbMessages = await ChatService.fetchMessagesWithUsers(
-        conversationId,
-        pageSize,
-        0
+      // Use deduplicated request to prevent duplicate API calls
+      const requestKey = `messages-${conversationId}-${pageSize}-0`;
+      const dbMessages = await makeDeduplicatedRequest(requestKey, () =>
+        ChatService.fetchMessagesWithUsers(conversationId, pageSize, 0)
       );
 
-      const chatMessages = dbMessages.map(convertToChatMessage);
-
+      const chatMessages = dbMessages.map(convertMessage);
       chatMessages.reverse();
 
       setMessages(chatMessages);
@@ -103,7 +181,13 @@ export function useInfiniteMessages({
         isLoadingRef.current = false;
       }, 100);
     }
-  }, [conversationId, pageSize, convertToChatMessage, onMessage]);
+  }, [
+    conversationId,
+    pageSize,
+    convertMessage,
+    onMessage,
+    makeDeduplicatedRequest,
+  ]);
 
   // Load more messages (older ones)
   const loadMoreMessages = useCallback(async () => {
@@ -128,10 +212,14 @@ export function useInfiniteMessages({
     const isAtTop = currentScrollTop === 0;
 
     try {
-      const dbMessages = await ChatService.fetchMessagesWithUsers(
-        conversationId,
-        pageSize,
-        currentOffset.current
+      // Use deduplicated request to prevent duplicate API calls
+      const requestKey = `messages-${conversationId}-${pageSize}-${currentOffset.current}`;
+      const dbMessages = await makeDeduplicatedRequest(requestKey, () =>
+        ChatService.fetchMessagesWithUsers(
+          conversationId,
+          pageSize,
+          currentOffset.current
+        )
       );
 
       if (dbMessages.length === 0) {
@@ -139,7 +227,7 @@ export function useInfiniteMessages({
         return;
       }
 
-      const chatMessages = dbMessages.map(convertToChatMessage);
+      const chatMessages = dbMessages.map(convertMessage);
 
       chatMessages.reverse();
 
@@ -178,19 +266,15 @@ export function useInfiniteMessages({
       setIsLoadingMore(false);
       isLoadingRef.current = false;
     }
-  }, [conversationId, pageSize, hasMore, convertToChatMessage]);
+  }, [conversationId, pageSize, hasMore, convertMessage]);
 
   // Handle realtime message events
   const handleRealtimeMessage = useCallback((message: ChatMessage) => {
-    console.log("🔥 Realtime message received:", message);
     setMessages((prevMessages) => {
       const messageExists = prevMessages.some((msg) => msg.id === message.id);
       if (!messageExists) {
-        console.log("✅ Adding new message to state");
         const newMessages = [...prevMessages, message];
         return newMessages;
-      } else {
-        console.log("⚠️ Message already exists, skipping");
       }
       return prevMessages;
     });
@@ -203,7 +287,6 @@ export function useInfiniteMessages({
 
     // Prevent loading if already loading or loaded recently (within 1 second)
     if (isLoadingRef.current || timeSinceLastLoad < 1000) {
-      console.log("Load more blocked - already loading or too recent");
       return;
     }
 
@@ -213,13 +296,38 @@ export function useInfiniteMessages({
 
   // Send message function
   const sendMessage = useCallback(
-    async (content: string) => {
+    async (content: string, messageType: string = "text", fileUrl?: string) => {
       if (!conversationId || !user?.id || !content.trim()) {
         return;
       }
-
       setIsSending(true);
       setSendError(null);
+
+      // Create optimistic message immediately
+      const optimisticMessage: ChatMessage = {
+        id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        content: content.trim(),
+        user: {
+          id: user.id,
+          name: `${userMetadata?.first_name || "Unknown"} ${
+            userMetadata?.last_name || "User"
+          }`,
+          avatar:
+            (user as { profile_image_url?: string }).profile_image_url ||
+            undefined,
+        },
+        createdAt: new Date().toISOString(),
+        conversationId: conversationId,
+        messageType: messageType,
+        fileUrl: fileUrl || null,
+      };
+
+      // Add optimistic message immediately
+      setMessages((prevMessages) => {
+        const newMessages = [...prevMessages, optimisticMessage];
+        onMessage?.(newMessages);
+        return newMessages;
+      });
 
       try {
         // Check if the other user is blocked before sending
@@ -234,16 +342,24 @@ export function useInfiniteMessages({
           );
           if (isBlocked) {
             setSendError(new Error("Cannot send message to blocked user"));
+            // Remove optimistic message on error
+            setMessages((prevMessages) =>
+              prevMessages.filter((msg) => msg.id !== optimisticMessage.id)
+            );
             return;
           }
         }
 
-        // First save to database
-        const newMessage = await ChatService.sendMessage(
+        // Use server action that includes notification creation
+        const { sendMessage: sendMessageAction } = await import(
+          "@/actions/chat/send-message"
+        );
+        const newMessage = await sendMessageAction(
           conversationId,
           user.id,
           content.trim(),
-          "text"
+          messageType,
+          fileUrl
         );
 
         // Convert to ChatMessage format
@@ -251,22 +367,23 @@ export function useInfiniteMessages({
           id: user.id,
           first_name: userMetadata?.first_name || "Unknown",
           last_name: userMetadata?.last_name || "User",
-          profile_image_url: (user as any).profile_image_url || null,
+          profile_image_url:
+            (user as { profile_image_url?: string }).profile_image_url || null,
         });
 
-        console.log("💾 Adding message to local state:", chatMessage);
+        // Replace optimistic message with real message
         setMessages((prevMessages) => {
-          const newMessages = [...prevMessages, chatMessage];
+          const newMessages = prevMessages.map((msg) =>
+            msg.id === optimisticMessage.id ? chatMessage : msg
+          );
           onMessage?.(newMessages);
           return newMessages;
         });
 
         try {
-          console.log("📡 Broadcasting message via realtime:", chatMessage);
           await RealtimeService.sendMessage(conversationId, chatMessage);
-          console.log("✅ Message broadcast successful");
         } catch (broadcastError) {
-          console.error("❌ Message broadcast failed:", broadcastError);
+          // Silent error handling for broadcast failures
         }
 
         try {
@@ -276,6 +393,10 @@ export function useInfiniteMessages({
         }
       } catch (err) {
         setSendError(err as Error);
+        // Remove optimistic message on error
+        setMessages((prevMessages) =>
+          prevMessages.filter((msg) => msg.id !== optimisticMessage.id)
+        );
       } finally {
         setIsSending(false);
       }
@@ -286,12 +407,6 @@ export function useInfiniteMessages({
   // Intersection Observer for infinite loading
   const loadMoreRefCallback = useCallback(
     (node: HTMLDivElement | null) => {
-      console.log("loadMoreRefCallback called:", {
-        node,
-        hasMore,
-        isLoading: isLoadingRef.current,
-      });
-
       // Store the ref
       loadMoreRef.current = node;
       sentinelElementRef.current = node;
@@ -309,23 +424,12 @@ export function useInfiniteMessages({
         ) as HTMLElement;
         messagesContainerRef.current = messagesContainer;
 
-        console.log("Setting up observer with container:", messagesContainer);
-
         if (messagesContainer) {
           observerRef.current = new IntersectionObserver(
             (entries) => {
               const entry = entries[0];
-              console.log("Intersection Observer callback:", {
-                isIntersecting: entry.isIntersecting,
-                hasMore,
-                isLoading: isLoadingRef.current,
-                intersectionRatio: entry.intersectionRatio,
-              });
 
               if (entry.isIntersecting && hasMore && !isLoadingRef.current) {
-                console.log(
-                  "Intersection Observer triggered - loading more messages"
-                );
                 debouncedLoadMore();
               }
             },
@@ -336,37 +440,23 @@ export function useInfiniteMessages({
             }
           );
           observerRef.current.observe(node);
-          console.log("Observer set up and observing node");
-        } else {
-          console.log("No messages container found");
         }
       }
     },
     [hasMore, loadMoreMessages]
   );
 
-  // Function to set up observer
+  // Function to set up observer (stabilized dependencies to prevent loops)
   const setupObserver = useCallback(() => {
     const element = loadMoreRef.current || sentinelElementRef.current;
     if (element && hasMore) {
-      console.log("Setting up observer via setupObserver function");
       loadMoreRefCallback(element);
     }
-  }, [hasMore, loadMoreRefCallback]);
+  }, [hasMore]);
 
-  // Set up observer when the ref is available
+  // Set up observer when the ref is available (removed retry loop)
   useEffect(() => {
     setupObserver();
-
-    // Retry after a short delay if observer wasn't set up
-    const retryTimeout = setTimeout(() => {
-      if (!observerRef.current && hasMore) {
-        console.log("Retrying observer setup after delay");
-        setupObserver();
-      }
-    }, 500);
-
-    return () => clearTimeout(retryTimeout);
   }, [setupObserver, hasMore]);
 
   // Load initial messages when conversation changes
@@ -380,18 +470,12 @@ export function useInfiniteMessages({
     }
   }, [conversationId, loadInitialMessages]);
 
-  // Re-observe when hasMore changes or when messages change
+  // Re-observe when hasMore changes (removed loadMoreRefCallback dependency to prevent loop)
   useEffect(() => {
     if (loadMoreRef.current && hasMore) {
-      console.log("Setting up observer via useEffect");
       loadMoreRefCallback(loadMoreRef.current);
     }
-  }, [hasMore, loadMoreRefCallback]);
-
-  // Debug: Log when loadMoreRef changes
-  useEffect(() => {
-    console.log("loadMoreRef changed:", loadMoreRef.current);
-  }, [loadMoreRef.current]);
+  }, [hasMore]);
 
   // Fallback: Add scroll event listener as backup (only if intersection observer fails)
   useEffect(() => {
@@ -401,11 +485,8 @@ export function useInfiniteMessages({
     // Only use scroll fallback if intersection observer is not working
     const hasWorkingObserver = observerRef.current !== null;
     if (hasWorkingObserver) {
-      console.log("Intersection observer is working, skipping scroll fallback");
       return;
     }
-
-    console.log("Setting up scroll fallback");
 
     const handleScroll = () => {
       // Clear existing timeout
@@ -419,7 +500,6 @@ export function useInfiniteMessages({
         const sentinel = loadMoreRef.current || sentinelElementRef.current;
 
         if (sentinel && scrollTop <= 50 && hasMore && !isLoadingRef.current) {
-          console.log("Scroll fallback triggered - loading more messages");
           debouncedLoadMore();
         }
       }, 100); // 100ms debounce
@@ -434,7 +514,7 @@ export function useInfiniteMessages({
     };
   }, [hasMore, debouncedLoadMore]);
 
-  // Set up realtime subscription with debouncing
+  // Simplified realtime subscription to prevent loops
   useEffect(() => {
     if (!conversationId) {
       // Clean up previous subscription if conversationId is null
@@ -448,64 +528,41 @@ export function useInfiniteMessages({
       return;
     }
 
-    // Clear any existing timeout
-    if (subscriptionTimeoutRef.current) {
-      clearTimeout(subscriptionTimeoutRef.current);
+    // Only subscribe if this is a new conversation
+    if (conversationId === currentConversationIdRef.current) {
+      return;
     }
 
-    // Debounce subscription changes to prevent rapid switching
-    subscriptionTimeoutRef.current = setTimeout(() => {
-      // Only subscribe if this is still the current conversation
-      if (conversationId === currentConversationIdRef.current) {
-        return;
+    // Clean up previous subscription
+    if (currentConversationIdRef.current && subscriptionRef.current) {
+      RealtimeService.unsubscribeFromMessages(currentConversationIdRef.current);
+      subscriptionRef.current = false;
+    }
+
+    // Set new conversation ID and subscribe
+    currentConversationIdRef.current = conversationId;
+    subscriptionRef.current = true;
+
+    RealtimeService.subscribeToMessages(
+      conversationId,
+      handleRealtimeMessage,
+      (error) => {
+        setError(error);
       }
-
-      // Clean up previous subscription
-      if (currentConversationIdRef.current && subscriptionRef.current) {
-        RealtimeService.unsubscribeFromMessages(
-          currentConversationIdRef.current
-        );
-        subscriptionRef.current = false;
-      }
-
-      // Set new conversation ID
-      currentConversationIdRef.current = conversationId;
-      subscriptionRef.current = true;
-
-      console.log(
-        "🚀 Setting up realtime subscription for conversation:",
-        conversationId
-      );
-      RealtimeService.subscribeToMessages(
-        conversationId,
-        handleRealtimeMessage,
-        (error) => {
-          console.error("❌ Realtime subscription error:", error);
-          // Only set error if this is still the current conversation
-          if (conversationId === currentConversationIdRef.current) {
-            setError(error);
-          }
-        }
-      )
-        .then(() => {
-          console.log("✅ Realtime subscription established");
-        })
-        .catch((err) => {
-          console.error("❌ Failed to establish realtime subscription:", err);
-        });
-    }, 100); // 100ms debounce
+    )
+      .then(() => {})
+      .catch((err) => {
+        setError(err);
+      });
 
     return () => {
-      if (subscriptionTimeoutRef.current) {
-        clearTimeout(subscriptionTimeoutRef.current);
-      }
       if (conversationId === currentConversationIdRef.current) {
         RealtimeService.unsubscribeFromMessages(conversationId);
         subscriptionRef.current = false;
         currentConversationIdRef.current = null;
       }
     };
-  }, [conversationId, handleRealtimeMessage]);
+  }, [conversationId]);
 
   // Cleanup observer and timeouts on unmount
   useEffect(() => {

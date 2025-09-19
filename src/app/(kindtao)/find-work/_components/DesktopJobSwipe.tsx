@@ -5,7 +5,16 @@ import { useRouter } from "next/navigation";
 import { JobPost } from "@/types/jobPosts";
 import { JobService } from "@/services/JobService";
 import { useAuth } from "@/hooks/useAuth";
-import { FaChevronLeft, FaChevronRight, FaHeart, FaTimes, FaMapMarkerAlt, FaClock, FaUser, FaDollarSign } from "react-icons/fa";
+import {
+  FaChevronLeft,
+  FaChevronRight,
+  FaHeart,
+  FaTimes,
+  FaMapMarkerAlt,
+  FaClock,
+  FaUser,
+  FaDollarSign,
+} from "react-icons/fa";
 import { SlLocationPin } from "react-icons/sl";
 import Image from "next/image";
 import { salaryFormatter, salaryRateFormatter } from "@/utils/salaryFormatter";
@@ -44,7 +53,9 @@ export default function DesktopJobSwipe({
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
   const [jobs, setJobs] = useState<JobPost[]>(initialJobs);
-  const [matchingScores, setMatchingScores] = useState<MatchingScore[]>(initialMatchingScores);
+  const [matchingScores, setMatchingScores] = useState<MatchingScore[]>(
+    initialMatchingScores
+  );
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -56,14 +67,15 @@ export default function DesktopJobSwipe({
   // Load more jobs when we're running low
   useEffect(() => {
     // Only load more if we're near the end, have more jobs available, not currently loading, and not on the very last job
-    const shouldLoadMore = currentIndex >= jobs.length - 3 && 
-                          hasMore && 
-                          !loading && 
-                          !loadingRef.current && 
-                          currentIndex < jobs.length - 1 &&
-                          jobs.length > 0 &&
-                          currentIndex > lastLoadedIndex.current;
-    
+    const shouldLoadMore =
+      currentIndex >= jobs.length - 3 &&
+      hasMore &&
+      !loading &&
+      !loadingRef.current &&
+      currentIndex < jobs.length - 1 &&
+      jobs.length > 0 &&
+      currentIndex > lastLoadedIndex.current;
+
     if (shouldLoadMore) {
       lastLoadedIndex.current = currentIndex;
       loadMore();
@@ -80,7 +92,7 @@ export default function DesktopJobSwipe({
   // Load more jobs function
   const loadMore = async () => {
     if (loading || !hasMore || !user || loadingRef.current) return;
-    
+
     loadingRef.current = true;
     setLoading(true);
     try {
@@ -91,7 +103,7 @@ export default function DesktopJobSwipe({
       );
       if (more.length > 0) {
         // Convert matched jobs to regular job format
-        const regularJobs = more.map(job => ({
+        const regularJobs = more.map((job) => ({
           id: job.id,
           family_id: job.family_id,
           title: job.title,
@@ -104,9 +116,9 @@ export default function DesktopJobSwipe({
           created_at: job.created_at,
           updated_at: job.updated_at,
         }));
-        
+
         // Convert matching scores to plain objects
-        const newMatchingScores = more.map(job => ({
+        const newMatchingScores = more.map((job) => ({
           jobId: job.matchingScore.jobId,
           score: job.matchingScore.score,
           reasons: job.matchingScore.reasons,
@@ -119,15 +131,15 @@ export default function DesktopJobSwipe({
             availabilityMatch: job.matchingScore.breakdown.availabilityMatch,
             ratingBonus: job.matchingScore.breakdown.ratingBonus,
             recencyBonus: job.matchingScore.breakdown.recencyBonus,
-          }
+          },
         }));
-        
+
         setJobs((prev) => [...prev, ...regularJobs]);
         setMatchingScores((prev) => [...prev, ...newMatchingScores]);
-        
+
         // Reset the last loaded index to allow future loads
         lastLoadedIndex.current = jobs.length + more.length - 1;
-        
+
         if (more.length < pageSize) {
           setHasMore(false);
         }
@@ -156,41 +168,47 @@ export default function DesktopJobSwipe({
   }, [currentIndex]);
 
   // Action functions
-  const handleApply = useCallback(async (job: JobPost) => {
-    if (isApplying || isSkipping) return;
-    
-    setIsApplying(true);
-    try {
-      onApply?.(job);
-      // Navigate to apply page
-      router.push(`/apply?jobId=${job.id}`);
-      // Move to next job after a short delay
-      setTimeout(() => {
-        goToNext();
-        setIsApplying(false);
-      }, 1000);
-    } catch (error) {
-      console.error("Failed to apply:", error);
-      setIsApplying(false);
-    }
-  }, [isApplying, isSkipping, onApply, router, goToNext]);
+  const handleApply = useCallback(
+    async (job: JobPost) => {
+      if (isApplying || isSkipping) return;
 
-  const handleSkip = useCallback(async (job: JobPost) => {
-    if (isApplying || isSkipping) return;
-    
-    setIsSkipping(true);
-    try {
-      onSkip?.(job);
-      // Move to next job after a short delay
-      setTimeout(() => {
-        goToNext();
+      setIsApplying(true);
+      try {
+        onApply?.(job);
+        // Navigate to apply page
+        router.push(`/apply?jobId=${job.id}`);
+        // Move to next job after a short delay
+        setTimeout(() => {
+          goToNext();
+          setIsApplying(false);
+        }, 1000);
+      } catch (error) {
+        console.error("Failed to apply:", error);
+        setIsApplying(false);
+      }
+    },
+    [isApplying, isSkipping, onApply, router, goToNext]
+  );
+
+  const handleSkip = useCallback(
+    async (job: JobPost) => {
+      if (isApplying || isSkipping) return;
+
+      setIsSkipping(true);
+      try {
+        onSkip?.(job);
+        // Move to next job after a short delay
+        setTimeout(() => {
+          goToNext();
+          setIsSkipping(false);
+        }, 500);
+      } catch (error) {
+        console.error("Failed to skip:", error);
         setIsSkipping(false);
-      }, 500);
-    } catch (error) {
-      console.error("Failed to skip:", error);
-      setIsSkipping(false);
-    }
-  }, [isApplying, isSkipping, onSkip, goToNext]);
+      }
+    },
+    [isApplying, isSkipping, onSkip, goToNext]
+  );
 
   // Keyboard navigation
   useEffect(() => {
@@ -270,7 +288,9 @@ export default function DesktopJobSwipe({
   }
 
   const currentJob = jobs[currentIndex];
-  const currentMatchingScore = matchingScores.find(score => score.jobId === currentJob?.id);
+  const currentMatchingScore = matchingScores.find(
+    (score) => score.jobId === currentJob?.id
+  );
 
   return (
     <div className="w-full">
@@ -346,46 +366,51 @@ export default function DesktopJobSwipe({
               <div className="px-6 py-4 bg-blue-50 border-b border-blue-100">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      currentMatchingScore.score >= 80 
-                        ? 'text-green-600 bg-green-100' 
-                        : currentMatchingScore.score >= 60 
-                        ? 'text-yellow-600 bg-yellow-100'
-                        : currentMatchingScore.score >= 40
-                        ? 'text-orange-600 bg-orange-100'
-                        : 'text-red-600 bg-red-100'
-                    }`}>
+                    <div
+                      className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        currentMatchingScore.score >= 80
+                          ? "text-green-600 bg-green-100"
+                          : currentMatchingScore.score >= 60
+                          ? "text-yellow-600 bg-yellow-100"
+                          : currentMatchingScore.score >= 40
+                          ? "text-orange-600 bg-orange-100"
+                          : "text-red-600 bg-red-100"
+                      }`}
+                    >
                       {currentMatchingScore.score}% Match
                     </div>
                     <span className="text-sm text-gray-600">
-                      {currentMatchingScore.score >= 80 
-                        ? 'Excellent Match' 
-                        : currentMatchingScore.score >= 60 
-                        ? 'Good Match'
+                      {currentMatchingScore.score >= 80
+                        ? "Excellent Match"
+                        : currentMatchingScore.score >= 60
+                        ? "Good Match"
                         : currentMatchingScore.score >= 40
-                        ? 'Fair Match'
-                        : 'Poor Match'
-                      }
+                        ? "Fair Match"
+                        : "Poor Match"}
                     </span>
                   </div>
                   <div className="text-sm text-gray-500">
                     Job {currentIndex + 1} of {jobs.length}
                   </div>
                 </div>
-                
+
                 {/* Matching Reasons */}
                 {currentMatchingScore.reasons.length > 0 && (
                   <div className="mt-3">
-                    <p className="text-sm font-medium text-gray-700 mb-2">Why this job matches you:</p>
+                    <p className="text-sm font-medium text-gray-700 mb-2">
+                      Why this job matches you:
+                    </p>
                     <div className="flex flex-wrap gap-2">
-                      {currentMatchingScore.reasons.slice(0, 3).map((reason, index) => (
-                        <span 
-                          key={index}
-                          className="px-2 py-1 bg-white text-gray-700 text-xs rounded-full border border-gray-200"
-                        >
-                          {reason}
-                        </span>
-                      ))}
+                      {currentMatchingScore.reasons
+                        .slice(0, 3)
+                        .map((reason, index) => (
+                          <span
+                            key={index}
+                            className="px-2 py-1 bg-white text-gray-700 text-xs rounded-full border border-gray-200"
+                          >
+                            {reason}
+                          </span>
+                        ))}
                       {currentMatchingScore.reasons.length > 3 && (
                         <span className="px-2 py-1 bg-gray-100 text-gray-500 text-xs rounded-full">
                           +{currentMatchingScore.reasons.length - 3} more
@@ -402,7 +427,9 @@ export default function DesktopJobSwipe({
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Description */}
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Job Description</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                    Job Description
+                  </h3>
                   <p className="text-gray-700 leading-relaxed">
                     {currentJob.description || "No description provided."}
                   </p>
@@ -410,7 +437,9 @@ export default function DesktopJobSwipe({
 
                 {/* Job Requirements */}
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Requirements</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                    Requirements
+                  </h3>
                   <ul className="space-y-2 text-gray-700">
                     <li className="flex items-start">
                       <span className="w-2 h-2 bg-[#CC0000] rounded-full mt-2 mr-3 flex-shrink-0"></span>
@@ -436,9 +465,12 @@ export default function DesktopJobSwipe({
               <div className="mt-6 p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="font-semibold text-gray-900">Salary Range</h4>
+                    <h4 className="font-semibold text-gray-900">
+                      Salary Range
+                    </h4>
                     <p className="text-gray-600">
-                      ₱{salaryFormatter(currentJob.salary_min)} - ₱{salaryFormatter(currentJob.salary_max)}
+                      ₱{salaryFormatter(currentJob.salary_min)} - ₱
+                      {salaryFormatter(currentJob.salary_max)}
                     </p>
                   </div>
                   <div className="text-right">
@@ -472,10 +504,14 @@ export default function DesktopJobSwipe({
                   >
                     <FaChevronLeft className="w-5 h-5" />
                   </button>
-                  
+
                   <button
                     onClick={goToNext}
-                    disabled={currentIndex >= jobs.length - 1 || isApplying || isSkipping}
+                    disabled={
+                      currentIndex >= jobs.length - 1 ||
+                      isApplying ||
+                      isSkipping
+                    }
                     className="flex items-center justify-center w-12 h-12 bg-white text-gray-600 rounded-full border border-gray-300 hover:bg-gray-50 transition-colors disabled:opacity-50"
                   >
                     <FaChevronRight className="w-5 h-5" />
@@ -493,7 +529,9 @@ export default function DesktopJobSwipe({
 
               {/* Keyboard Shortcuts Help */}
               <div className="mt-4 text-center text-xs text-gray-500">
-                <p>Use arrow keys to navigate • Enter to apply • Escape to skip</p>
+                <p>
+                  Use arrow keys to navigate • Enter to apply • Escape to skip
+                </p>
               </div>
             </div>
           </div>

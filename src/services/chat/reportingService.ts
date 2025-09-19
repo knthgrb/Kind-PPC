@@ -67,75 +67,131 @@ export class ReportingService {
         reportId: report.id,
       };
     } catch (error) {
-      console.error("Error reporting user:", error);
       throw error;
     }
   }
 
   /**
-   * Get reports made by a specific user
+   * Get reports made by a specific user using server actions
    */
   static async getReportsByUser(userId: string) {
     const supabase = createClient();
 
     const { data, error } = await supabase
       .from("reports")
-      .select(
-        `
-        *,
-        reported_user:users!reports_reported_user_id_fkey(
-          id,
-          first_name,
-          last_name,
-          profile_image_url
-        )
-      `
-      )
+      .select("*")
       .eq("reporter_id", userId)
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Error getting user reports:", error);
       return [];
     }
 
-    return data || [];
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    // Get user details for reported users using server action
+    const reportedUserIds = [
+      ...new Set(data.map((report) => report.reported_user_id)),
+    ];
+
+    const { getMultipleUsers } = await import(
+      "@/actions/user/get-multiple-users"
+    );
+    const { data: userResults, error: userError } = await getMultipleUsers(
+      reportedUserIds
+    );
+
+    if (userError) {
+      return data.map((report) => ({
+        ...report,
+        reported_user: null,
+      }));
+    }
+
+    // Create user map
+    const userMap = new Map();
+    userResults.forEach(({ id, user }) => {
+      if (user) {
+        userMap.set(id, {
+          id: user.id,
+          first_name: user.user_metadata?.first_name || "",
+          last_name: user.user_metadata?.last_name || "",
+          profile_image_url: user.user_metadata?.profile_image_url || null,
+        });
+      }
+    });
+
+    // Combine reports with user data
+    return data.map((report) => ({
+      ...report,
+      reported_user: userMap.get(report.reported_user_id) || null,
+    }));
   }
 
   /**
-   * Get all pending reports (admin function)
+   * Get all pending reports (admin function) using server actions
    */
   static async getPendingReports() {
     const supabase = createClient();
 
     const { data, error } = await supabase
       .from("reports")
-      .select(
-        `
-        *,
-        reporter:users!reports_reporter_id_fkey(
-          id,
-          first_name,
-          last_name,
-          profile_image_url
-        ),
-        reported_user:users!reports_reported_user_id_fkey(
-          id,
-          first_name,
-          last_name,
-          profile_image_url
-        )
-      `
-      )
+      .select("*")
       .eq("status", "pending")
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Error getting pending reports:", error);
       return [];
     }
 
-    return data || [];
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    // Get user details for both reporters and reported users using server action
+    const allUserIds = new Set<string>();
+
+    data.forEach((report) => {
+      allUserIds.add(report.reporter_id);
+      allUserIds.add(report.reported_user_id);
+    });
+
+    const { getMultipleUsers } = await import(
+      "@/actions/user/get-multiple-users"
+    );
+    const { data: userResults, error: userError } = await getMultipleUsers(
+      Array.from(allUserIds)
+    );
+
+    if (userError) {
+      return data.map((report) => ({
+        ...report,
+        reporter: null,
+        reported_user: null,
+      }));
+    }
+
+    // Create user map
+    const userMap = new Map();
+    userResults.forEach(({ id, user }) => {
+      if (user) {
+        userMap.set(id, {
+          id: user.id,
+          first_name: user.user_metadata?.first_name || "",
+          last_name: user.user_metadata?.last_name || "",
+          profile_image_url: user.user_metadata?.profile_image_url || null,
+        });
+      }
+    });
+
+    // Combine reports with user data
+    return data.map((report) => ({
+      ...report,
+      reporter: userMap.get(report.reporter_id) || null,
+      reported_user: userMap.get(report.reported_user_id) || null,
+    }));
   }
 
   /**
@@ -192,7 +248,6 @@ export class ReportingService {
         message: `Report ${resolution} successfully`,
       };
     } catch (error) {
-      console.error("Error resolving report:", error);
       throw error;
     }
   }

@@ -13,7 +13,8 @@ export default function ChatsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { userMetadata, loading } = useAuthStore();
+  const { user, loading } = useAuthStore();
+  const userMetadata = user?.user_metadata;
   const role = userMetadata?.role;
 
   // Show loading state while fetching user data
