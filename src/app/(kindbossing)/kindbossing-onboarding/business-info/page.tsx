@@ -99,8 +99,16 @@ export default function BusinessInfoPage() {
             .eq("id", user!.id),
         ]);
 
-      if (familyErr) throw familyErr;
-      if (userErr) throw userErr;
+      if (familyErr) {
+        console.error("Error updating family profile:", familyErr);
+        setError("An error occurred. Please try again.");
+        return;
+      }
+      if (userErr) {
+        console.error("Error updating user data:", userErr);
+        setError("An error occurred. Please try again.");
+        return;
+      }
 
       // Redirect to family profile
       router.push("/kindbossing-onboarding/household-info");

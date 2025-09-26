@@ -1,21 +1,21 @@
 export interface FamilyProfile {
   id: string;
   user_id: string;
-  business_name: string;
-  household_size: number | null;
-  children_count: number;
-  children_ages: number[];
-  elderly_count: number;
-  pets_count: number;
-  pet_types: string[];
-  preferred_languages: string[];
-  household_description: string | null;
-  special_requirements: string | null;
-  work_environment_description: string | null;
-  rating: number;
-  total_reviews: number;
-  created_at: string;
-  updated_at: string;
+  business_name?: string;
+  household_size?: number | null;
+  children_count?: number;
+  children_ages?: number[];
+  elderly_count?: number;
+  pets_count?: number;
+  pet_types?: string[];
+  preferred_languages?: string[];
+  household_description?: string | null;
+  special_requirements?: string | null;
+  work_environment_description?: string | null;
+  rating?: number;
+  total_reviews?: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface FamilyProfileFormData {

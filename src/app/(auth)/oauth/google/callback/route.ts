@@ -83,17 +83,10 @@ async function handleUserSetup(
     return { error: fetchError, role: null, needsRoleSelection: false };
   }
 
-  // If first-time and no role provided nor in DB, force role selection page
-  if (!existingUser && !providedRole) {
-    return { error: null, role: null, needsRoleSelection: true };
-  }
-
   // Determine final role preference
-  const finalRole: UserRole | null = (providedRole ||
-    existingUser?.role ||
-    null) as UserRole | null;
+  const finalRole: UserRole | null = providedRole || existingUser?.role || null;
 
-  // If still no role, force role selection
+  // If no role determined, force role selection
   if (!finalRole) {
     return { error: null, role: null, needsRoleSelection: true };
   }
@@ -112,19 +105,27 @@ async function handleUserSetup(
     });
 
     if (insertError) {
+      logger.error("Error inserting user:", insertError);
       return { error: insertError, role: null, needsRoleSelection: false };
     }
 
+    logger.debug("User created successfully with role:", finalRole);
+
     // Insert family profile if kindbossing
     if (finalRole === "kindbossing") {
-      await supabase.from("family_profiles").insert({ user_id: user.id });
-
-      logger.debug("Family profile inserted successfully");
+      const familyProfileResult = await createFamilyProfile(supabase, user.id);
+      if (familyProfileResult.error) {
+        logger.error(
+          "Error creating family profile:",
+          familyProfileResult.error
+        );
+        // Don't return error here, just log it - family profile can be created later
+      }
     }
 
     // Update auth metadata with display name and role
     const displayName = `${userData.firstName} ${userData.lastName}`.trim();
-    await supabase.auth.updateUser({
+    const { error: updateAuthError } = await supabase.auth.updateUser({
       data: {
         role: finalRole,
         has_completed_onboarding: false,
@@ -134,7 +135,12 @@ async function handleUserSetup(
         display_name: displayName,
       },
     });
-  } else if (providedRole && !existingUser.role) {
+
+    if (updateAuthError) {
+      logger.error("Error updating auth metadata:", updateAuthError);
+      // Don't return error here, just log it
+    }
+  } else if (providedRole && providedRole !== existingUser.role) {
     // Update existing user with new role
     const { error: updateError } = await supabase
       .from("users")
@@ -142,21 +148,67 @@ async function handleUserSetup(
       .eq("id", user.id);
 
     if (updateError) {
+      logger.error("Error updating user role:", updateError);
       return { error: updateError, role: null, needsRoleSelection: false };
     }
 
-    // Insert family profile if kindbossing
+    logger.debug("User role updated to:", finalRole);
+
+    // Insert family profile if kindbossing and doesn't exist
     if (finalRole === "kindbossing") {
-      await supabase.from("family_profiles").insert({ user_id: user.id });
+      const familyProfileResult = await createFamilyProfile(supabase, user.id);
+      if (familyProfileResult.error) {
+        logger.error(
+          "Error creating family profile:",
+          familyProfileResult.error
+        );
+        // Don't return error here, just log it - family profile can be created later
+      }
     }
 
     // Update auth metadata
-    await supabase.auth.updateUser({
+    const { error: updateAuthError } = await supabase.auth.updateUser({
       data: { role: finalRole },
     });
+
+    if (updateAuthError) {
+      logger.error("Error updating auth metadata:", updateAuthError);
+      // Don't return error here, just log it
+    }
   }
 
   return { error: null, role: finalRole, needsRoleSelection: false };
+}
+
+async function createFamilyProfile(supabase: any, userId: string) {
+  // First check if family profile already exists
+  const { data: existingProfile, error: checkError } = await supabase
+    .from("family_profiles")
+    .select("id")
+    .eq("user_id", userId)
+    .single();
+
+  if (checkError && checkError.code !== "PGRST116") {
+    // PGRST116 = no rows returned
+    return { error: checkError };
+  }
+
+  if (existingProfile) {
+    logger.debug("Family profile already exists for user:", userId);
+    return { error: null };
+  }
+
+  // Create family profile
+  const { error: insertError } = await supabase
+    .from("family_profiles")
+    .insert({ user_id: userId });
+
+  if (insertError) {
+    return { error: insertError };
+  }
+
+  logger.debug("Family profile created successfully for user:", userId);
+  return { error: null };
 }
 
 function extractUserDataFromGoogle(user: any) {

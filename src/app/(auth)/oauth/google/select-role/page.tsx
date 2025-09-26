@@ -68,6 +68,11 @@ export default function SelectRolePage() {
         .upsert(upsertPayload, { onConflict: "id" });
       if (upsertError) throw upsertError;
 
+      // Create family profile if kindbossing
+      if (role === "kindbossing") {
+        await createFamilyProfile(userRes.user.id);
+      }
+
       // Redirect to onboarding
       if (role === "kindbossing") {
         router.push("/kindbossing-onboarding/business-info");
@@ -79,6 +84,43 @@ export default function SelectRolePage() {
       setError("An error occurred. Please try again.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const createFamilyProfile = async (userId: string) => {
+    try {
+      // First check if family profile already exists
+      const { data: existingProfile, error: checkError } = await supabase
+        .from("family_profiles")
+        .select("id")
+        .eq("user_id", userId)
+        .single();
+
+      if (checkError && checkError.code !== "PGRST116") {
+        // PGRST116 = no rows returned
+        console.error("Error checking family profile:", checkError);
+        return;
+      }
+
+      if (existingProfile) {
+        console.log("Family profile already exists for user:", userId);
+        return;
+      }
+
+      // Create family profile
+      const { error: insertError } = await supabase
+        .from("family_profiles")
+        .insert({ user_id: userId });
+
+      if (insertError) {
+        console.error("Error creating family profile:", insertError);
+        // Don't throw error here, just log it - family profile can be created later
+      } else {
+        console.log("Family profile created successfully for user:", userId);
+      }
+    } catch (error) {
+      console.error("Unexpected error creating family profile:", error);
+      // Don't throw error here, just log it
     }
   };
 
