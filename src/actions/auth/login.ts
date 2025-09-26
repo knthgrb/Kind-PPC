@@ -14,18 +14,23 @@ export async function login(formData: FormData) {
     password: formData.get("password") as string,
   };
 
-  const { error } = await AuthService.login(data.email, data.password);
+  const { data: authData, error } = await AuthService.login(
+    data.email,
+    data.password
+  );
   if (error) {
+    if (error.message === "Email not confirmed") {
+      redirect("/email-not-confirmed");
+    }
+
     // Return error information instead of redirecting
     return {
       success: false,
       error: error.message,
       errorType:
-        error.message === "Email not confirmed"
-          ? "email_not_confirmed"
-          : error.message === "Invalid login credentials"
-          ? "invalid_credentials"
-          : "general_error",
+        error.message === "Invalid login credentials"
+          ? "Invalid login credentials"
+          : "A server error occurred. Please try again.",
     };
   }
 
@@ -48,8 +53,13 @@ export async function login(formData: FormData) {
       const role = user.user_metadata?.role;
 
       if (!role) {
-        // Redirect to role selection
-        redirect("/oauth/google/select-role");
+        // Return redirect info instead of redirecting
+        return {
+          success: true,
+          data: authData,
+          user: user,
+          redirectTo: "/oauth/google/select-role",
+        };
       }
 
       // Continue with existing role-based routing...
@@ -66,23 +76,33 @@ export async function login(formData: FormData) {
       };
     }
 
-    // Handle different user roles
-    // * Let the middleware handle the redirect
+    // Handle different user roles - return redirect info instead of redirecting
+    revalidatePath("/", "layout");
+
+    let redirectTo = "/";
     if (role === "kindtao") {
-      revalidatePath("/", "layout");
-      redirect("/jobs");
+      redirectTo = "/find-work";
     } else if (role === "kindbossing") {
-      revalidatePath("/", "layout");
-      redirect("/dashboard");
+      redirectTo = "/dashboard";
     } else if (role === "admin") {
-      // Admin users go to admin dashboard
-      revalidatePath("/", "layout");
-      redirect("/admin-dashboard");
+      redirectTo = "/dashboard";
     }
+
+    return {
+      success: true,
+      data: authData,
+      user: user,
+      role: role,
+      redirectTo: redirectTo,
+    };
   }
 
-  // Fallback redirect
+  // Fallback - return success with redirect to home
   logger.debug("Fallback redirect to home...");
   revalidatePath("/", "layout");
-  redirect("/");
+  return {
+    success: true,
+    data: authData,
+    redirectTo: "/",
+  };
 }

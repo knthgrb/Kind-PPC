@@ -9,7 +9,7 @@ export interface UserDocument {
   file_size: number;
   mime_type: string;
   is_verified: boolean | null;
-  verification_status: 'pending' | 'approved' | 'rejected';
+  verification_status: "pending" | "approved" | "rejected";
   verification_notes: string | null;
   uploaded_at: string | null;
   verified_at: string | null;
@@ -24,7 +24,7 @@ export interface UserWithDocuments {
   last_name: string;
   phone: string | null;
   profile_image_url: string | null;
-  role: 'kindtao' | 'kindbossing' | 'admin';
+  role: "kindtao" | "kindbossing" | "admin";
   created_at: string;
   user_documents: UserDocument[];
 }
@@ -35,10 +35,11 @@ export class ProfileVerificationService {
    */
   static async getPendingVerifications() {
     const supabase = await createClient();
-    
+
     const { data, error } = await supabase
-      .from('users')
-      .select(`
+      .from("users")
+      .select(
+        `
         id,
         email,
         first_name,
@@ -63,12 +64,13 @@ export class ProfileVerificationService {
           created_at,
           updated_at
         )
-      `)
-      .eq('user_documents.verification_status', 'pending')
-      .order('user_documents.uploaded_at', { ascending: false });
+      `
+      )
+      .eq("user_documents.verification_status", "pending")
+      .order("user_documents.uploaded_at", { ascending: false });
 
     if (error) {
-      console.error('Error fetching pending verifications:', error);
+      console.error("Error fetching pending verifications:", error);
       return { data: null, error };
     }
 
@@ -80,11 +82,12 @@ export class ProfileVerificationService {
    */
   static async getAllUsersWithDocuments() {
     const supabase = await createClient();
-    
+
     // Get users who have documents by joining with user_documents
     const { data: usersWithDocs, error: usersError } = await supabase
-      .from('user_documents')
-      .select(`
+      .from("user_documents")
+      .select(
+        `
         user_id,
         users!inner (
           id,
@@ -96,11 +99,12 @@ export class ProfileVerificationService {
           role,
           created_at
         )
-      `)
-      .order('uploaded_at', { ascending: false });
+      `
+      )
+      .order("uploaded_at", { ascending: false });
 
     if (usersError) {
-      console.error('Error fetching users with documents:', usersError);
+      console.error("Error fetching users with documents:", usersError);
       return { data: null, error: usersError };
     }
 
@@ -109,10 +113,11 @@ export class ProfileVerificationService {
     }
 
     // Get all documents for these users
-    const userIds = usersWithDocs.map(u => u.user_id);
+    const userIds = usersWithDocs.map((u) => u.user_id);
     const { data: documents, error: docsError } = await supabase
-      .from('user_documents')
-      .select(`
+      .from("user_documents")
+      .select(
+        `
         id,
         user_id,
         document_type,
@@ -127,21 +132,26 @@ export class ProfileVerificationService {
         verified_at,
         created_at,
         updated_at
-      `)
-      .in('user_id', userIds);
+      `
+      )
+      .in("user_id", userIds);
 
     if (docsError) {
-      console.error('Error fetching documents:', docsError);
+      console.error("Error fetching documents:", docsError);
       return { data: null, error: docsError };
     }
 
     // Combine users with their documents
-    const usersWithDocuments = usersWithDocs.map(userDoc => ({
+    const usersWithDocuments = usersWithDocs.map((userDoc) => ({
       ...userDoc.users,
-      user_documents: documents?.filter(doc => doc.user_id === userDoc.user_id) || []
+      user_documents:
+        documents?.filter((doc) => doc.user_id === userDoc.user_id) || [],
     }));
 
-    return { data: usersWithDocuments as UserWithDocuments[], error: null };
+    return {
+      data: usersWithDocuments as unknown as UserWithDocuments[],
+      error: null,
+    };
   }
 
   /**
@@ -149,21 +159,21 @@ export class ProfileVerificationService {
    */
   static async approveDocument(documentId: string, notes?: string) {
     const supabase = await createClient();
-    
+
     const { data, error } = await supabase
-      .from('user_documents')
+      .from("user_documents")
       .update({
         is_verified: true,
-        verification_status: 'approved',
+        verification_status: "approved",
         verification_notes: notes || null,
         verified_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
-      .eq('id', documentId)
+      .eq("id", documentId)
       .select();
 
     if (error) {
-      console.error('Error approving document:', error);
+      console.error("Error approving document:", error);
       return { data: null, error };
     }
 
@@ -175,21 +185,21 @@ export class ProfileVerificationService {
    */
   static async rejectDocument(documentId: string, notes: string) {
     const supabase = await createClient();
-    
+
     const { data, error } = await supabase
-      .from('user_documents')
+      .from("user_documents")
       .update({
         is_verified: false,
-        verification_status: 'rejected',
+        verification_status: "rejected",
         verification_notes: notes,
         verified_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
-      .eq('id', documentId)
+      .eq("id", documentId)
       .select();
 
     if (error) {
-      console.error('Error rejecting document:', error);
+      console.error("Error rejecting document:", error);
       return { data: null, error };
     }
 
@@ -201,15 +211,15 @@ export class ProfileVerificationService {
    */
   static async getUserDocuments(userId: string) {
     const supabase = await createClient();
-    
+
     const { data, error } = await supabase
-      .from('user_documents')
-      .select('*')
-      .eq('user_id', userId)
-      .order('uploaded_at', { ascending: false });
+      .from("user_documents")
+      .select("*")
+      .eq("user_id", userId)
+      .order("uploaded_at", { ascending: false });
 
     if (error) {
-      console.error('Error fetching user documents:', error);
+      console.error("Error fetching user documents:", error);
       return { data: null, error };
     }
 

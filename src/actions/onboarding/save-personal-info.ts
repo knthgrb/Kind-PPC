@@ -75,7 +75,7 @@ export async function savePersonalInfo(formData: FormData) {
       }
 
       // Redirect to next stage
-      redirect("/onboarding/skills-availability");
+      redirect("/kindtao-onboarding/skills-availability");
     } else {
       console.error("❌ Database save failed:", result.error);
       return { success: false, error: result.error };

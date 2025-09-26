@@ -7,11 +7,13 @@ export default function AuthProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { onAuthStateChange } = useAuthStore();
+  const { initializeAuth } = useAuthStore();
 
   useEffect(() => {
-    onAuthStateChange();
-  }, [onAuthStateChange]);
+    const cleanup = initializeAuth();
+
+    return cleanup;
+  }, []);
 
   return <>{children}</>;
 }

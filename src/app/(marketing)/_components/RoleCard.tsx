@@ -27,7 +27,7 @@ export default function RoleCard({
         "text-left rounded-xl border-[1.8px] p-5 md:p-3 transition-shadow",
         selected ? "border-[#CC0000]" : "border-[#DCDCDC]",
         "hover:shadow-sm",
-        "focus:outline-none",
+        "focus:outline-none cursor-pointer",
       ].join(" ")}
     >
       <div className="flex items-start justify-between mb-3">
@@ -43,22 +43,6 @@ export default function RoleCard({
               : "none",
           }}
         />
-
-{/* Radio indicator */}
-<span
-  aria-hidden="true"
-  className={`inline-flex items-center justify-center h-5 w-5 rounded-full border ${
-    selected ? "border-[#CC0000]" : "border-[#DCDCDC]"
-  }`}
->
-  {selected ? (
-    <span
-      className="h-3 w-3 rounded-full" // increased size from 2.5 to 3.5
-      style={{ backgroundColor: "#CC0000" }}
-    />
-  ) : null}
-</span>
-
       </div>
 
       {/* Title — turns red if selected */}

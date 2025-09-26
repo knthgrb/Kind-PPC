@@ -8,7 +8,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { signup } from "@/actions/auth/signup";
 import { useParams } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
 import { logger } from "@/utils/logger";
 import { AuthService } from "@/services/client/AuthService";
 
@@ -16,13 +15,7 @@ import { AuthService } from "@/services/client/AuthService";
 const signUpSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  businessName: z.string().optional(),
   email: z.string().email("Please enter a valid email address"),
-  phone: z
-    .string()
-    .min(10, "Please enter a valid phone number")
-    .max(10, "Please enter a valid phone number")
-    .regex(/^9[0-9]{9}$/, "Please enter a valid phone number"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   role: z.enum(["kindbossing", "kindtao"]),
 });
@@ -65,23 +58,24 @@ export default function SignUpPage() {
       formData.append("firstName", data.firstName);
       formData.append("lastName", data.lastName);
       formData.append("email", data.email);
-      formData.append("phone", data.phone);
       formData.append("password", data.password);
       formData.append("role", data.role);
 
-      if (data.businessName) {
-        formData.append("businessName", data.businessName);
-      }
-
       const result = await signup(formData);
 
+      // Only show error if we get a result object with success: false
+      // If result is undefined, it means redirect happened (successful signup)
       if (result && !result.success) {
         setError(
           result.error || "An error occurred during signup. Please try again."
         );
       }
+      // If result is undefined, it means redirect happened - don't show error
     } catch (err) {
-      setError("An error occurred during signup. Please try again.");
+      // Only show error if it's not a redirect
+      if (err instanceof Error && !err.message.includes("NEXT_REDIRECT")) {
+        setError("An error occurred during signup. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -162,32 +156,6 @@ export default function SignUpPage() {
             </div>
           </div>
 
-          {/* Business name - only for kindbossing */}
-          {role === "kindbossing" && (
-            <div>
-              <label
-                htmlFor="businessName"
-                className="block mb-2 registerLabel"
-              >
-                Business Name
-              </label>
-              <input
-                id="businessName"
-                type="text"
-                placeholder="BrightCare Homes"
-                className={`registerInput w-full rounded-md border-[1px] px-4 h-12 ${
-                  errors.businessName ? "border-red-500" : "border-[#ADADAD]"
-                }`}
-                {...register("businessName")}
-              />
-              {errors.businessName && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.businessName.message}
-                </p>
-              )}
-            </div>
-          )}
-
           {/* Email */}
           <div>
             <label htmlFor="email" className="block mb-2 registerLabel">
@@ -205,53 +173,6 @@ export default function SignUpPage() {
             {errors.email && (
               <p className="text-red-500 text-xs mt-1">
                 {errors.email.message}
-              </p>
-            )}
-          </div>
-
-          {/* Phone */}
-          <div>
-            <label htmlFor="phone" className="block mb-2 registerLabel">
-              Enter your Phone
-            </label>
-            <div className="flex gap-2">
-              <div className="flex items-center gap-2 rounded-md border-[1px] border-[#ADADAD] h-12 px-3">
-                <Image
-                  src="/icons/ph_flag.png"
-                  width={24}
-                  height={16}
-                  alt="Philippines Flag"
-                />
-                <span>+63</span>
-              </div>
-              <input
-                id="phone"
-                type="tel"
-                placeholder="9XXXXXXXXX"
-                maxLength={10}
-                className={`registerInput flex-1 rounded-md border-[1px] px-4 h-12 ${
-                  errors.phone ? "border-red-500" : "border-[#ADADAD]"
-                }`}
-                {...register("phone", {
-                  onChange: (e) => {
-                    // Remove any non-digit characters
-                    const value = e.target.value.replace(/\D/g, "");
-                    // Ensure it starts with 9
-                    if (value && !value.startsWith("9")) {
-                      e.target.value = "9" + value.replace(/^9/, "");
-                    }
-                    e.target.value = value;
-                  },
-                })}
-              />
-            </div>
-            {errors.phone ? (
-              <p className="text-red-500 text-xs mt-1">
-                {errors.phone.message}
-              </p>
-            ) : (
-              <p className="text-xs text-gray-500 mt-1">
-                Format: 9XXXXXXXXX (e.g., 9096862170)
               </p>
             )}
           </div>

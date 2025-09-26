@@ -7,17 +7,20 @@ import { FaRegEnvelope } from "react-icons/fa";
 import { FaChevronDown } from "react-icons/fa6";
 import { FiMenu, FiX, FiUser, FiLogOut } from "react-icons/fi";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useRouter } from "next/navigation";
 
 export default function KindBossingHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { user, loading, signOut, isAuthenticated } = useAuthStore();
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   const handleSignOut = async () => {
     await signOut();
     setUserMenuOpen(false);
     setMenuOpen(false);
+    router.push("/login");
   };
 
   const getUserDisplayName = () => {
@@ -53,7 +56,7 @@ export default function KindBossingHeader() {
   }, [userMenuOpen]);
 
   return (
-    <header className="bg-white">
+    <header className="bg-white sticky top-0 z-50">
       <div className="w-full max-w-7xl mx-auto flex justify-between items-center p-4">
         {/* Logo */}
         <Link href="/" className="flex items-center">
@@ -70,7 +73,7 @@ export default function KindBossingHeader() {
         {/* Desktop Navigation */}
         <nav className="hidden lg:flex space-x-10 font-medium items-center text-[clamp(0.9rem,1vw,1.125rem)]">
           {[
-            { label: "Dashboard", href: "/my-dashboard" },
+            { label: "Dashboard", href: "/dashboard" },
             { label: "Employees", href: "/my-employees" },
             { label: "Payslip", href: "/payslip" },
             { label: "Gov't Benefits", href: "/government-benefits" },

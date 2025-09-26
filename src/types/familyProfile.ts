@@ -1,6 +1,7 @@
 export interface FamilyProfile {
   id: string;
   user_id: string;
+  business_name: string;
   household_size: number | null;
   children_count: number;
   children_ages: number[];
@@ -18,6 +19,7 @@ export interface FamilyProfile {
 }
 
 export interface FamilyProfileFormData {
+  business_name: string;
   household_size: number | string;
   children_count: number;
   children_ages: number[];
@@ -42,5 +44,3 @@ export interface FamilyOnboardingProgress {
   completedStages: string[];
   missingStages: string[];
 }
-
-

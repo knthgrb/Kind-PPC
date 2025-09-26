@@ -195,21 +195,6 @@ export class JobService {
   ) {
     const supabase = await createClient();
 
-    const { data: family, error: familyError } = await supabase
-      .from("family_profiles")
-      .select("id")
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    if (familyError) {
-      console.error("Error fetching family profile:", familyError);
-      return { jobs: [], total: 0 };
-    }
-
-    if (!family) {
-      return { jobs: [], total: 0 };
-    }
-
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
@@ -220,7 +205,7 @@ export class JobService {
     } = await supabase
       .from("active_job_posts")
       .select("*", { count: "exact" })
-      .eq("family_id", family.id)
+      .eq("family_id", userId) // match what we insert
       .order("created_at", { ascending: false })
       .range(from, to);
 
@@ -298,5 +283,4 @@ export class JobService {
   ): Promise<JobWithMatchingScore[]> {
     return JobMatchingService.getMatchedJobsClient(userId, limit, offset);
   }
-
 }

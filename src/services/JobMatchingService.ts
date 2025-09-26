@@ -53,7 +53,7 @@ export class JobMatchingService {
    */
   static async getHelperProfile(userId: string): Promise<HelperProfile | null> {
     const supabase = await createClient();
-    
+
     const { data, error } = await supabase
       .from("helper_profiles")
       .select("*")
@@ -95,7 +95,10 @@ export class JobMatchingService {
       reasons.push(`Perfect job type match: ${job.job_type}`);
     } else if (job.job_type && profile.preferred_job_types?.length) {
       // Partial match based on similar job types
-      const similarTypes = this.getSimilarJobTypes(job.job_type, profile.preferred_job_types);
+      const similarTypes = this.getSimilarJobTypes(
+        job.job_type,
+        profile.preferred_job_types
+      );
       breakdown.jobTypeMatch = similarTypes * 15;
       if (similarTypes > 0) {
         reasons.push(`Similar job type match: ${(similarTypes * 100).toFixed(2)}%`);
@@ -105,16 +108,26 @@ export class JobMatchingService {
 
     // 2. Location Match (20% weight)
     if (job.location && profile.location_preference?.length) {
-      const locationMatch = this.calculateLocationMatch(job.location, profile.location_preference);
+      const locationMatch = this.calculateLocationMatch(
+        job.location,
+        profile.location_preference
+      );
       breakdown.locationMatch = locationMatch * 20;
       if (locationMatch > 0) {
-        reasons.push(`Location preference match: ${Math.round(locationMatch * 100)}%`);
+        reasons.push(
+          `Location preference match: ${Math.round(locationMatch * 100)}%`
+        );
       }
     }
     totalScore += breakdown.locationMatch;
 
     // 3. Salary Match (15% weight)
-    if (job.salary_min && job.salary_max && profile.salary_expectation_min && profile.salary_expectation_max) {
+    if (
+      job.salary_min &&
+      job.salary_max &&
+      profile.salary_expectation_min &&
+      profile.salary_expectation_max
+    ) {
       const salaryMatch = this.calculateSalaryMatch(
         job.salary_min,
         job.salary_max,
@@ -123,7 +136,9 @@ export class JobMatchingService {
       );
       breakdown.salaryMatch = salaryMatch * 15;
       if (salaryMatch > 0) {
-        reasons.push(`Salary expectation match: ${Math.round(salaryMatch * 100)}%`);
+        reasons.push(
+          `Salary expectation match: ${Math.round(salaryMatch * 100)}%`
+        );
       }
     }
     totalScore += breakdown.salaryMatch;
@@ -140,27 +155,37 @@ export class JobMatchingService {
 
     // 5. Experience Match (10% weight)
     if (profile.experience_years > 0) {
-      const experienceMatch = this.calculateExperienceMatch(job, profile.experience_years);
+      const experienceMatch = this.calculateExperienceMatch(
+        job,
+        profile.experience_years
+      );
       breakdown.experienceMatch = experienceMatch * 10;
       if (experienceMatch > 0) {
-        reasons.push(`Experience level match: ${Math.round(experienceMatch * 100)}%`);
+        reasons.push(
+          `Experience level match: ${Math.round(experienceMatch * 100)}%`
+        );
       }
     }
     totalScore += breakdown.experienceMatch;
 
     // 6. Availability Match (10% weight)
     if (profile.availability_schedule) {
-      const availabilityMatch = this.calculateAvailabilityMatch(job, profile.availability_schedule);
+      const availabilityMatch = this.calculateAvailabilityMatch(
+        job,
+        profile.availability_schedule
+      );
       breakdown.availabilityMatch = availabilityMatch * 10;
       if (availabilityMatch > 0) {
-        reasons.push(`Availability match: ${Math.round(availabilityMatch * 100)}%`);
+        reasons.push(
+          `Availability match: ${Math.round(availabilityMatch * 100)}%`
+        );
       }
     }
     totalScore += breakdown.availabilityMatch;
 
     // 7. Rating Bonus (3% weight)
     if (profile.rating > 0) {
-      breakdown.ratingBonus = Math.min(profile.rating / 5 * 3, 3);
+      breakdown.ratingBonus = Math.min((profile.rating / 5) * 3, 3);
       if (profile.rating >= 4.5) {
         reasons.push(`High rating: ${profile.rating}/5`);
       } else if (profile.rating >= 4.0) {
@@ -171,7 +196,8 @@ export class JobMatchingService {
 
     // 8. Recency Bonus (2% weight)
     const lastActive = new Date(profile.last_active);
-    const daysSinceActive = (Date.now() - lastActive.getTime()) / (1000 * 60 * 60 * 24);
+    const daysSinceActive =
+      (Date.now() - lastActive.getTime()) / (1000 * 60 * 60 * 24);
     if (daysSinceActive <= 1) {
       breakdown.recencyBonus = 2;
       reasons.push("Recently active");
@@ -192,52 +218,69 @@ export class JobMatchingService {
   /**
    * Get similar job types
    */
-  private static getSimilarJobTypes(jobType: string, preferredTypes: string[]): number {
+  private static getSimilarJobTypes(
+    jobType: string,
+    preferredTypes: string[]
+  ): number {
     const jobTypeGroups = {
-      'yaya': ['caregiver', 'housekeeper'],
-      'caregiver': ['yaya', 'housekeeper'],
-      'housekeeper': ['yaya', 'caregiver', 'cook'],
-      'cook': ['housekeeper'],
-      'driver': ['all_around'],
-      'all_around': ['driver', 'housekeeper', 'cook']
+      yaya: ["caregiver", "housekeeper"],
+      caregiver: ["yaya", "housekeeper"],
+      housekeeper: ["yaya", "caregiver", "cook"],
+      cook: ["housekeeper"],
+      driver: ["all_around"],
+      all_around: ["driver", "housekeeper", "cook"],
     };
 
-    const similarTypes = jobTypeGroups[jobType as keyof typeof jobTypeGroups] || [];
-    const matches = preferredTypes.filter(type => similarTypes.includes(type));
+    const similarTypes =
+      jobTypeGroups[jobType as keyof typeof jobTypeGroups] || [];
+    const matches = preferredTypes.filter((type) =>
+      similarTypes.includes(type)
+    );
     return matches.length / similarTypes.length;
   }
 
   /**
    * Calculate location match
    */
-  private static calculateLocationMatch(jobLocation: string, preferredLocations: string[]): number {
+  private static calculateLocationMatch(
+    jobLocation: string,
+    preferredLocations: string[]
+  ): number {
     const jobLocationLower = jobLocation.toLowerCase();
-    
+
     // Exact match
-    if (preferredLocations.some(loc => loc.toLowerCase() === jobLocationLower)) {
+    if (
+      preferredLocations.some((loc) => loc.toLowerCase() === jobLocationLower)
+    ) {
       return 1.0;
     }
 
     // City-level match (e.g., "Cebu City" matches "Cebu")
-    const jobCity = jobLocationLower.split(' ')[0];
-    if (preferredLocations.some(loc => loc.toLowerCase().includes(jobCity))) {
+    const jobCity = jobLocationLower.split(" ")[0];
+    if (preferredLocations.some((loc) => loc.toLowerCase().includes(jobCity))) {
       return 0.8;
     }
 
     // Province/region match
     const majorCities = {
-      'cebu': ['cebu city', 'mandaue', 'lapu-lapu', 'talisay', 'minglanilla'],
-      'davao': ['davao city', 'tagum', 'panabo'],
-      'manila': ['manila', 'quezon city', 'makati', 'taguig'],
-      'cagayan': ['cagayan de oro', 'iligan', 'ozamiz']
+      cebu: ["cebu city", "mandaue", "lapu-lapu", "talisay", "minglanilla"],
+      davao: ["davao city", "tagum", "panabo"],
+      manila: ["manila", "quezon city", "makati", "taguig"],
+      cagayan: ["cagayan de oro", "iligan", "ozamiz"],
     };
 
     for (const [region, cities] of Object.entries(majorCities)) {
-      if (jobLocationLower.includes(region) || cities.some(city => jobLocationLower.includes(city))) {
-        if (preferredLocations.some(loc => 
-          loc.toLowerCase().includes(region) || 
-          cities.some(city => loc.toLowerCase().includes(city))
-        )) {
+      if (
+        jobLocationLower.includes(region) ||
+        cities.some((city) => jobLocationLower.includes(city))
+      ) {
+        if (
+          preferredLocations.some(
+            (loc) =>
+              loc.toLowerCase().includes(region) ||
+              cities.some((city) => loc.toLowerCase().includes(city))
+          )
+        ) {
           return 0.6;
         }
       }
@@ -265,8 +308,10 @@ export class JobMatchingService {
 
     // Partial overlap
     if (jobMin <= profileMax && jobMax >= profileMin) {
-      const overlap = Math.min(jobMax, profileMax) - Math.max(jobMin, profileMin);
-      const totalRange = Math.max(jobMax, profileMax) - Math.min(jobMin, profileMin);
+      const overlap =
+        Math.min(jobMax, profileMax) - Math.max(jobMin, profileMin);
+      const totalRange =
+        Math.max(jobMax, profileMax) - Math.min(jobMin, profileMin);
       return overlap / totalRange;
     }
 
@@ -276,7 +321,7 @@ export class JobMatchingService {
       Math.abs(jobMax - profileMin)
     );
     const maxRange = Math.max(jobMax - jobMin, profileMax - profileMin);
-    
+
     // If within 20% of the range, give some points
     if (distance <= maxRange * 0.2) {
       return 0.3;
@@ -290,7 +335,7 @@ export class JobMatchingService {
    */
   private static calculateSkillsMatch(job: JobPost, skills: string[]): number {
     const jobText = `${job.title} ${job.description}`.toLowerCase();
-    const relevantSkills = skills.filter(skill => 
+    const relevantSkills = skills.filter((skill) =>
       jobText.includes(skill.toLowerCase())
     );
     return relevantSkills.length / skills.length;
@@ -299,12 +344,21 @@ export class JobMatchingService {
   /**
    * Calculate experience match
    */
-  private static calculateExperienceMatch(job: JobPost, experienceYears: number): number {
+  private static calculateExperienceMatch(
+    job: JobPost,
+    experienceYears: number
+  ): number {
     const jobText = `${job.title} ${job.description}`.toLowerCase();
-    
+
     // Look for experience requirements in job description
-    const experienceKeywords = ['experienced', 'senior', 'expert', 'professional', 'skilled'];
-    const hasExperienceRequirement = experienceKeywords.some(keyword => 
+    const experienceKeywords = [
+      "experienced",
+      "senior",
+      "expert",
+      "professional",
+      "skilled",
+    ];
+    const hasExperienceRequirement = experienceKeywords.some((keyword) =>
       jobText.includes(keyword)
     );
 
@@ -327,19 +381,32 @@ export class JobMatchingService {
   /**
    * Calculate availability match
    */
-  private static calculateAvailabilityMatch(job: JobPost, availabilitySchedule: any): number {
+  private static calculateAvailabilityMatch(
+    job: JobPost,
+    availabilitySchedule: any
+  ): number {
     // This is a simplified version - in reality, you'd need to parse
     // the job requirements and match against the availability schedule
-    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const dayNames = [
+      "sunday",
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+    ];
     const currentDay = dayNames[new Date().getDay()];
     const daySchedule = availabilitySchedule[currentDay];
-    
+
     if (daySchedule?.available) {
       return 1.0;
     }
 
     // Check if available on any day
-    const hasAnyAvailability = Object.values(availabilitySchedule).some((day: any) => day.available);
+    const hasAnyAvailability = Object.values(availabilitySchedule).some(
+      (day: any) => day.available
+    );
     return hasAnyAvailability ? 0.5 : 0;
   }
 
@@ -357,7 +424,7 @@ export class JobMatchingService {
     }
 
     const supabase = await createClient();
-    
+
     // Get all active jobs
     const { data: jobs, error } = await supabase
       .from("job_posts")
@@ -374,27 +441,53 @@ export class JobMatchingService {
       return [];
     }
 
-    // Calculate matching scores for all jobs
-    const jobsWithScores = jobs.map(job => ({
-      id: String(job.id),
-      family_id: String(job.family_id),
-      title: String(job.title),
-      description: String(job.description),
-      job_type: job.job_type ? String(job.job_type) : null,
-      location: String(job.location),
-      salary_min: Number(job.salary_min),
-      salary_max: Number(job.salary_max),
-      salary_rate: String(job.salary_rate),
-      created_at: String(job.created_at),
-      updated_at: String(job.updated_at),
-      matchingScore: this.calculateMatchingScore(job, profile)
-    }));
+    // Calculate matching scores for all jobs and ensure serialization
+    const jobsWithScores = jobs.map((job) => {
+      const matchingScore = this.calculateMatchingScore(job, profile);
+      return {
+        // Ensure job data is serialized
+        id: String(job.id),
+        family_id: String(job.family_id),
+        title: String(job.title),
+        description: String(job.description),
+        job_type: job.job_type ? String(job.job_type) : null,
+        location: String(job.location),
+        salary_min: Number(job.salary_min),
+        salary_max: Number(job.salary_max),
+        salary_rate: String(job.salary_rate),
+        created_at: String(job.created_at),
+        updated_at: String(job.updated_at),
+        is_active: Boolean(job.is_active),
+        // Ensure matching score is serialized
+        matchingScore: {
+          jobId: String(matchingScore.jobId),
+          score: Number(matchingScore.score),
+          reasons: Array.isArray(matchingScore.reasons)
+            ? matchingScore.reasons.map(String)
+            : [],
+          breakdown: {
+            jobTypeMatch: Number(matchingScore.breakdown.jobTypeMatch),
+            locationMatch: Number(matchingScore.breakdown.locationMatch),
+            salaryMatch: Number(matchingScore.breakdown.salaryMatch),
+            skillsMatch: Number(matchingScore.breakdown.skillsMatch),
+            experienceMatch: Number(matchingScore.breakdown.experienceMatch),
+            availabilityMatch: Number(matchingScore.breakdown.availabilityMatch),
+            ratingBonus: Number(matchingScore.breakdown.ratingBonus),
+            recencyBonus: Number(matchingScore.breakdown.recencyBonus),
+          },
+        },
+      };
+    });
 
     // Sort by matching score (highest first)
-    jobsWithScores.sort((a, b) => b.matchingScore.score - a.matchingScore.score);
+    jobsWithScores.sort(
+      (a, b) => b.matchingScore.score - a.matchingScore.score
+    );
 
-    // Apply pagination and ensure serialization
+    // Apply pagination
     const result = jobsWithScores.slice(offset, offset + limit);
+    
+    // Final serialization to ensure everything is a plain object
     return JSON.parse(JSON.stringify(result));
   }
 
@@ -412,7 +505,7 @@ export class JobMatchingService {
     }
 
     const supabase = createClientClient();
-    
+
     // Get all active jobs
     const { data: jobs, error } = await supabase
       .from("job_posts")
@@ -429,27 +522,53 @@ export class JobMatchingService {
       return [];
     }
 
-    // Calculate matching scores for all jobs
-    const jobsWithScores = jobs.map(job => ({
-      id: String(job.id),
-      family_id: String(job.family_id),
-      title: String(job.title),
-      description: String(job.description),
-      job_type: job.job_type ? String(job.job_type) : null,
-      location: String(job.location),
-      salary_min: Number(job.salary_min),
-      salary_max: Number(job.salary_max),
-      salary_rate: String(job.salary_rate),
-      created_at: String(job.created_at),
-      updated_at: String(job.updated_at),
-      matchingScore: this.calculateMatchingScore(job, profile)
-    }));
+    // Calculate matching scores for all jobs and ensure serialization
+    const jobsWithScores = jobs.map((job) => {
+      const matchingScore = this.calculateMatchingScore(job, profile);
+      return {
+        // Ensure job data is serialized
+        id: String(job.id),
+        family_id: String(job.family_id),
+        title: String(job.title),
+        description: String(job.description),
+        job_type: job.job_type ? String(job.job_type) : null,
+        location: String(job.location),
+        salary_min: Number(job.salary_min),
+        salary_max: Number(job.salary_max),
+        salary_rate: String(job.salary_rate),
+        created_at: String(job.created_at),
+        updated_at: String(job.updated_at),
+        is_active: Boolean(job.is_active),
+        // Ensure matching score is serialized
+        matchingScore: {
+          jobId: String(matchingScore.jobId),
+          score: Number(matchingScore.score),
+          reasons: Array.isArray(matchingScore.reasons)
+            ? matchingScore.reasons.map(String)
+            : [],
+          breakdown: {
+            jobTypeMatch: Number(matchingScore.breakdown.jobTypeMatch),
+            locationMatch: Number(matchingScore.breakdown.locationMatch),
+            salaryMatch: Number(matchingScore.breakdown.salaryMatch),
+            skillsMatch: Number(matchingScore.breakdown.skillsMatch),
+            experienceMatch: Number(matchingScore.breakdown.experienceMatch),
+            availabilityMatch: Number(matchingScore.breakdown.availabilityMatch),
+            ratingBonus: Number(matchingScore.breakdown.ratingBonus),
+            recencyBonus: Number(matchingScore.breakdown.recencyBonus),
+          },
+        },
+      };
+    });
 
     // Sort by matching score (highest first)
-    jobsWithScores.sort((a, b) => b.matchingScore.score - a.matchingScore.score);
+    jobsWithScores.sort(
+      (a, b) => b.matchingScore.score - a.matchingScore.score
+    );
 
-    // Apply pagination and ensure serialization
+    // Apply pagination
     const result = jobsWithScores.slice(offset, offset + limit);
+    
+    // Final serialization to ensure everything is a plain object
     return JSON.parse(JSON.stringify(result));
   }
 

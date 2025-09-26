@@ -33,7 +33,7 @@ export default function StepperFooter({
           disabled={!onBack}
           aria-disabled={!onBack}
           className={[
-            "w-[160px] h-[43px] rounded-md border border-[#CFCFCF] flex items-center justify-center gap-2",
+            "w-[160px] h-[43px] cursor-pointer rounded-md border border-[#CFCFCF] flex items-center justify-center gap-2",
             !onBack ? disabledCls : "",
           ].join(" ")}
         >
@@ -49,7 +49,7 @@ export default function StepperFooter({
           disabled={isSubmit ? false : !onNext}
           aria-disabled={isSubmit ? false : !onNext}
           className={[
-            "w-[188px] h-[43px] rounded-md bg-[#CB0000] text-white flex items-center justify-center gap-2",
+            "w-[188px] h-[43px] cursor-pointer rounded-md bg-[#CB0000] text-white flex items-center justify-center gap-2",
             !isSubmit && !onNext ? disabledCls : "",
           ].join(" ")}
         >

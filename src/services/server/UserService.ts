@@ -96,4 +96,18 @@ export const UserService = {
       return { data: null, error: error as Error };
     }
   },
+
+  async getUserPhone(userId: string) {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("users")
+      .select("phone")
+      .eq("id", userId)
+      .single();
+    if (error) {
+      logger.error("Error getting user phone:", error);
+      return null;
+    }
+    return data.phone;
+  },
 };

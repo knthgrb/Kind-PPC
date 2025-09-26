@@ -11,7 +11,8 @@ export default function RegisterChooseRolePage() {
 
   const onContinue = () => {
     if (!role) return;
-    const next = role === "kindbossing" ? "/signup/kindbossing" : "/signup/kindtao";
+    const next =
+      role === "kindbossing" ? "/signup/kindbossing" : "/signup/kindtao";
     window.location.href = next;
   };
 
@@ -58,7 +59,11 @@ export default function RegisterChooseRolePage() {
             onClick={onContinue}
             disabled={!role}
             className={`h-12 w-[230px] rounded-md px-6 
-      ${role ? "bg-[#CC0000] text-white" : "bg-[#CECECE] text-[#A2A2A2]"}
+      ${
+        role
+          ? "bg-[#CC0000] cursor-pointer text-white"
+          : "bg-[#CECECE] text-[#A2A2A2]"
+      }
     `}
           >
             Create Your Account

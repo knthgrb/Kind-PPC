@@ -2,22 +2,14 @@ import { FamilyOnboardingProgress, FamilyProfile } from "@/types/familyProfile";
 
 export const familyOnboardingHelpers = {
   /**
-   * Check if family profile is complete
-   */
-  checkFamilyProfileComplete(profile: FamilyProfile): boolean {
-    return !!(
-      profile.household_size &&
-      profile.children_count &&
-      profile.elderly_count &&
-      profile.pets_count
-    );
-  },
-
-  /**
    * Check which stages are complete
    */
-  checkStagesComplete(profile: FamilyProfile) {
+  checkStagesComplete(profile: FamilyProfile, phone: string) {
     return [
+      {
+        stage: "business-info" as const,
+        completed: !!(profile.business_name && phone),
+      },
       {
         stage: "household-info" as const,
         completed: !!(
@@ -47,9 +39,14 @@ export const familyOnboardingHelpers = {
   getDefaultProgress(): FamilyOnboardingProgress {
     return {
       isComplete: false,
-      nextStage: "/family-profile/household-info",
+      nextStage: "/kindbossing-onboarding/business-info",
       completedStages: [],
-      missingStages: ["household-info", "work-environment", "preferences"],
+      missingStages: [
+        "business-info",
+        "household-info",
+        "work-environment",
+        "preferences",
+      ],
     };
   },
 };

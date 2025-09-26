@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { ProfileService } from "@/services/ProfileService";
 import { JobService } from "@/services/JobService";
 import MyProfileClient from "./_components/MyProfileClient";
-import { FamilyProfileService } from "@/services/client/FamilyOnboardingService";
+import { FamilyService } from "@/services/server/FamilyService";
 
 export default async function MyProfilePage({
   searchParams,
@@ -12,7 +12,7 @@ export default async function MyProfilePage({
   const profileData = await ProfileService.fetchUserProfile();
   if (!profileData) redirect("/login");
 
-  const { data: familyProfile } = await FamilyProfileService.getFamilyProfile(
+  const { data: familyProfile } = await FamilyService.getFamilyProfile(
     profileData.id
   );
   if (!familyProfile) redirect("/login");

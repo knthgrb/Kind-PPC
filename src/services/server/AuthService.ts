@@ -6,7 +6,6 @@ export type SignupData = {
   password: string;
   firstName: string;
   lastName: string;
-  phone: string;
   role: "kindbossing" | "kindtao";
   businessName?: string; // Optional, only for bossing users
 };
@@ -18,32 +17,19 @@ export const AuthService = {
 
     try {
       // Sign up the user
+      const displayName = `${data.firstName} ${data.lastName}`.trim();
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
-          emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/login`,
           data: {
             role: data.role,
-            first_name: data.firstName,
-            email: data.email,
-            last_name: data.lastName,
-            phone: data.phone,
-            business_name:
-              data.role === "kindbossing" ? data.businessName ?? null : null,
-            date_of_birth: null,
-            gender: null,
-            profile_image_url: null,
-            full_address: null,
-            city: null,
-            province: null,
-            postal_code: null,
-            verification_status: "pending",
-            subscription_tier: "free",
-            swipe_credits: 10,
-            boost_credits: 0,
             has_completed_onboarding: false,
+            first_name: data.firstName,
+            last_name: data.lastName,
+            full_name: displayName,
           },
+          emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/email-confirmation-callback?role=${data.role}`,
         },
       });
 
@@ -51,7 +37,6 @@ export const AuthService = {
         logger.debug("Supabase auth error:", authError);
         logger.debug("Error details:", {
           message: authError.message,
-
           status: authError.status,
           code: authError.code,
         });
@@ -60,43 +45,133 @@ export const AuthService = {
 
       logger.debug("Auth signup successful, authData:", authData);
 
+      // If user was created successfully, insert data into users table
+      if (authData.user) {
+        const userInsertData: any = {
+          id: authData.user.id,
+          role: data.role,
+          email: data.email,
+          first_name: data.firstName,
+          last_name: data.lastName,
+        };
+
+        const { error: insertError } = await supabase
+          .from("users")
+          .insert(userInsertData);
+
+        if (insertError) {
+          logger.error(
+            "Error inserting user data into users table:",
+            insertError
+          );
+
+          // Handle specific database constraint errors
+          if ((insertError as any).code === "23505") {
+            if (insertError.message.includes("users_email_key")) {
+              return {
+                data: null,
+                error: {
+                  message:
+                    "An account with this email already exists. Please use a different email or try signing in instead.",
+                  code: "EMAIL_EXISTS",
+                },
+              };
+            }
+            if (insertError.message.includes("users_phone_key")) {
+              return {
+                data: null,
+                error: {
+                  message:
+                    "An account with this phone number already exists. Please use a different phone number.",
+                  code: "PHONE_EXISTS",
+                },
+              };
+            }
+          }
+
+          return { data: null, error: insertError };
+        }
+
+        if (data.role === "kindbossing") {
+          const { error: familyProfileError } = await supabase
+            .from("family_profiles")
+            .insert({ user_id: authData.user.id });
+          if (familyProfileError) {
+            logger.error("Error inserting family profile:", familyProfileError);
+          }
+        }
+
+        logger.debug("User data inserted successfully into users table");
+      }
+
       return { data: authData, error: null };
     } catch (error) {
       logger.error("Unexpected error signing up:", error);
+      return { data: null, error: error as Error };
     }
   },
 
-  // Log in with email + password
-  async login(email: string, password: string) {
+  // Sign in with email and password
+  async signIn(email: string, password: string) {
     const supabase = await createClient();
-    const { data: authData, error: authError } =
-      await supabase.auth.signInWithPassword({
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-    if (authError) {
-      logger.debug("Supabase auth error:", authError);
-      return { error: authError };
+      if (error) {
+        logger.error("Sign in error:", error);
+        return { data: null, error };
+      }
+
+      logger.debug("Sign in successful:", data);
+      return { data, error: null };
+    } catch (error) {
+      logger.error("Unexpected error signing in:", error);
+      return { data: null, error: error as Error };
     }
-
-    logger.debug("Auth login successful, data:", authData);
-
-    return { data: authData, error: null };
   },
 
-  async resendConfirmationEmail(email: string) {
+  // Sign out
+  async signOut() {
     const supabase = await createClient();
-    const { error } = await supabase.auth.resend({
-      type: "signup",
-      email: email,
-    });
 
-    if (error) {
-      logger.error("Error resending confirmation email:", error);
-      return { error: error };
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        logger.error("Sign out error:", error);
+        return { data: null, error };
+      }
+
+      logger.debug("Sign out successful");
+      return { data: null, error: null };
+    } catch (error) {
+      logger.error("Unexpected error signing out:", error);
+      return { data: null, error: error as Error };
     }
+  },
 
-    return { error: null };
+  // Reset password
+  async resetPassword(email: string) {
+    const supabase = await createClient();
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/reset-password`,
+      });
+
+      if (error) {
+        logger.error("Password reset error:", error);
+        return { data: null, error };
+      }
+
+      logger.debug("Password reset email sent successfully");
+      return { data: null, error: null };
+    } catch (error) {
+      logger.error("Unexpected error resetting password:", error);
+      return { data: null, error: error as Error };
+    }
   },
 };

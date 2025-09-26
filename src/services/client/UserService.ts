@@ -30,4 +30,18 @@ export const UserService = {
         | null,
     };
   },
+
+  async getUserPhone(userId: string) {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("users")
+      .select("phone")
+      .eq("id", userId)
+      .single();
+    if (error) {
+      logger.error("Error getting user phone:", error);
+      return null;
+    }
+    return data.phone;
+  },
 };

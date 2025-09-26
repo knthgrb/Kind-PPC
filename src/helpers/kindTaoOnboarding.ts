@@ -4,30 +4,17 @@ export const kindTaoOnboardingHelpers = {
   /**
    * Check if personal info is complete
    */
-  checkPersonalInfoComplete(userMetadata: {
-    first_name?: string | null;
-    last_name?: string | null;
-    phone?: string | null;
-    date_of_birth?: string | null;
-    gender?: string | null;
-    full_address?: string | null;
-    city?: string | null;
-    province?: string | null;
-    postal_code?: string | null;
-  }): boolean {
+  checkPersonalInfoComplete(userInfo: any): boolean {
     // Align with the current Personal Info form which collects
     // date_of_birth and gender only. Treat other fields as optional
     // for completion to avoid false negatives during redirects.
+    console.log("userInfo", userInfo);
     return !!(
-      userMetadata?.first_name &&
-      userMetadata?.last_name &&
-      userMetadata?.phone &&
-      userMetadata?.date_of_birth &&
-      userMetadata?.gender &&
-      userMetadata?.full_address &&
-      userMetadata?.city &&
-      userMetadata?.province &&
-      userMetadata?.postal_code
+      userInfo?.first_name &&
+      userInfo?.last_name &&
+      userInfo?.phone &&
+      userInfo?.date_of_birth &&
+      userInfo?.gender
     );
   },
 
@@ -36,12 +23,12 @@ export const kindTaoOnboardingHelpers = {
    */
   getDefaultProgress(): OnboardingProgress {
     return {
-      personalInfo: false,
+      personalInfoComplete: false,
       skillsAvailability: false,
       workHistory: false,
       documentUpload: false,
       isComplete: false,
-      nextStage: "/onboarding/personal-info",
+      nextStage: "/kindtao-onboarding/personal-info",
     };
   },
 
@@ -50,7 +37,7 @@ export const kindTaoOnboardingHelpers = {
    */
   getProgressPercentage(progress: OnboardingProgress): number {
     const stages = [
-      progress.personalInfo,
+      progress.personalInfoComplete,
       progress.skillsAvailability,
       progress.workHistory,
       progress.documentUpload,

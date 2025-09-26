@@ -25,6 +25,7 @@ export default function PersonalInfoClient() {
     location: "Philippines",
   });
 
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -46,7 +47,7 @@ export default function PersonalInfoClient() {
 
         const { data: userData } = await supabase
           .from("users")
-          .select("date_of_birth, gender")
+          .select("date_of_birth, gender, phone")
           .eq("id", user.id)
           .single();
 
@@ -59,6 +60,10 @@ export default function PersonalInfoClient() {
             year: date.getFullYear().toString(),
             gender: userData.gender || prev.gender,
           }));
+        }
+
+        if (userData?.phone) {
+          setPhoneNumber(userData.phone);
         }
       } catch (error) {
         console.error("Error loading existing data:", error);
@@ -76,9 +81,37 @@ export default function PersonalInfoClient() {
     }
   }, [form.day, form.month, form.year, daysInMonth]);
 
+  const formatPhoneNumber = (phone: string) => {
+    // Remove all non-digits
+    const digits = phone.replace(/\D/g, "");
+
+    // If it starts with 63, keep it as is
+    if (digits.startsWith("63")) {
+      return `+${digits}`;
+    }
+
+    // If it starts with 0, replace with +63
+    if (digits.startsWith("0")) {
+      return `+63${digits.substring(1)}`;
+    }
+
+    // If it's just 9 digits, add +63
+    if (digits.length === 9) {
+      return `+63${digits}`;
+    }
+
+    // Otherwise, add +63 prefix
+    return `+63${digits}`;
+  };
+
   const handleNext = async () => {
     if (!form.day || !form.month || !form.year) {
       setSaveError("Please fill in all required fields");
+      return;
+    }
+
+    if (!phoneNumber.trim()) {
+      setSaveError("Phone number is required");
       return;
     }
 
@@ -94,20 +127,28 @@ export default function PersonalInfoClient() {
         "0"
       )}-${form.day.padStart(2, "0")}`;
 
-      const { error, data } = await updateUserMetadata({
-        date_of_birth: dateOfBirth,
-        gender: form.gender,
-        updated_at: new Date().toISOString(),
-      });
+      const formattedPhone = formatPhoneNumber(phoneNumber);
 
-      if (error) {
-        logger.error("❌ Error saving personal info:", error);
-        setSaveError(`Failed to save data: ${error}`);
+      // Update users table
+      const { error: dbError } = await supabase
+        .from("users")
+        .update({
+          date_of_birth: dateOfBirth,
+          gender: form.gender,
+          phone: formattedPhone,
+          updated_at: new Date().toISOString(),
+          // TODO: Need to handle address, city, province, postal code
+        })
+        .eq("id", (await supabase.auth.getUser()).data.user?.id);
+
+      if (dbError) {
+        logger.error("❌ Error updating users table:", dbError);
+        setSaveError(`Failed to save data: ${dbError.message}`);
         return;
       }
 
       // Redirect to next stage
-      router.push("/onboarding/skills-availability");
+      router.push("/kindtao-onboarding/skills-availability");
     } catch (err) {
       setSaveError("An unexpected error occurred. Please try again.");
     } finally {
@@ -127,6 +168,23 @@ export default function PersonalInfoClient() {
 
   return (
     <div className="space-y-6">
+      {/* Phone Number */}
+      <div>
+        <label className="block mb-2 stepsLabel">Phone Number</label>
+        <input
+          type="tel"
+          value={phoneNumber}
+          onChange={(e) => setPhoneNumber(e.target.value)}
+          placeholder="e.g., 09123456789 or +639123456789"
+          className="w-full px-4 py-3 border border-[#DFDFDF] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          disabled={isSaving}
+          required
+        />
+        <p className="text-xs text-gray-500 mt-1">
+          Enter your phone number with or without +63 prefix
+        </p>
+      </div>
+
       {/* Date of Birth */}
       <div>
         <label className="block mb-2 stepsLabel">Date of Birth</label>

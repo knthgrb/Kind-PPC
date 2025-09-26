@@ -6,10 +6,10 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { login } from "@/actions/auth/login";
 import { createClient } from "@/utils/supabase/client";
 import { logger } from "@/utils/logger";
 import { AuthService } from "@/services/client/AuthService";
+import { useRouter } from "next/navigation";
 
 // Schema for validation
 const loginSchema = z.object({
@@ -26,7 +26,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errorType, setErrorType] = useState<string | null>(null);
-
+  const router = useRouter();
   // Initialize react-hook-form with Zod resolver
   const {
     register,
@@ -50,20 +50,30 @@ export default function LoginPage() {
     setErrorType(null);
 
     try {
-      // Create FormData for the server action
-      const formData = new FormData();
-      formData.append("email", data.email);
-      formData.append("password", data.password);
+      // Use client-side authentication so AuthProvider can detect the session change
+      const supabase = createClient();
+      const { data: authData, error: authError } =
+        await supabase.auth.signInWithPassword({
+          email: data.email,
+          password: data.password,
+        });
 
-      const result = await login(formData);
-
-      // Handle error responses
-      if (result && !result.success) {
-        setError(
-          result.error || "An error occurred during login. Please try again."
-        );
-        setErrorType(result.errorType || "general_error");
+      if (authError) {
+        if (authError.message === "Email not confirmed") {
+          setError(
+            "Email not confirmed! Please check your email and click the confirmation link before logging in."
+          );
+          setErrorType("email_not_confirmed");
+        } else {
+          setError(
+            authError.message ||
+              "An error occurred during login. Please try again."
+          );
+          setErrorType("general_error");
+        }
+        return;
       }
+      router.refresh();
     } catch (err) {
       setError("An error occurred during login. Please try again.");
       setErrorType("general_error");

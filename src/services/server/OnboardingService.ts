@@ -4,7 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { User } from "@supabase/supabase-js";
 
 export interface OnboardingProgress {
-  personalInfo: boolean;
+  personalInfoComplete: boolean;
   skillsAvailability: boolean;
   workHistory: boolean;
   documentUpload: boolean;
@@ -22,11 +22,17 @@ export const OnboardingService = {
     try {
       // Then fetch the rest of the data in parallel
       const [
+        personalInfoResponse,
         skillsResponse,
         workResponse,
         userDocsResponse,
         verificationResponse,
       ] = await Promise.all([
+        supabase
+          .from("users")
+          .select("first_name, last_name, phone, date_of_birth, gender")
+          .eq("id", user.id)
+          .single(),
         supabase
           .from("helper_profiles")
           .select(
@@ -53,9 +59,10 @@ export const OnboardingService = {
           .single(),
       ]);
 
-      const personalInfo = kindTaoOnboardingHelpers.checkPersonalInfoComplete(
-        user.user_metadata
-      );
+      const personalInfoComplete =
+        kindTaoOnboardingHelpers.checkPersonalInfoComplete(
+          personalInfoResponse.data
+        );
 
       // Check skills and availability
       const { data: skillsData, error: skillsError } = skillsResponse;
@@ -93,26 +100,29 @@ export const OnboardingService = {
 
       // Determine next stage
       let nextStage: string | null = null;
-      if (!personalInfo) {
-        nextStage = "/onboarding/personal-info";
+      if (!personalInfoComplete) {
+        nextStage = "/kindtao-onboarding/personal-info";
       }
       if (!skillsAvailability && nextStage === null) {
-        nextStage = "/onboarding/skills-availability";
+        nextStage = "/kindtao-onboarding/skills-availability";
       }
       if (!workHistory && nextStage === null) {
-        nextStage = "/onboarding/work-history";
+        nextStage = "/kindtao-onboarding/work-history";
       }
       if (!documentUpload && nextStage === null) {
-        nextStage = "/onboarding/document-upload";
+        nextStage = "/kindtao-onboarding/document-upload";
       }
 
       return {
-        personalInfo,
+        personalInfoComplete,
         skillsAvailability,
         workHistory,
         documentUpload,
         isComplete:
-          personalInfo && skillsAvailability && workHistory && documentUpload,
+          personalInfoComplete &&
+          skillsAvailability &&
+          workHistory &&
+          documentUpload,
         nextStage,
       };
     } catch (error) {

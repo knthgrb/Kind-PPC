@@ -10,7 +10,7 @@ export default function PlatformUsagePipeline() {
     <div className="px-4 md:px-6 pt-10 pb-16">
       <div className="mx-auto max-w-7xl">
         {/* Stats */}
-        <div className="grid grid-cols-1 gap-4 grid-cols-1 lg:grid-cols-3 pb-6">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 pb-6">
           <div className="rounded-xl border border-[#D0D0D0] bg-white">
             <StatCard
               label="Total Active Users"
@@ -32,7 +32,7 @@ export default function PlatformUsagePipeline() {
         </div>
 
         {/* Usage Growth */}
-        <div className="rounded-xl border border-[#D0D0D0] bg-white p-5 bg-white">
+        <div className="rounded-xl border border-[#D0D0D0] p-5 bg-white">
           <h3 className="text-[1.034rem] text-[#3D434A] font-semibold pb-6">
             Usage Growth
           </h3>

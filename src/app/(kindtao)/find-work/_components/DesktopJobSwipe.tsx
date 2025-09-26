@@ -63,11 +63,13 @@ export default function DesktopJobSwipe({
   const [hasMore, setHasMore] = useState(true);
   const [isApplying, setIsApplying] = useState(false);
   const [isSkipping, setIsSkipping] = useState(false);
-  const [swipeLimit, setSwipeLimit] = useState(initialSwipeLimit || {
-    remainingSwipes: 0,
-    dailyLimit: 10,
-    canSwipe: false
-  });
+  const [swipeLimit, setSwipeLimit] = useState(
+    initialSwipeLimit || {
+      remainingSwipes: 0,
+      dailyLimit: 10,
+      canSwipe: false,
+    }
+  );
   const [showSwipeLimitModal, setShowSwipeLimitModal] = useState(false);
   const loadingRef = useRef(false);
   const lastLoadedIndex = useRef(0);
@@ -166,24 +168,28 @@ export default function DesktopJobSwipe({
   const goToNext = useCallback(async () => {
     if (currentIndex < jobs.length - 1) {
       // Use swipe credit and check if allowed
-      const swipeResult = await SwipeService.consumeSwipeCredit(user?.id || '');
+      const swipeResult = await SwipeService.consumeSwipeCredit(user?.id || "");
       if (!swipeResult.canSwipe) {
         setShowSwipeLimitModal(true);
         return;
       }
-      
+
       // Update swipe limit display
       setSwipeLimit({
         remainingSwipes: swipeResult.remainingSwipes,
         dailyLimit: swipeResult.dailyLimit,
-        canSwipe: swipeResult.canSwipe
+        canSwipe: swipeResult.canSwipe,
       });
-      
+
       // Record as a skip action
       if (user && jobs[currentIndex]) {
-        await SwipeService.recordSwipeClient(user.id, jobs[currentIndex].id, 'skip');
+        await SwipeService.recordSwipeClient(
+          user.id,
+          jobs[currentIndex].id,
+          "skip"
+        );
       }
-      
+
       setCurrentIndex(currentIndex + 1);
     }
   }, [currentIndex, user, jobs]);
@@ -191,24 +197,28 @@ export default function DesktopJobSwipe({
   const goToPrevious = useCallback(async () => {
     if (currentIndex > 0) {
       // Use swipe credit and check if allowed
-      const swipeResult = await SwipeService.consumeSwipeCredit(user?.id || '');
+      const swipeResult = await SwipeService.consumeSwipeCredit(user?.id || "");
       if (!swipeResult.canSwipe) {
         setShowSwipeLimitModal(true);
         return;
       }
-      
+
       // Update swipe limit display
       setSwipeLimit({
         remainingSwipes: swipeResult.remainingSwipes,
         dailyLimit: swipeResult.dailyLimit,
-        canSwipe: swipeResult.canSwipe
+        canSwipe: swipeResult.canSwipe,
       });
-      
+
       // Record as a skip action
       if (user && jobs[currentIndex]) {
-        await SwipeService.recordSwipeClient(user.id, jobs[currentIndex].id, 'skip');
+        await SwipeService.recordSwipeClient(
+          user.id,
+          jobs[currentIndex].id,
+          "skip"
+        );
       }
-      
+
       setCurrentIndex(currentIndex - 1);
     }
   }, [currentIndex, user, jobs]);
@@ -219,7 +229,7 @@ export default function DesktopJobSwipe({
       if (isApplying || isSkipping) return;
 
       // Use swipe credit and check if allowed
-      const swipeResult = await SwipeService.consumeSwipeCredit(user?.id || '');
+      const swipeResult = await SwipeService.consumeSwipeCredit(user?.id || "");
       if (!swipeResult.canSwipe) {
         setShowSwipeLimitModal(true);
         return;
@@ -229,14 +239,14 @@ export default function DesktopJobSwipe({
       setSwipeLimit({
         remainingSwipes: swipeResult.remainingSwipes,
         dailyLimit: swipeResult.dailyLimit,
-        canSwipe: swipeResult.canSwipe
+        canSwipe: swipeResult.canSwipe,
       });
 
       setIsApplying(true);
       try {
         // Record the swipe action
-        await SwipeService.recordSwipeClient(user?.id || '', job.id, 'apply');
-        
+        await SwipeService.recordSwipeClient(user?.id || "", job.id, "apply");
+
         // Navigate to apply page
         router.push(`/apply?jobId=${job.id}`);
         // Move to next job after a short delay
@@ -257,7 +267,7 @@ export default function DesktopJobSwipe({
       if (isApplying || isSkipping) return;
 
       // Use swipe credit and check if allowed
-      const swipeResult = await SwipeService.consumeSwipeCredit(user?.id || '');
+      const swipeResult = await SwipeService.consumeSwipeCredit(user?.id || "");
       if (!swipeResult.canSwipe) {
         setShowSwipeLimitModal(true);
         return;
@@ -267,14 +277,14 @@ export default function DesktopJobSwipe({
       setSwipeLimit({
         remainingSwipes: swipeResult.remainingSwipes,
         dailyLimit: swipeResult.dailyLimit,
-        canSwipe: swipeResult.canSwipe
+        canSwipe: swipeResult.canSwipe,
       });
 
       setIsSkipping(true);
       try {
         // Record the swipe action
-        await SwipeService.recordSwipeClient(user?.id || '', job.id, 'skip');
-        
+        await SwipeService.recordSwipeClient(user?.id || "", job.id, "skip");
+
         // Move to next job after a short delay
         setTimeout(() => {
           goToNext();
@@ -371,7 +381,13 @@ export default function DesktopJobSwipe({
             </span>
             <div className="flex items-center space-x-2 text-sm">
               <span className="text-gray-500">Swipes left:</span>
-              <span className={`font-semibold ${swipeLimit.remainingSwipes > 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <span
+                className={`font-semibold ${
+                  swipeLimit.remainingSwipes > 0
+                    ? "text-green-600"
+                    : "text-red-600"
+                }`}
+              >
                 {swipeLimit.remainingSwipes} / {swipeLimit.dailyLimit}
               </span>
             </div>
@@ -575,7 +591,7 @@ export default function DesktopJobSwipe({
                   <button
                     onClick={goToPrevious}
                     disabled={currentIndex === 0 || isApplying || isSkipping}
-                    className="flex items-center justify-center w-12 h-12 bg-white text-gray-600 rounded-full border border-gray-300 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                    className="flex cursor-pointer items-center justify-center w-12 h-12 bg-white text-gray-600 rounded-full border border-gray-300 hover:bg-gray-50 transition-colors disabled:opacity-50"
                   >
                     <FaChevronLeft className="w-5 h-5" />
                   </button>
@@ -587,7 +603,7 @@ export default function DesktopJobSwipe({
                       isApplying ||
                       isSkipping
                     }
-                    className="flex items-center justify-center w-12 h-12 bg-white text-gray-600 rounded-full border border-gray-300 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                    className="flex cursor-pointer items-center justify-center w-12 h-12 bg-white text-gray-600 rounded-full border border-gray-300 hover:bg-gray-50 transition-colors disabled:opacity-50"
                   >
                     <FaChevronRight className="w-5 h-5" />
                   </button>
@@ -596,7 +612,7 @@ export default function DesktopJobSwipe({
                 <button
                   onClick={() => handleApply(currentJob)}
                   disabled={isApplying || isSkipping}
-                  className="flex items-center justify-center w-16 h-16 bg-[#CC0000] text-white rounded-full hover:bg-red-700 transition-colors disabled:opacity-50"
+                  className="flex items-center cursor-pointer justify-center w-16 h-16 bg-[#CC0000] text-white rounded-full hover:bg-red-700 transition-colors disabled:opacity-50"
                   title="Apply for this job"
                 >
                   <FaPaperPlane className="w-6 h-6" />

@@ -12,6 +12,7 @@ export default function Header() {
   const { user, loading, signOut, isAuthenticated } = useAuthStore();
   const userMenuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const [userDisplayName, setUserDisplayName] = useState("");
 
   const handleSignOut = async () => {
     await signOut();
@@ -20,22 +21,30 @@ export default function Header() {
     router.push("/login");
   };
 
-  const getUserDisplayName = () => {
-    // Prioritize full name like on profile page
-    if (user?.user_metadata?.first_name && user?.user_metadata?.last_name) {
-      return `${user.user_metadata.first_name} ${user.user_metadata.last_name}`;
-    }
-    if (user?.user_metadata?.first_name) {
-      return user.user_metadata.first_name;
-    }
+  useEffect(() => {
+    const getUserDisplayName = () => {
+      // Prioritize full name like on profile page
+      if (user?.user_metadata?.first_name && user?.user_metadata?.last_name) {
+        setUserDisplayName(
+          `${user.user_metadata.first_name} ${user.user_metadata.last_name}`
+        );
+        return;
+      }
+      if (user?.user_metadata?.first_name) {
+        setUserDisplayName(user.user_metadata.first_name);
+        return;
+      }
 
-    // Fallback to user email if metadata is still loading
-    if (user?.email) {
-      return user.email.split("@")[0];
-    }
+      // Fallback to user email if metadata is still loading
+      if (user?.email) {
+        setUserDisplayName(user.email.split("@")[0]);
+        return;
+      }
 
-    return "User";
-  };
+      setUserDisplayName("User");
+    };
+    getUserDisplayName();
+  }, [user]);
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -58,7 +67,7 @@ export default function Header() {
   }, [userMenuOpen]);
 
   return (
-    <header className="bg-white">
+    <header className="bg-white sticky top-0 z-50">
       <div className="w-full max-w-7xl mx-auto flex justify-between items-center p-4">
         {/* Logo */}
         <Link href="/" className="flex items-center">
@@ -105,9 +114,11 @@ export default function Header() {
               >
                 <FiUser className="w-5 h-5 text-gray-600" />
                 <div className="text-left">
-                  <div className="text-lg font-semibold text-gray-900 leading-tight">
-                    {getUserDisplayName()}
-                  </div>
+                  {userDisplayName && (
+                    <div className="text-lg font-semibold text-gray-900 leading-tight">
+                      {userDisplayName}
+                    </div>
+                  )}
                   {user?.user_metadata?.role && (
                     <div className="text-xs text-gray-500 capitalize">
                       {user.user_metadata.role}
@@ -227,9 +238,11 @@ export default function Header() {
                 <div className="flex items-center space-x-3">
                   <FiUser className="w-6 h-6 text-gray-600" />
                   <div className="text-center">
-                    <div className="text-xl font-semibold text-gray-900 leading-tight">
-                      {getUserDisplayName()}
-                    </div>
+                    {userDisplayName && (
+                      <div className="text-xl font-semibold text-gray-900 leading-tight">
+                        {userDisplayName}
+                      </div>
+                    )}
                     {user?.user_metadata?.role && (
                       <div className="text-sm text-gray-500 capitalize">
                         {user.user_metadata.role}

@@ -8,12 +8,12 @@ interface State {
   user: User | null;
   loading: boolean;
   isAuthenticated: boolean;
+  initialized: boolean;
 
-  onAuthStateChange: () => void;
+  initializeAuth: () => () => void; // Return cleanup function
   setUser: (user: User | null) => void;
   setIsAuthenticated: (isAuthenticated: boolean) => void;
   setLoading: (loading: boolean) => void;
-
   signOut: () => void;
 }
 
@@ -21,10 +21,14 @@ export const useAuthStore = create(
   persist(
     (set, get) => ({
       user: null,
-      loading: true, // Start with loading true
+      loading: true,
       isAuthenticated: false,
+      initialized: false,
 
-      onAuthStateChange: () => {
+      initializeAuth: () => {
+        const state = get();
+        if (state.initialized) return () => {}; // Return empty cleanup function
+
         const supabase = createClient();
 
         // Set up the auth state listener
@@ -32,38 +36,25 @@ export const useAuthStore = create(
           data: { subscription },
         } = supabase.auth.onAuthStateChange(async (event, session) => {
           if (session?.user) {
-            // User is signed in
+            // Handle both INITIAL_SESSION and SIGNED_IN the same way
             set({
               user: session.user as User,
               isAuthenticated: true,
               loading: false,
+              initialized: true,
             });
-          } else {
-            // User is signed out
+          } else if (event === "SIGNED_OUT") {
             set({
               user: null,
               isAuthenticated: false,
               loading: false,
+              initialized: true,
             });
           }
         });
 
-        // Get initial session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-          if (session?.user) {
-            set({
-              user: session.user as User,
-              isAuthenticated: true,
-              loading: false,
-            });
-          } else {
-            set({
-              user: null,
-              isAuthenticated: false,
-              loading: false,
-            });
-          }
-        });
+        // Mark as initialized to prevent multiple calls
+        set({ initialized: true });
 
         // Return cleanup function
         return () => {
@@ -92,13 +83,6 @@ export const useAuthStore = create(
         user: state.user
           ? {
               id: state.user.id,
-              role: state.user.role,
-              aud: state.user.aud,
-              created_at: state.user.created_at,
-              updated_at: state.user.updated_at,
-              is_anonymous: state.user.is_anonymous,
-
-              // ! Only include non-sensitive metadata
               user_metadata: state.user.user_metadata
                 ? {
                     role: state.user.user_metadata.role,
@@ -121,6 +105,11 @@ export const useAuthStore = create(
           : null,
         isAuthenticated: state.isAuthenticated,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state.loading = false;
+        }
+      },
     }
   )
 );

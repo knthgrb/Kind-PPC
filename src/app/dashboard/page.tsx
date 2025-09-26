@@ -9,6 +9,7 @@ const KindTaoDashboard = dynamic(
 const KindBossingDashboard = dynamic(
   () => import("../(kindbossing)/_components/KindBossingDashboard")
 );
+
 const AdminDashboard = dynamic(
   () => import("../(admin)/_components/AdminDashboard")
 );

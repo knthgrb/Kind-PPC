@@ -29,10 +29,6 @@ export default function EmailConfirmationPage() {
     }
   };
 
-  const handleBackClick = () => {
-    router.back();
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-gray-50">
       <div className="w-full max-w-md">
@@ -75,7 +71,7 @@ export default function EmailConfirmationPage() {
             <div className="mb-6">
               <button
                 onClick={handleGmailClick}
-                className="w-full bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg p-4 flex items-center justify-center gap-3 transition-colors"
+                className="w-full bg-red-50 cursor-pointer hover:bg-red-100 border border-red-200 rounded-lg p-4 flex items-center justify-center gap-3 transition-colors"
               >
                 <Image
                   src="/icons/google_ic.png"
@@ -137,14 +133,7 @@ export default function EmailConfirmationPage() {
           </div>
 
           {/* Action Buttons */}
-          <div className="space-y-3">
-            <button
-              onClick={handleBackClick}
-              className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-lg font-medium transition-colors"
-            >
-              ← Back to Previous Page
-            </button>
-
+          <div>
             <Link
               href="/login"
               className="block w-full text-center bg-[#CB0000] hover:bg-[#A00000] text-white py-3 px-4 rounded-lg font-medium transition-colors"

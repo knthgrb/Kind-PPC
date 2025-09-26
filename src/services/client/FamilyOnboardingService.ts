@@ -5,6 +5,7 @@ import {
 } from "@/types/familyProfile";
 import { FamilyService } from "./FamilyService";
 import { familyOnboardingHelpers } from "@/helpers/familyOnboarding";
+import { UserService } from "@/services/client/UserService";
 
 export class FamilyOnboardingService {
   /**
@@ -17,11 +18,13 @@ export class FamilyOnboardingService {
       userId
     );
 
+    const phone = await UserService.getUserPhone(userId);
+
     if (error || !profile) {
       return familyOnboardingHelpers.getDefaultProgress();
     }
 
-    const stages = familyOnboardingHelpers.checkStagesComplete(profile);
+    const stages = familyOnboardingHelpers.checkStagesComplete(profile, phone);
     const completedStages = stages.filter((stage) => stage.completed);
     const missingStages = stages.filter((stage) => !stage.completed);
 
@@ -29,7 +32,7 @@ export class FamilyOnboardingService {
       isComplete: completedStages.length === stages.length,
       nextStage:
         missingStages.length > 0
-          ? `/family-profile/${missingStages[0].stage}`
+          ? `/kindbossing-onboarding/${missingStages[0].stage}`
           : undefined,
       completedStages: completedStages.map((s) => s.stage),
       missingStages: missingStages.map((s) => s.stage),

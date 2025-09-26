@@ -26,7 +26,7 @@ export default function About() {
 
             <div className="mt-5 flex flex-col sm:flex-row items-center justify-center md:justify-start gap-3">
               <Link
-                href="/jobs"
+                href="/find-work"
                 className={`aboutP text-white rounded-[10px] bg-[#E11F26] px-6 py-4 w-full sm:w-auto text-center`}
               >
                 Search Jobs
