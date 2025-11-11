@@ -7,7 +7,7 @@ import NotificationInitializer from "@/components/notification/NotificationIniti
 import NotificationPrompt from "@/components/notification/NotificationPrompt";
 import AuthProvider from "@/components/common/AuthProvider";
 import SubscriptionSuccessHandler from "@/components/common/SubscriptionSuccessHandler";
-import { ToastContainer } from "@/components/toast";
+// import { ToastContainer } from "@/components/toast";
 
 // Import the required fonts
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -47,7 +47,7 @@ export default function RootLayout({
             <SubscriptionSuccessHandler />
           </Suspense>
           {children}
-          <ToastContainer />
+          {/* <ToastContainer /> */}
         </AuthProvider>
       </body>
     </html>
