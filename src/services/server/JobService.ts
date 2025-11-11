@@ -1,6 +1,39 @@
 import { createClient } from "@/utils/supabase/server";
+import { logger } from "@/utils/logger";
+import {
+  areProvincesInSameRegion,
+  getRegionForProvince,
+} from "@/utils/regionMapping";
 import { JobPost, SalaryRate, JobType } from "@/types/jobPosts";
-import { JobMatchingService, JobMatch } from "./JobMatchingService";
+
+export interface JobMatch {
+  jobId: string;
+  job: any;
+  score: number;
+  reasons: string[];
+  breakdown: {
+    jobTitle: number;
+    jobType: number;
+    location: number;
+    salary: number;
+    languages: number;
+    skills: number;
+    priority: number;
+  };
+}
+
+interface KindTaoJobPreferences {
+  desiredJobs: string[];
+  desiredLocations: string[];
+  desiredJobTypes: string[];
+  salaryRange: {
+    min: number;
+    max: number;
+    salaryType: string;
+  };
+  preferredLanguages: string[];
+  preferredWorkRadiusKm: number;
+}
 
 export type JobFilters = {
   search?: string;
@@ -93,6 +126,7 @@ export class JobService {
   static async fetchJobs(filters?: JobFilters): Promise<JobPost[]> {
     const supabase = await createClient();
 
+    const now = new Date().toISOString();
     let query = supabase
       .from("job_posts")
       .select(
@@ -116,6 +150,7 @@ export class JobService {
       `
       )
       .eq("status", "active")
+      .or(`expires_at.is.null,expires_at.gt.${now}`)
       .order("created_at", { ascending: false });
 
     // Apply filters
@@ -631,7 +666,8 @@ export class JobService {
     limit: number = 20,
     offset: number = 0
   ): Promise<JobMatch[]> {
-    return JobMatchingService.findMatchingJobs(userId, limit);
+    const supabase = await createClient();
+    return this.findMatchingJobs(supabase, userId, limit, offset);
   }
 
   /**
@@ -642,6 +678,579 @@ export class JobService {
     limit: number = 20,
     offset: number = 0
   ): Promise<JobMatch[]> {
-    return JobMatchingService.findMatchingJobs(userId, limit);
+    const supabase = await createClient();
+    return this.findMatchingJobs(supabase, userId, limit, offset);
+  }
+
+  private static async findMatchingJobs(
+    supabase: any,
+    kindtaoUserId: string,
+    limit: number = 20,
+    offset: number = 0
+  ): Promise<JobMatch[]> {
+    try {
+      const normalizedLimit =
+        Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : 20;
+      const normalizedOffset = Number.isFinite(offset)
+        ? Math.max(Math.floor(offset), 0)
+        : 0;
+
+      if (normalizedLimit === 0) {
+        return [];
+      }
+
+      const preferences = await this.getUserPreferences(
+        supabase,
+        kindtaoUserId
+      );
+
+      if (!preferences) {
+        logger.warn(`No preferences found for user ${kindtaoUserId}`);
+        return [];
+      }
+
+      const userLocation = await this.getUserLocation(supabase, kindtaoUserId);
+      const userSkills = await this.getUserSkills(supabase, kindtaoUserId);
+
+      const { data: swipedJobs, error: swipedError } = await supabase
+        .from("kindtao_job_interactions")
+        .select("job_post_id")
+        .eq("kindtao_user_id", kindtaoUserId);
+
+      if (swipedError) {
+        logger.error("Error fetching swiped jobs:", swipedError);
+        return [];
+      }
+
+      const swipedJobIds =
+        swipedJobs?.map((item: { job_post_id: string }) => item.job_post_id) ||
+        [];
+
+      const now = new Date().toISOString();
+      let query = supabase
+        .from("job_posts")
+        .select("*")
+        .eq("status", "active")
+        .or(`expires_at.is.null,expires_at.gt.${now}`)
+        .order("created_at", { ascending: false });
+
+      if (swipedJobIds.length > 0) {
+        query = query.not("id", "in", `(${swipedJobIds.join(",")})`);
+      }
+
+      query = query.range(
+        normalizedOffset,
+        normalizedOffset + normalizedLimit - 1
+      );
+
+      const { data: jobs, error } = await query;
+
+      if (error) {
+        logger.error("Error fetching job posts:", error);
+        return [];
+      }
+
+      if (!jobs || jobs.length === 0) {
+        return [];
+      }
+
+      const matches = jobs
+        .map((job: any) =>
+          this.calculateJobMatch(preferences, job, userLocation, userSkills)
+        )
+        .filter(Boolean) as JobMatch[];
+
+      return matches
+        .filter((match: JobMatch) => match.score > 0)
+        .sort((a: JobMatch, b: JobMatch) => b.score - a.score)
+        .slice(0, normalizedLimit);
+    } catch (error) {
+      logger.error("Error in findMatchingJobs:", error);
+      return [];
+    }
+  }
+
+  private static async getUserPreferences(
+    supabase: any,
+    userId: string
+  ): Promise<KindTaoJobPreferences | null> {
+    const { data, error } = await supabase
+      .from("kindtao_job_preferences")
+      .select("*")
+      .eq("kindtao_user_id", userId)
+      .single();
+
+    if (error) {
+      logger.error("Error fetching user preferences:", error);
+      return null;
+    }
+
+    if (!data) {
+      return null;
+    }
+
+    return {
+      desiredJobs: data.desired_jobs || [],
+      desiredLocations: data.desired_locations || [],
+      desiredJobTypes: data.desired_job_types || [],
+      salaryRange: {
+        min: data.salary_range_min || 0,
+        max: data.salary_range_max || 0,
+        salaryType: data.salary_type || "daily",
+      },
+      preferredLanguages: data.desired_languages || [],
+      preferredWorkRadiusKm: data.desired_job_location_radius || 10,
+    };
+  }
+
+  private static async getUserLocation(
+    supabase: any,
+    userId: string
+  ): Promise<{ lat: number; lng: number } | null> {
+    const { data, error } = await supabase
+      .from("users")
+      .select("location_coordinates")
+      .eq("id", userId)
+      .single();
+
+    if (error || !data?.location_coordinates) {
+      logger.warn(`No location coordinates found for user ${userId}`);
+      return null;
+    }
+
+    const match = data.location_coordinates.match(/\(([^,]+),([^)]+)\)/);
+    if (match) {
+      return {
+        lng: parseFloat(match[1]),
+        lat: parseFloat(match[2]),
+      };
+    }
+
+    return null;
+  }
+
+  private static async getUserSkills(
+    supabase: any,
+    userId: string
+  ): Promise<string[]> {
+    try {
+      const { data: profile, error } = await supabase
+        .from("kindtaos")
+        .select("skills")
+        .eq("user_id", userId)
+        .single();
+
+      if (error || !profile) {
+        logger.warn(`No profile found for user ${userId}`);
+        return [];
+      }
+
+      return profile.skills || [];
+    } catch (error) {
+      logger.error("Error fetching user skills:", error);
+      return [];
+    }
+  }
+
+  private static calculateJobMatch(
+    preferences: KindTaoJobPreferences,
+    job: any,
+    userLocation?: { lat: number; lng: number } | null,
+    userSkills?: string[]
+  ): JobMatch {
+    const hasDesiredJobTitle = preferences.desiredJobs.includes(job.job_title);
+    const hasRequiredSkills = this.calculateSkillMatch(
+      userSkills || [],
+      job.required_skills || []
+    );
+
+    if (!hasDesiredJobTitle && !hasRequiredSkills) {
+      return {
+        jobId: job.id,
+        job: job,
+        score: 0,
+        reasons: ["Job type not in your preferences and skills don't match"],
+        breakdown: {
+          jobTitle: 0,
+          jobType: 0,
+          location: 0,
+          salary: 0,
+          languages: 0,
+          skills: 0,
+          priority: 0,
+        },
+      };
+    }
+
+    const breakdown = {
+      jobTitle: hasDesiredJobTitle ? 100 : 0,
+      jobType: this.calculateJobTypeMatch(
+        preferences.desiredJobTypes,
+        job.job_type
+      ),
+      location: this.calculateLocationMatch(preferences, job, userLocation),
+      salary: this.calculateSalaryMatch(preferences.salaryRange, job),
+      languages: this.calculateLanguageMatch(
+        preferences.preferredLanguages,
+        job.preferred_languages
+      ),
+      skills: this.calculateSkillMatch(
+        userSkills || [],
+        job.required_skills || []
+      ),
+      priority: this.calculatePriorityScore(job),
+    };
+
+    const baseScore = Math.round(
+      breakdown.jobTitle * 0.4 +
+        breakdown.jobType * 0.2 +
+        breakdown.location * 0.15 +
+        breakdown.salary * 0.08 +
+        breakdown.languages * 0.02 +
+        breakdown.skills * 0.1 +
+        breakdown.priority * 0.05
+    );
+
+    // Check if boost is active and not expired
+    const isBoostActive =
+      job.is_boosted &&
+      job.boost_expires_at &&
+      new Date(job.boost_expires_at) > new Date();
+
+    const finalScore = isBoostActive ? Math.round(baseScore * 1.5) : baseScore;
+
+    return {
+      jobId: job.id,
+      job: job,
+      score: finalScore,
+      reasons: this.generateMatchReasons(breakdown),
+      breakdown,
+    };
+  }
+
+  private static calculateSkillMatch(
+    userSkills: string[],
+    requiredSkills: string[]
+  ): number {
+    if (!requiredSkills || requiredSkills.length === 0) {
+      return 50;
+    }
+
+    if (!userSkills || userSkills.length === 0) {
+      return 0;
+    }
+
+    const userSkillsLower = userSkills.map((skill) =>
+      skill.toLowerCase().trim()
+    );
+    const requiredSkillsLower = requiredSkills.map((skill) =>
+      skill.toLowerCase().trim()
+    );
+
+    const matchingSkills = requiredSkillsLower.filter((requiredSkill) =>
+      userSkillsLower.some(
+        (userSkill) =>
+          userSkill.includes(requiredSkill) || requiredSkill.includes(userSkill)
+      )
+    );
+
+    const matchPercentage =
+      (matchingSkills.length / requiredSkillsLower.length) * 100;
+
+    return Math.round(matchPercentage);
+  }
+
+  private static calculatePriorityScore(job: any): number {
+    let priorityScore = 50;
+
+    if (job.is_boosted && job.boost_expires_at) {
+      const boostExpiry = new Date(job.boost_expires_at);
+      const now = new Date();
+      if (boostExpiry > now) {
+        priorityScore += 30;
+      }
+    }
+
+    const jobAge = Date.now() - new Date(job.created_at).getTime();
+    const daysOld = jobAge / (1000 * 60 * 60 * 24);
+
+    if (daysOld < 1) {
+      priorityScore += 20;
+    } else if (daysOld < 3) {
+      priorityScore += 15;
+    } else if (daysOld < 7) {
+      priorityScore += 10;
+    } else if (daysOld < 14) {
+      priorityScore += 5;
+    }
+
+    if (job.salary_min && job.salary_max) {
+      const avgSalary = (job.salary_min + job.salary_max) / 2;
+      if (avgSalary > 1000) {
+        priorityScore += 10;
+      } else if (avgSalary > 500) {
+        priorityScore += 5;
+      }
+    }
+
+    if (job.expires_at) {
+      const expiryDate = new Date(job.expires_at);
+      const daysUntilExpiry =
+        (expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+
+      if (daysUntilExpiry < 3) {
+        priorityScore += 15;
+      } else if (daysUntilExpiry < 7) {
+        priorityScore += 10;
+      }
+    }
+
+    return Math.min(priorityScore, 100);
+  }
+
+  private static calculateJobTypeMatch(
+    desiredJobTypes: string[],
+    jobType: string
+  ): number {
+    if (desiredJobTypes.includes(jobType)) {
+      return 100;
+    }
+
+    return 60;
+  }
+
+  private static calculateLocationMatch(
+    preferences: KindTaoJobPreferences,
+    job: any,
+    userLocation?: { lat: number; lng: number } | null
+  ): number {
+    if (preferences.desiredLocations.includes(job.location)) {
+      return 100;
+    }
+
+    if (
+      userLocation &&
+      job.location_coordinates &&
+      preferences.preferredWorkRadiusKm > 0
+    ) {
+      try {
+        const jobCoordsMatch =
+          job.location_coordinates.match(/\(([^,]+),([^)]+)\)/);
+        if (jobCoordsMatch) {
+          const jobLng = parseFloat(jobCoordsMatch[1]);
+          const jobLat = parseFloat(jobCoordsMatch[2]);
+
+          const distance = this.calculateDistance(
+            userLocation.lat,
+            userLocation.lng,
+            jobLat,
+            jobLng
+          );
+
+          if (distance <= preferences.preferredWorkRadiusKm) {
+            const score = Math.max(
+              60,
+              100 - (distance / preferences.preferredWorkRadiusKm) * 40
+            );
+            return Math.round(score);
+          } else {
+            return 30;
+          }
+        }
+      } catch (error) {
+        logger.warn("Error calculating location distance:", error);
+      }
+    }
+
+    if (job.province && job.region) {
+      const regionMatch = this.calculateRegionMatch(
+        preferences.desiredLocations,
+        job.province,
+        job.region
+      );
+      if (regionMatch > 0) {
+        return regionMatch;
+      }
+    }
+
+    const fuzzyMatch = this.calculateFuzzyLocationMatch(
+      preferences.desiredLocations,
+      job.location
+    );
+    if (fuzzyMatch > 0) {
+      return fuzzyMatch;
+    }
+
+    return 50;
+  }
+
+  private static calculateFuzzyLocationMatch(
+    desiredLocations: string[],
+    jobLocation: string
+  ): number {
+    if (!jobLocation || desiredLocations.length === 0) return 0;
+
+    const jobLocationLower = jobLocation.toLowerCase().trim();
+
+    for (const desiredLocation of desiredLocations) {
+      const desiredLower = desiredLocation.toLowerCase().trim();
+
+      if (desiredLower === jobLocationLower) {
+        return 100;
+      }
+
+      if (
+        jobLocationLower.includes(desiredLower) ||
+        desiredLower.includes(jobLocationLower)
+      ) {
+        return 90;
+      }
+    }
+
+    return 0;
+  }
+
+  private static calculateRegionMatch(
+    desiredLocations: string[],
+    jobProvince: string,
+    jobRegion: string
+  ): number {
+    if (!jobProvince || !jobRegion || desiredLocations.length === 0) return 0;
+
+    for (const desiredLocation of desiredLocations) {
+      const desiredLower = desiredLocation.toLowerCase().trim();
+
+      const regionInfo = getRegionForProvince(desiredLocation);
+      if (regionInfo && regionInfo.region === jobRegion) {
+        return 80;
+      }
+
+      if (areProvincesInSameRegion(desiredLocation, jobProvince)) {
+        return 85;
+      }
+    }
+
+    return 0;
+  }
+
+  private static calculateSalaryMatch(
+    salaryRange: { min: number; max: number; salaryType: string },
+    job: any
+  ): number {
+    if (salaryRange.min === 0 && salaryRange.max === 0) {
+      return 50;
+    }
+
+    const jobSalary = this.parseJobSalary(job.salary);
+    if (jobSalary === 0) {
+      return 50;
+    }
+
+    const userMin = salaryRange.min;
+    const userMax = salaryRange.max;
+
+    if (jobSalary >= userMin && jobSalary <= userMax) {
+      return 100;
+    }
+
+    const threshold = Math.max(userMin * 0.2, 100);
+    const lowerBound = userMin - threshold;
+    const upperBound = userMax + threshold;
+
+    if (jobSalary >= lowerBound && jobSalary <= upperBound) {
+      return 80;
+    }
+
+    if (jobSalary > upperBound) {
+      return 70;
+    }
+
+    if (jobSalary < lowerBound) {
+      return 40;
+    }
+
+    return 50;
+  }
+
+  private static parseJobSalary(salaryString: string): number {
+    if (!salaryString) return 0;
+
+    const match = salaryString.match(/[\d,]+/);
+    return match ? parseInt(match[0].replace(/,/g, "")) : 0;
+  }
+
+  private static calculateLanguageMatch(
+    preferredLanguages: string[],
+    requiredLanguages: string[]
+  ): number {
+    if (!requiredLanguages || requiredLanguages.length === 0) {
+      return 100;
+    }
+
+    if (preferredLanguages.length === 0) {
+      return 50;
+    }
+
+    const overlap = preferredLanguages.filter((lang) =>
+      requiredLanguages.includes(lang)
+    );
+
+    if (overlap.length === 0) {
+      return 30;
+    }
+
+    return (overlap.length / requiredLanguages.length) * 100;
+  }
+
+  private static generateMatchReasons(breakdown: any): string[] {
+    const reasons: string[] = [];
+
+    if (breakdown.jobTitle === 100) {
+      reasons.push("Job type matches your preferences");
+    }
+
+    if (breakdown.jobType === 100) {
+      reasons.push("Work arrangement matches your preferences");
+    } else if (breakdown.jobType >= 60) {
+      reasons.push("Work arrangement is close to your preferences");
+    }
+
+    if (breakdown.location === 100) {
+      reasons.push("Location matches your preferences");
+    } else if (breakdown.location >= 50) {
+      reasons.push("Location is outside your preferred areas");
+    }
+
+    if (breakdown.salary >= 80) {
+      reasons.push("Salary meets your expectations");
+    } else if (breakdown.salary >= 60) {
+      reasons.push("Salary is close to your expectations");
+    } else if (breakdown.salary >= 40) {
+      reasons.push("Salary is below your expectations");
+    }
+
+    if (breakdown.languages >= 80) {
+      reasons.push("Language requirements match your skills");
+    } else if (breakdown.languages >= 30) {
+      reasons.push("Some language requirements may not match");
+    }
+
+    if (breakdown.skills >= 80) {
+      reasons.push("Your skills match the job requirements");
+    } else if (breakdown.skills >= 60) {
+      reasons.push("Most of your skills match the job requirements");
+    } else if (breakdown.skills >= 40) {
+      reasons.push("Some of your skills match the job requirements");
+    } else if (breakdown.skills > 0) {
+      reasons.push("Few of your skills match the job requirements");
+    }
+
+    if (breakdown.priority >= 80) {
+      reasons.push("High priority job");
+    } else if (breakdown.priority >= 60) {
+      reasons.push("Good priority job");
+    }
+
+    return reasons;
   }
 }

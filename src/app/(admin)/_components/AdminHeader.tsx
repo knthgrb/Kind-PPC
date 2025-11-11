@@ -88,7 +88,7 @@ export default function AdminHeader() {
           ))}
 
           {/* Messages & Notifications */}
-          <Link href="/messages">
+          <Link href="/matches">
             <FaRegEnvelope className="text-[#636363] hover:text-red-600 cursor-pointer text-[clamp(1rem,1.2vw,1.25rem)]" />
           </Link>
           <Link href="/notifications">
@@ -102,7 +102,7 @@ export default function AdminHeader() {
             <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex items-center space-x-3 px-4 py-2 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors cursor-pointer"
+                className="flex items-center space-x-3 px-4 py-2 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors cursor-pointer"
               >
                 <FiUser className="w-5 h-5 text-gray-600" />
                 <div className="text-left">
@@ -119,7 +119,7 @@ export default function AdminHeader() {
 
               {/* User Dropdown Menu */}
               {userMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
                   <div className="py-1">
                     <Link
                       href="/profile"
@@ -148,7 +148,7 @@ export default function AdminHeader() {
             </div>
           ) : (
             <Link href="/login">
-              <button className="px-6 py-2 bg-red-600 text-white rounded-md text-lg hover:bg-red-700 cursor-pointer">
+              <button className="px-6 py-2 bg-red-600 text-white rounded-xl text-lg hover:bg-red-700 cursor-pointer">
                 Sign In
               </button>
             </Link>
@@ -157,7 +157,7 @@ export default function AdminHeader() {
 
         {/* Mobile Menu Button */}
         <div className="lg:hidden flex items-center space-x-5">
-          <Link href="/messages" onClick={() => setMenuOpen(false)}>
+          <Link href="/matches" onClick={() => setMenuOpen(false)}>
             <FaRegEnvelope className="text-[#636363] hover:text-red-600 text-xl" />
           </Link>
           <Link href="/notifications" onClick={() => setMenuOpen(false)}>
@@ -192,7 +192,7 @@ export default function AdminHeader() {
           ) : (
             <div className="flex justify-center pb-6">
               <Link href="/login">
-                <button className="px-6 py-2 bg-red-600 text-white rounded-md text-lg hover:bg-red-700 cursor-pointer">
+                <button className="px-6 py-2 bg-red-600 text-white rounded-xl text-lg hover:bg-red-700 cursor-pointer">
                   Sign In
                 </button>
               </Link>

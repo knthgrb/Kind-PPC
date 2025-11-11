@@ -354,7 +354,47 @@ export async function getUserSubscription(
       return null;
     }
 
-    return data as UserSubscription;
+    // Populate subscription_plans from SUBSCRIPTION_PLANS based on xendit_plan_id or subscription_tier
+    const subscription = data as UserSubscription;
+    const planId = subscription.xendit_plan_id;
+    const tier = subscription.subscription_tier;
+
+    // Find matching plan from SUBSCRIPTION_PLANS
+    let matchedPlan = null;
+    if (planId) {
+      matchedPlan = SUBSCRIPTION_PLANS.find((p) => p.id === planId);
+    }
+    
+    // If no match by planId, try matching by tier
+    if (!matchedPlan && tier) {
+      // Get user role to match the correct plan
+      const { data: userData } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", userId)
+        .single();
+      
+      const userRole = userData?.role;
+      if (userRole) {
+        matchedPlan = SUBSCRIPTION_PLANS.find(
+          (p) => p.tier === tier && p.userRole === userRole
+        );
+      }
+    }
+
+    // Populate subscription_plans if we found a match
+    if (matchedPlan) {
+      subscription.subscription_plans = {
+        name: matchedPlan.name,
+        tier: matchedPlan.tier,
+        price_monthly: matchedPlan.priceMonthly,
+        features: matchedPlan.features,
+        swipe_credits_monthly: matchedPlan.swipeCreditsMonthly,
+        boost_credits_monthly: matchedPlan.boostCreditsMonthly,
+      };
+    }
+
+    return subscription;
   } catch (error) {
     console.error("Error fetching user subscription:", error);
     return null;

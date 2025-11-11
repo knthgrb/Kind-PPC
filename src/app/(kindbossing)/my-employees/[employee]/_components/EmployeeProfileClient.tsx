@@ -60,7 +60,7 @@ export default function EmployeeProfileClient() {
           {/* Work History */}
           <Card title="Work History">
             <ul className="space-y-2">
-              <li className="rounded-md bg-white p-3 border border-white">
+              <li className="rounded-xl bg-white p-3 border border-white">
                 <div className="font-medium">Caregiver</div>
                 <div className="mt-1 text-sm opacity-80">
                   St. Luke's Hospital
@@ -119,14 +119,14 @@ export default function EmployeeProfileClient() {
                 alt="ID"
                 width={110}
                 height={72}
-                className="rounded-md border border-white object-cover"
+                className="rounded-xl border border-white object-cover"
               />
               <Image
                 src="/profile/id_placeholder_two.png"
                 alt="ID"
                 width={110}
                 height={72}
-                className="rounded-md border border-white object-cover"
+                className="rounded-xl border border-white object-cover"
               />
             </div>
           </Card>

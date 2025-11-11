@@ -247,7 +247,7 @@ export default function NotificationsPage() {
                   <div className="mt-4 flex space-x-1 bg-gray-100 rounded-lg p-1">
                     <button
                       onClick={() => handleFilterChange("all")}
-                      className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                      className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
                         filter === "all"
                           ? "bg-white text-gray-900 shadow-sm"
                           : "text-gray-600 hover:text-gray-900"
@@ -257,7 +257,7 @@ export default function NotificationsPage() {
                     </button>
                     <button
                       onClick={() => handleFilterChange("unread")}
-                      className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                      className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
                         filter === "unread"
                           ? "bg-white text-gray-900 shadow-sm"
                           : "text-gray-600 hover:text-gray-900"
@@ -324,7 +324,7 @@ export default function NotificationsPage() {
                         }`}
                       >
                         <div className="flex items-start space-x-3">
-                          <div className="flex-shrink-0 mt-1">
+                          <div className="shrink-0 mt-1">
                             {getNotificationIcon(notification.type)}
                           </div>
 
@@ -490,7 +490,7 @@ export default function NotificationsPage() {
                   <div className="mt-4 flex space-x-1 bg-gray-100 rounded-lg p-1">
                     <button
                       onClick={() => handleFilterChange("all")}
-                      className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                      className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
                         filter === "all"
                           ? "bg-white text-gray-900 shadow-sm"
                           : "text-gray-600 hover:text-gray-900"
@@ -500,7 +500,7 @@ export default function NotificationsPage() {
                     </button>
                     <button
                       onClick={() => handleFilterChange("unread")}
-                      className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                      className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
                         filter === "unread"
                           ? "bg-white text-gray-900 shadow-sm"
                           : "text-gray-600 hover:text-gray-900"
@@ -567,7 +567,7 @@ export default function NotificationsPage() {
                         }`}
                       >
                         <div className="flex items-start space-x-3">
-                          <div className="flex-shrink-0 mt-1">
+                          <div className="shrink-0 mt-1">
                             {getNotificationIcon(notification.type)}
                           </div>
 
@@ -721,7 +721,7 @@ export default function NotificationsPage() {
           <div className="mt-4 flex space-x-1 bg-gray-100 rounded-lg p-1">
             <button
               onClick={() => handleFilterChange("all")}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
                 filter === "all"
                   ? "bg-white text-gray-900 shadow-sm"
                   : "text-gray-600 hover:text-gray-900"
@@ -731,7 +731,7 @@ export default function NotificationsPage() {
             </button>
             <button
               onClick={() => handleFilterChange("unread")}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
                 filter === "unread"
                   ? "bg-white text-gray-900 shadow-sm"
                   : "text-gray-600 hover:text-gray-900"
@@ -798,7 +798,7 @@ export default function NotificationsPage() {
                 }`}
               >
                 <div className="flex items-start space-x-3">
-                  <div className="flex-shrink-0 mt-1">
+                  <div className="shrink-0 mt-1">
                     {getNotificationIcon(notification.type)}
                   </div>
 

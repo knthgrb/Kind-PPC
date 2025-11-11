@@ -2,14 +2,23 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, lazy, Suspense } from "react";
+import { useState, lazy, Suspense, useEffect } from "react";
 import { IoArrowBack, IoCreateOutline } from "react-icons/io5";
+import { FaRocket } from "react-icons/fa";
+import { IoClose } from "react-icons/io5";
 import Card from "@/components/common/Card";
 import Chip from "@/components/common/Chip";
 import type { UserProfile } from "@/types/userProfile";
 import { capitalizeWords } from "@/utils/capitalize";
 import SupabaseImage from "@/components/common/SupabaseImage";
 import WorkExperienceSection from "./WorkExperienceSection";
+import SubscriptionModal from "@/components/modals/SubscriptionModal";
+import CreditPurchaseModal from "@/components/modals/CreditPurchaseModal";
+import { boostProfile } from "@/actions/profile/boost-profile";
+import { getUserSubscription } from "@/actions/subscription/xendit";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { useToastActions } from "@/stores/useToastStore";
+import { createClient } from "@/utils/supabase/client";
 
 // Lazy load the EditProfileModal
 const EditProfileModal = lazy(() => import("./EditProfileModal"));
@@ -19,8 +28,119 @@ interface ProfileClientProps {
 }
 
 export default function ProfileClient({ user }: ProfileClientProps) {
+  const { user: authUser } = useAuthStore();
+  const { showSuccess, showError } = useToastActions();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
+  const [isCreditPurchaseModalOpen, setIsCreditPurchaseModalOpen] =
+    useState(false);
+  const [boostCredits, setBoostCredits] = useState<number>(0);
+  const [isBoosting, setIsBoosting] = useState(false);
+  const [isProfileBoosted, setIsProfileBoosted] = useState(false);
+  const [boostExpiresAt, setBoostExpiresAt] = useState<string | null>(null);
+  const [isBoostBannerDismissed, setIsBoostBannerDismissed] = useState(false);
+
+  useEffect(() => {
+    if (authUser?.id) {
+      loadBoostCredits();
+      loadProfileBoostStatus();
+    }
+  }, [authUser]);
+
+  const loadBoostCredits = async () => {
+    if (!authUser?.id) return;
+
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("users")
+        .select("boost_credits")
+        .eq("id", authUser.id)
+        .single();
+
+      if (!error && data) {
+        setBoostCredits(data.boost_credits || 0);
+      }
+    } catch (error) {
+      console.error("Error loading boost credits:", error);
+    }
+  };
+
+  const loadProfileBoostStatus = async () => {
+    if (!authUser?.id) return;
+
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("kindtaos")
+        .select("is_boosted, boost_expires_at")
+        .eq("user_id", authUser.id)
+        .single();
+
+      if (!error && data) {
+        setIsProfileBoosted(data.is_boosted || false);
+        setBoostExpiresAt(data.boost_expires_at || null);
+      }
+    } catch (error) {
+      console.error("Error loading profile boost status:", error);
+    }
+  };
+
+  const handleBoostProfile = async () => {
+    if (!authUser?.id) return;
+
+    // Check if profile is already boosted and not expired
+    if (isProfileBoosted && boostExpiresAt) {
+      const expiryDate = new Date(boostExpiresAt);
+      if (expiryDate > new Date()) {
+        showError("Your profile is already boosted");
+        return;
+      }
+    }
+
+    // Check boost credits
+    if (boostCredits < 1) {
+      // Check if user has subscription
+      try {
+        const subscriptionResult = await getUserSubscription();
+        const hasSubscription =
+          subscriptionResult.success &&
+          subscriptionResult.subscription &&
+          subscriptionResult.subscription.status === "active";
+
+        if (!hasSubscription) {
+          // Show subscription modal
+          setIsSubscriptionModalOpen(true);
+        } else {
+          // Show credit purchase modal
+          setIsCreditPurchaseModalOpen(true);
+        }
+      } catch (error) {
+        console.error("Error checking subscription:", error);
+        setIsSubscriptionModalOpen(true);
+      }
+      return;
+    }
+
+    // Boost the profile
+    setIsBoosting(true);
+    try {
+      const result = await boostProfile();
+      if (result.success) {
+        showSuccess("Profile boosted successfully!");
+        loadBoostCredits();
+        loadProfileBoostStatus();
+      } else {
+        showError(result.error || "Failed to boost profile");
+      }
+    } catch (error) {
+      console.error("Error boosting profile:", error);
+      showError("An unexpected error occurred");
+    } finally {
+      setIsBoosting(false);
+    }
+  };
 
   const {
     first_name,
@@ -76,30 +196,92 @@ export default function ProfileClient({ user }: ProfileClientProps) {
       .join(" ");
   };
 
+  const handleDismissBoostBanner = () => {
+    setIsBoostBannerDismissed(true);
+  };
+
+  // Show boost banner if:
+  // 1. Not dismissed
+  // 2. Profile is not currently boosted
+  const shouldShowBoostBanner =
+    !isBoostBannerDismissed &&
+    !(
+      isProfileBoosted &&
+      boostExpiresAt &&
+      new Date(boostExpiresAt) > new Date()
+    );
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Back Button and Edit Profile */}
+        {/* Back Button and Actions */}
         <div className="flex items-center justify-between mb-6">
           <Link
-            href="/find-work"
+            href="/recs"
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
           >
             <IoArrowBack className="w-5 h-5" />
             <span>Find Work</span>
           </Link>
-          <button
-            onClick={() => setIsEditModalOpen(true)}
-            className="flex cursor-pointer items-center gap-2 text-red-600 hover:text-red-700 transition-colors"
-          >
-            <IoCreateOutline className="w-5 h-5" />
-            <span>Edit Profile</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsEditModalOpen(true)}
+              className="flex cursor-pointer items-center gap-2 text-red-600 hover:text-red-700 transition-colors"
+            >
+              <IoCreateOutline className="w-5 h-5" />
+              <span>Edit Profile</span>
+            </button>
+          </div>
         </div>
+
+        {/* Boost Profile Banner - Top of Page */}
+        {shouldShowBoostBanner && (
+          <Card className="mb-6 border-2 border-[#CC0000] relative">
+            <button
+              onClick={handleDismissBoostBanner}
+              className="absolute top-3 cursor-pointer right-3 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+              aria-label="Dismiss boost banner"
+            >
+              <IoClose className="w-5 h-5" />
+            </button>
+            <div className="flex items-center justify-between pr-8">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <FaRocket className="w-5 h-5 text-[#CC0000]" />
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Boost Your Profile
+                  </h3>
+                </div>
+                <p className="text-sm text-gray-600">
+                  Increase the chance to be seen by employers when they review
+                  applications
+                </p>
+              </div>
+              <button
+                onClick={handleBoostProfile}
+                disabled={isBoosting}
+                className="flex cursor-pointer items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium bg-[#CC0000] text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isBoosting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Boosting...</span>
+                  </>
+                ) : (
+                  <>
+                    <FaRocket className="w-4 h-4" />
+                    <span>Boost Now</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </Card>
+        )}
+
         {/* Profile Header */}
         <Card className="mb-6">
           <div className="flex flex-col md:flex-row gap-6">
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               {profile_image_url ? (
                 <SupabaseImage
                   filePath={profile_image_url}
@@ -145,6 +327,16 @@ export default function ProfileClient({ user }: ProfileClientProps) {
                       </a>
                     </div>
                   )}
+                  {isProfileBoosted &&
+                    boostExpiresAt &&
+                    new Date(boostExpiresAt) > new Date() && (
+                      <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                        <FaRocket className="w-3 h-3 text-[#CC0000]" />
+                        <span className="text-sm font-medium text-red-800">
+                          Profile Boosted
+                        </span>
+                      </div>
+                    )}
                   {status && (
                     <div className="bg-gray-100 border border-gray-200 rounded-lg px-3 py-2">
                       <span className="text-sm font-medium text-gray-700">
@@ -245,11 +437,11 @@ export default function ProfileClient({ user }: ProfileClientProps) {
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">
                     Education
                   </h2>
-                  <p className="text-gray-700">
+                  <span className="inline-block bg-white rounded-lg px-3 py-2 text-gray-700">
                     {capitalizeWords(
                       kindtao_profile.highest_educational_attainment
                     )}
-                  </p>
+                  </span>
                 </Card>
               )}
 
@@ -258,9 +450,9 @@ export default function ProfileClient({ user }: ProfileClientProps) {
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">
                     Expected Salary
                   </h2>
-                  <p className="text-gray-700">
+                  <span className="inline-block bg-white rounded-lg px-3 py-2 text-gray-700">
                     {kindtao_profile.expected_salary_range}
-                  </p>
+                  </span>
                 </Card>
               )}
             </div>
@@ -424,6 +616,27 @@ export default function ProfileClient({ user }: ProfileClientProps) {
           />
         </Suspense>
       )}
+
+      {/* Subscription Modal */}
+      <SubscriptionModal
+        isOpen={isSubscriptionModalOpen}
+        onClose={() => {
+          setIsSubscriptionModalOpen(false);
+          loadBoostCredits();
+        }}
+        userRole="kindtao"
+      />
+
+      {/* Credit Purchase Modal */}
+      <CreditPurchaseModal
+        isOpen={isCreditPurchaseModalOpen}
+        onClose={() => {
+          setIsCreditPurchaseModalOpen(false);
+          loadBoostCredits();
+        }}
+        creditType="boost_credits"
+        currentCredits={boostCredits}
+      />
     </div>
   );
 }

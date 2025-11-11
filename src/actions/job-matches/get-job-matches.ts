@@ -1,6 +1,6 @@
 "use server";
 
-import { JobMatchingService } from "@/services/server/JobMatchingService";
+import { JobService } from "@/services/server/JobService";
 import { createClient } from "@/utils/supabase/server";
 
 export async function getJobMatches(limit: number = 20): Promise<{
@@ -28,7 +28,7 @@ export async function getJobMatches(limit: number = 20): Promise<{
     }
 
     // Get matching jobs
-    const matches = await JobMatchingService.findMatchingJobs(user.id, limit);
+    const matches = await JobService.fetchMatchedJobs(user.id, limit);
 
     return {
       success: true,

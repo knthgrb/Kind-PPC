@@ -185,11 +185,11 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
 
 // Boost packages for one-time purchases
 export const BOOST_PACKAGES = {
-  profile_boost: [
+  boost_credits: [
     {
       id: "boost_1",
       name: "Profile Boost (1)",
-      type: "profile_boost" as const,
+      type: "boost_credits" as const,
       quantity: 1,
       price: 49,
       currency: "PHP",
@@ -199,7 +199,7 @@ export const BOOST_PACKAGES = {
     {
       id: "boost_3",
       name: "Profile Boost (3)",
-      type: "profile_boost" as const,
+      type: "boost_credits" as const,
       quantity: 3,
       price: 129,
       currency: "PHP",
@@ -209,7 +209,7 @@ export const BOOST_PACKAGES = {
     {
       id: "boost_5",
       name: "Profile Boost (5)",
-      type: "profile_boost" as const,
+      type: "boost_credits" as const,
       quantity: 5,
       price: 199,
       currency: "PHP",

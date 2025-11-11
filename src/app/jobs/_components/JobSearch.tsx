@@ -74,7 +74,7 @@ export default function JobSearch({
         <div className="block lg:hidden space-y-4">
           {/* Search Input Section */}
           <div className="flex items-center gap-2">
-            <CiSearch className="text-xl text-gray-500 flex-shrink-0" />
+            <CiSearch className="text-xl text-gray-500 shrink-0" />
             <div className="flex flex-wrap gap-2 flex-1 min-w-0">
               {inputs.tags.map((tag, i) => (
                 <Tag
@@ -134,7 +134,7 @@ export default function JobSearch({
         {/* Desktop Layout */}
         <div className="hidden lg:flex items-center gap-2 min-w-0">
           {/* Search icon */}
-          <CiSearch className="text-xl text-gray-500 flex-shrink-0" />
+          <CiSearch className="text-xl text-gray-500 shrink-0" />
 
           {/* Tags + Input */}
           <div className="flex flex-wrap gap-2 flex-1 min-w-0">
@@ -184,7 +184,7 @@ export default function JobSearch({
           {/* Search button */}
           <button
             onClick={handleSearch}
-            className="bg-[#CC0000] hover:bg-red-700 text-white text-sm px-6 py-3 rounded-lg flex items-center justify-center gap-2 flex-shrink-0"
+            className="bg-[#CC0000] hover:bg-red-700 text-white text-sm px-6 py-3 rounded-lg flex items-center justify-center gap-2 shrink-0"
           >
             Search
             <IoArrowForwardCircleOutline className="text-white text-lg" />

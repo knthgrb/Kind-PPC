@@ -27,7 +27,7 @@ export interface JobPreferences {
   preferredWorkRadiusKm: number;
 }
 
-const PHILIPPINE_REGIONS = [
+export const PHILIPPINE_REGIONS = [
   "All Philippines",
   "National Capital Region (NCR)",
   "Cordillera Administrative Region (CAR)",
@@ -48,7 +48,7 @@ const PHILIPPINE_REGIONS = [
   "Bangsamoro Autonomous Region in Muslim Mindanao (BARMM)",
 ];
 
-const JOB_TYPES = [
+export const JOB_TYPES = [
   "one-time",
   "full-time",
   "part-time",
@@ -56,14 +56,14 @@ const JOB_TYPES = [
   "temporary",
 ];
 
-const SALARY_TYPES = [
+export const SALARY_TYPES = [
   { value: "daily", label: "Daily" },
   { value: "monthly", label: "Monthly" },
   { value: "hourly", label: "Hourly" },
   { value: "one-time", label: "One Time" },
 ];
 
-const LANGUAGES = [
+export const LANGUAGES = [
   "English",
   "Filipino/Tagalog",
   "Cebuano",
@@ -584,7 +584,7 @@ export default function JobPreferencesModal({
 
         {/* Validation Error */}
         {validationError && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-md mb-6">
+          <div className="p-4 bg-red-50 border border-red-200 rounded-xl mb-6">
             <p className="text-red-600 text-sm">{validationError}</p>
           </div>
         )}

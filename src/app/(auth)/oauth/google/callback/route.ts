@@ -1,3 +1,4 @@
+import { UserSettingsService } from "@/services/server/UserSettingsService";
 import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/utils/logger";
@@ -151,6 +152,20 @@ async function handleUserSetup(
       logger.error("Error updating auth metadata:", updateAuthError);
       // Don't return error here, just log it
     }
+  }
+
+  const { error: settingsError } =
+    await UserSettingsService.ensureDefaultSettingsForUser(
+      user.id,
+      finalRole,
+      supabase
+    );
+
+  if (settingsError) {
+    logger.error(
+      "Error ensuring default user settings for Google signup:",
+      settingsError
+    );
   }
 
   return { error: null, role: finalRole, needsRoleSelection: false };

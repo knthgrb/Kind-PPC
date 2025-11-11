@@ -38,7 +38,7 @@ export default function ApplicationCardMobile({
       {/* Candidate Profile */}
       <div className="p-6">
         <div className="flex items-start space-x-4">
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             <Image
               src="/people/user-profile.png"
               alt={application.applicant_name || "Candidate"}

@@ -23,16 +23,16 @@ export class VerificationRequestService {
     }
 
     console.log("🔍 Creating verification request with data:", {
-      kindtao_user_id: user.user.id,
+      user_id: user.user.id,
       notes: requestData.notes || null,
       user_metadata: user.user.user_metadata,
       role: user.user.user_metadata?.role,
     });
 
     const { data, error } = await supabase
-      .from("kindtao_verification_requests")
+      .from("verification_requests")
       .insert({
-        kindtao_user_id: user.user.id,
+        user_id: user.user.id,
         notes: requestData.notes || null,
       })
       .select()
@@ -73,9 +73,9 @@ export class VerificationRequestService {
     try {
       // First check if user already has a verification request
       const { data: existingRequest, error: checkError } = await supabase
-        .from("kindtao_verification_requests")
+        .from("verification_requests")
         .select("*")
-        .eq("kindtao_user_id", user.user.id)
+        .eq("user_id", user.user.id)
         .order("created_at", { ascending: false })
         .limit(1)
         .single();
@@ -95,7 +95,7 @@ export class VerificationRequestService {
           existingRequest.id
         );
         const { data, error } = await supabase
-          .from("kindtao_verification_requests")
+          .from("verification_requests")
           .update({
             status: "pending",
             updated_at: new Date().toISOString(),
@@ -139,9 +139,9 @@ export class VerificationRequestService {
     try {
       // First get the verification request
       const { data: requestData, error: requestError } = await supabase
-        .from("kindtao_verification_requests")
+        .from("verification_requests")
         .select("*")
-        .eq("kindtao_user_id", user.user.id)
+        .eq("user_id", user.user.id)
         .order("created_at", { ascending: false })
         .limit(1)
         .single();
@@ -173,9 +173,9 @@ export class VerificationRequestService {
       // If we have a request, fetch the associated documents
       if (requestData) {
         const { data: documents, error: documentsError } = await supabase
-          .from("kindtao_verification_documents")
+          .from("verification_documents")
           .select("*")
-          .eq("kindbossing_user_id", user.user.id)
+          .eq("user_id", user.user.id)
           .order("created_at", { ascending: false });
 
         if (documentsError) {
@@ -230,7 +230,7 @@ export class VerificationRequestService {
     });
 
     const { data, error } = await supabase
-      .from("kindtao_verification_requests")
+      .from("verification_requests")
       .update({
         ...updateData,
         updated_at: new Date().toISOString(),
@@ -275,14 +275,14 @@ export class VerificationRequestService {
     }
 
     console.log("🔍 Saving document metadata:", {
-      kindbossing_user_id: user.user.id,
+      user_id: user.user.id,
       ...documentData,
     });
 
     const { data, error } = await supabase
-      .from("kindtao_verification_documents")
+      .from("verification_documents")
       .insert({
-        kindbossing_user_id: user.user.id,
+        user_id: user.user.id,
         title: documentData.title,
         file_url: documentData.file_url,
         size: documentData.size,
@@ -315,9 +315,9 @@ export class VerificationRequestService {
     try {
       // Check documents in the database first
       const { data: dbDocuments, error: dbError } = await supabase
-        .from("kindtao_verification_documents")
+        .from("verification_documents")
         .select("*")
-        .eq("kindbossing_user_id", user.user.id);
+        .eq("user_id", user.user.id);
 
       if (dbError) {
         console.error("Error checking documents in database:", dbError);

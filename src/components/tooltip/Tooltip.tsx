@@ -113,7 +113,7 @@ export default function Tooltip({
       {isVisible && (
         <div
           ref={tooltipRef}
-          className={`absolute z-50 px-3 py-2 text-sm text-white bg-gray-900 rounded-md shadow-lg whitespace-nowrap ${getPositionClasses()}`}
+          className={`absolute z-50 px-3 py-2 text-sm text-white bg-gray-900 rounded-xl shadow-lg whitespace-nowrap ${getPositionClasses()}`}
           role="tooltip"
         >
           {content}

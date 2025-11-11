@@ -1,5 +1,5 @@
 import { createClient } from "@/utils/supabase/client";
-import { ReportData } from "@/app/chats/_components/ReportUserModal";
+import { ReportData } from "@/app/matches/_components/ReportUserModal";
 
 export interface ReportUserData {
   reporterId: string;

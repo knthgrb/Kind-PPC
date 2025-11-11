@@ -53,10 +53,10 @@ export async function GET(request: NextRequest) {
         score: Number(match.score),
         reasons: Array.isArray(match.reasons) ? match.reasons.map(String) : [],
         breakdown: {
-          jobTypeMatch: Number(match.breakdown.jobTitle),
+          jobTypeMatch: Number(match.breakdown.jobType),
           locationMatch: Number(match.breakdown.location),
           salaryMatch: Number(match.breakdown.salary),
-          skillsMatch: Number(match.breakdown.languages),
+          skillsMatch: Number(match.breakdown.skills),
           experienceMatch: 0,
           availabilityMatch: 0,
           ratingBonus: 0,

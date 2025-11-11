@@ -4,8 +4,13 @@ import {
   verifyWebhookSignature,
   createPaymentTransaction,
 } from "@/services/server/XenditService";
+import {
+  addCreditsToUser,
+  recordCreditPurchase,
+} from "@/services/server/XenditCreditService";
 import { XenditWebhookEvent } from "@/types/subscription";
 import { logger } from "@/utils/logger";
+import { BOOST_PACKAGES } from "@/constants/subscriptionPlans";
 
 export async function POST(request: NextRequest) {
   try {
@@ -55,6 +60,18 @@ export async function POST(request: NextRequest) {
 
       case "recurring.cycle.retrying":
         await handleCycleRetrying(event);
+        break;
+
+      case "invoice.paid":
+        await handleInvoicePaid(event);
+        break;
+
+      case "invoice.cancelled":
+        await handleInvoiceCancelled(event);
+        break;
+
+      case "invoice.expired":
+        await handleInvoiceExpired(event);
         break;
 
       default:
@@ -173,5 +190,101 @@ async function handleCycleRetrying(event: XenditWebhookEvent) {
     logger.log("Payment retry in progress for subscription:", data.id);
   } catch (error) {
     logger.error("Error handling cycle retry:", error);
+  }
+}
+
+async function handleInvoicePaid(event: any) {
+  try {
+    const { data } = event;
+    logger.log("Invoice paid:", data.id);
+
+    // Check if this is a credit purchase
+    const metadata = data.metadata;
+    if (metadata && metadata.purchase_type === "credit_purchase") {
+      const { user_id, credit_type, package_id, quantity } = metadata;
+
+      // Add credits to user account
+      const addCreditsResult = await addCreditsToUser(
+        user_id,
+        credit_type,
+        quantity
+      );
+
+      if (!addCreditsResult.success) {
+        logger.error("Failed to add credits:", addCreditsResult.error);
+      } else {
+        logger.log(`Added ${quantity} ${credit_type} to user ${user_id}`);
+      }
+
+      // Update transaction record
+      const transactionResult = await recordCreditPurchase(
+        user_id,
+        credit_type,
+        package_id,
+        quantity,
+        data.amount,
+        data.currency,
+        "succeeded",
+        data.id
+      );
+
+      if (!transactionResult.success) {
+        logger.error("Failed to record transaction:", transactionResult.error);
+      }
+    }
+  } catch (error) {
+    logger.error("Error handling invoice payment:", error);
+  }
+}
+
+async function handleInvoiceCancelled(event: any) {
+  try {
+    const { data } = event;
+    logger.log("Invoice cancelled:", data.id);
+
+    // Record failed transaction if applicable
+    const metadata = data.metadata;
+    if (metadata && metadata.purchase_type === "credit_purchase") {
+      const { user_id, credit_type, package_id, quantity } = metadata;
+
+      await recordCreditPurchase(
+        user_id,
+        credit_type,
+        package_id,
+        quantity,
+        data.amount,
+        data.currency,
+        "failed",
+        data.id
+      );
+    }
+  } catch (error) {
+    logger.error("Error handling invoice cancellation:", error);
+  }
+}
+
+async function handleInvoiceExpired(event: any) {
+  try {
+    const { data } = event;
+    logger.log("Invoice expired:", data.id);
+
+    // Record failed transaction if applicable
+    const metadata = data.metadata;
+    if (metadata && metadata.purchase_type === "credit_purchase") {
+      const { user_id, credit_type, package_id, quantity } = metadata;
+
+      await recordCreditPurchase(
+        user_id,
+        credit_type,
+        package_id,
+        quantity,
+        data.amount,
+        data.currency,
+        "failed",
+        data.id
+      );
+    }
+  } catch (error) {
+    logger.error("Error handling invoice expiration:", error);
   }
 }

@@ -161,7 +161,7 @@ export default function EditProfileModal({
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
       <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300">
         {/* Fixed Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 shrink-0">
           <h2 className="text-xl font-semibold text-gray-900">Edit Profile</h2>
           <button
             onClick={onClose}

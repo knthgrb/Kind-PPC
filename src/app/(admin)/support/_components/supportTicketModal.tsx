@@ -111,7 +111,7 @@ export default function SupportTicketModal({ open, onClose, ticket }: Props) {
                 <div className="font-medium text-[#101010]">Ticket Status:</div>
                 <Dropdown
                   value={status}
-                  className="border border-[#D0D0D0] bg-white rounded-md"
+                  className="border border-[#D0D0D0] bg-white rounded-xl"
                   options={["In Progress", "Resolved"]}
                   onChange={(val) => setStatus(val as Ticket["status"])}
                 />
@@ -134,7 +134,7 @@ export default function SupportTicketModal({ open, onClose, ticket }: Props) {
                   key={i}
                   src={src}
                   alt={`attachment-${i}`}
-                  className="h-16 w-28 sm:h-20 sm:w-36 rounded-md object-cover ring-1 ring-gray-200"
+                  className="h-16 w-28 sm:h-20 sm:w-36 rounded-xl object-cover ring-1 ring-gray-200"
                 />
               ))}
             </div>

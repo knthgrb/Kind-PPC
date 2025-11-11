@@ -62,9 +62,9 @@ export async function GET(request: NextRequest) {
       nextUrl = "/settings";
       // Optional: role-based dashboard landing
       if (role === "kindbossing") {
-        nextUrl = "/kindbossing-dashboard"; // adjust if you have a specific bossing dashboard
+        nextUrl = "/my-jobs"; // adjust if you have a specific bossing dashboard
       } else if (role === "kindtao") {
-        nextUrl = "/find-work"; // adjust if you have a specific tao dashboard
+        nextUrl = "/recs"; // adjust if you have a specific tao dashboard
       }
     }
 
@@ -147,9 +147,9 @@ export async function POST(request: NextRequest) {
       nextUrl = "/settings";
       // Optional: role-based dashboard landing
       if (role === "kindbossing") {
-        nextUrl = "/kindbossing-dashboard"; // adjust if you have a specific bossing dashboard
+        nextUrl = "/my-jobs"; // adjust if you have a specific bossing dashboard
       } else if (role === "kindtao") {
-        nextUrl = "/find-work"; // adjust if you have a specific tao dashboard
+        nextUrl = "/recs"; // adjust if you have a specific tao dashboard
       }
     }
 

@@ -11,12 +11,13 @@ const PUBLIC_ROUTES = [
   "/pricing",
   "/contact-us",
   "/find-help",
-  "/email-confirmation-callback",
   "/oauth/google/callback",
   "/select-role",
   "/oauth/google/auth-code-error",
   "/email-confirmation",
+  "/email-confirmation-callback",
   "/email-not-confirmed",
+  "/forgot-password",
   "/forbidden",
   "/api/webhooks/xendit",
 ] as const;
@@ -39,8 +40,10 @@ const ADMIN_ROUTES = [
 // Role-specific route prefixes
 const KINDTAO_PREFIXES = [
   "/kindtao-onboarding",
-  "/find-work",
+  "/recs",
   "/profile",
+  "/kindtao",
+  "/kindtao-more",
 ] as const;
 
 const KINDBOSSING_PREFIXES = [
@@ -50,6 +53,8 @@ const KINDBOSSING_PREFIXES = [
   "/documents",
   "/payslip",
   "/government-benefits",
+  "/kindbossing",
+  "/kindbossing-more",
 ] as const;
 
 function matchesAnyPrefix(
@@ -137,10 +142,10 @@ export async function updateSession(request: NextRequest) {
     const role = user.user_metadata?.role;
 
     if (role === "kindtao") {
-      url.pathname = "/find-work";
+      url.pathname = "/recs";
       return NextResponse.redirect(url);
     } else if (role === "kindbossing") {
-      url.pathname = "/kindbossing-dashboard";
+      url.pathname = "/my-jobs";
       return NextResponse.redirect(url);
     }
 
@@ -210,10 +215,10 @@ export async function updateSession(request: NextRequest) {
     user.user_metadata?.role === "kindtao" &&
     user.user_metadata?.has_completed_onboarding &&
     isKindTaoOnboardingRoute(currentPathname) &&
-    currentPathname !== "/find-work"
+    currentPathname !== "/recs"
   ) {
     const url = request.nextUrl.clone();
-    url.pathname = "/find-work";
+    url.pathname = "/recs";
     return NextResponse.redirect(url);
   }
 
@@ -223,10 +228,10 @@ export async function updateSession(request: NextRequest) {
     user.user_metadata?.role === "kindbossing" &&
     user.user_metadata?.has_completed_onboarding &&
     isKindBossingOnboardingRoute(currentPathname) &&
-    currentPathname !== "/kindbossing-dashboard"
+    currentPathname !== "/my-jobs"
   ) {
     const url = request.nextUrl.clone();
-    url.pathname = "/kindbossing-dashboard";
+    url.pathname = "/my-jobs";
     return NextResponse.redirect(url);
   }
 

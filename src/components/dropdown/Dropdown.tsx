@@ -40,7 +40,7 @@ export default function Dropdown({
         type="button"
         onClick={() => !disabled && setExpanded((v) => !v)}
         disabled={disabled}
-        className={`w-full h-11.5 rounded-md px-3 text-left text-sm flex items-center justify-between focus:outline-none ${
+        className={`w-full h-11.5 rounded-xl px-3 text-left text-sm flex items-center justify-between focus:outline-none ${
           disabled
             ? "bg-gray-100 text-gray-400 cursor-not-allowed"
             : "text-gray-700 bg-white"
@@ -54,7 +54,7 @@ export default function Dropdown({
 
       {/* Dropdown options */}
       {expanded && !disabled && (
-        <div className="absolute mt-1 w-full max-h-60 overflow-y-auto rounded-md border border-gray-200 bg-white shadow-md z-[60]">
+        <div className="absolute mt-1 w-full max-h-60 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-md z-[60]">
           {options.map((opt) => (
             <button
               key={opt}

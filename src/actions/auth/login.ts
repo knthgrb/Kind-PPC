@@ -79,9 +79,9 @@ export async function login(formData: FormData) {
 
     let redirectTo = "/";
     if (role === "kindtao") {
-      redirectTo = "/find-work";
+      redirectTo = "/recs";
     } else if (role === "kindbossing") {
-      redirectTo = "/kindbossing-dashboard";
+      redirectTo = "/my-jobs";
     } else if (role === "admin") {
       redirectTo = "/admin-dashboard";
     }

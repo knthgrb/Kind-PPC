@@ -68,7 +68,7 @@ export default function ToastItem({ toast }: ToastItemProps) {
 
   const getIconComponent = () => {
     const iconContainerStyles =
-      "w-8 h-8 flex items-center justify-center flex-shrink-0";
+      "w-8 h-8 flex items-center justify-center shrink-0";
     const iconStyles = "w-5 h-5";
 
     const getIconColor = () => {

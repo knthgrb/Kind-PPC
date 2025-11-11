@@ -338,7 +338,7 @@ export default function SkillsAvailabilityClient({
         {/* Skills */}
         <div className="mb-6">
           <label className="block mb-2 stepsLabel">Skills</label>
-          <div className="rounded-md border border-[#DFDFDF] p-2 flex flex-wrap gap-2">
+          <div className="rounded-xl border border-[#DFDFDF] p-2 flex flex-wrap gap-2">
             {/* Skills Dropdown - Always at the leftmost position */}
             <div className="relative flex-1 min-w-[160px]">
               <input
@@ -354,7 +354,7 @@ export default function SkillsAvailabilityClient({
               {/* Dropdown Options */}
               {skillDropdownOpen && filteredSkills.length > 0 && (
                 <div
-                  className="absolute top-full left-0 right-0 mt-1 bg-white border border-[#DFDFDF] rounded-md shadow-lg z-20 max-h-48 overflow-y-auto"
+                  className="absolute top-full left-0 right-0 mt-1 bg-white border border-[#DFDFDF] rounded-xl shadow-lg z-20 max-h-48 overflow-y-auto"
                   ref={dropdownRef}
                 >
                   {filteredSkills.map((skill) => (
@@ -375,7 +375,7 @@ export default function SkillsAvailabilityClient({
             {skills.map((s) => (
               <span
                 key={s}
-                className="inline-flex items-center gap-2 rounded-md border border-[#DFDFDF] px-3 py-1 stepsSkills bg-[#DFDFDF]"
+                className="inline-flex items-center gap-2 rounded-xl border border-[#DFDFDF] px-3 py-1 stepsSkills bg-[#DFDFDF]"
               >
                 {capitalizeSkill(s)}
                 <button
@@ -438,7 +438,7 @@ export default function SkillsAvailabilityClient({
             <button
               type="button"
               onClick={() => setDaysExpanded((v) => !v)}
-              className="w-full h-12 rounded-md border border-[#DFDFDF] px-4 flex items-center justify-between"
+              className="w-full h-12 rounded-xl border border-[#DFDFDF] px-4 flex items-center justify-between"
             >
               <span className="truncate">
                 {selectedDays.length ? selectedDays.join(", ") : "Select days"}
@@ -451,7 +451,7 @@ export default function SkillsAvailabilityClient({
                 className="
         absolute right-0 mt-3
         w-full max-w-full
-        rounded-md bg-[#EDEDED] border border-[#EDEDED]
+        rounded-xl bg-[#EDEDED] border border-[#EDEDED]
         p-4 shadow-sm
       "
               >
@@ -464,7 +464,7 @@ export default function SkillsAvailabilityClient({
                         <span
                           className={[
                             "inline-flex items-center justify-center",
-                            "w-5 h-5 rounded-[4px] border flex-shrink-0",
+                            "w-5 h-5 rounded-[4px] border shrink-0",
                             checked
                               ? "border-[#CC0000] bg-[#CC0000]"
                               : "border-[#667282] bg-[#EDEDED]",
@@ -526,11 +526,11 @@ export default function SkillsAvailabilityClient({
         {/* Languages */}
         <div className="mb-6">
           <label className="block mb-2 stepsLabel">Languages</label>
-          <div className="rounded-md border border-[#DFDFDF] p-2 flex flex-wrap gap-2">
+          <div className="rounded-xl border border-[#DFDFDF] p-2 flex flex-wrap gap-2">
             {(languages as string[]).map((lng, idx) => (
               <span
                 key={`${lng}-${idx}`}
-                className="inline-flex items-center gap-2 rounded-md border border-[#DFDFDF] px-3 py-1 stepsSkills bg-[#DFDFDF]"
+                className="inline-flex items-center gap-2 rounded-xl border border-[#DFDFDF] px-3 py-1 stepsSkills bg-[#DFDFDF]"
               >
                 {lng}
                 <button
@@ -571,14 +571,14 @@ export default function SkillsAvailabilityClient({
 
         {/* Error Message */}
         {saveError && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-md mb-6">
+          <div className="p-4 bg-red-50 border border-red-200 rounded-xl mb-6">
             <p className="text-red-600 text-sm">{saveError}</p>
           </div>
         )}
 
         {/* Loading State */}
         {isSaving && (
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-md mb-6">
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl mb-6">
             <p className="text-blue-600 text-sm">
               Saving your skills & availability...
             </p>

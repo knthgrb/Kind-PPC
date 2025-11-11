@@ -26,12 +26,12 @@ export default function KindTaoSidebar() {
     },
     {
       label: "Find Work",
-      href: "/find-work",
+      href: "/recs",
       icon: FiSearch,
     },
     {
       label: "Messages",
-      href: "/chats",
+      href: "/kindtao/messages",
       icon: FiMessageCircle,
     },
     {
@@ -50,11 +50,11 @@ export default function KindTaoSidebar() {
     if (href === "/dashboard") {
       return pathname === href || pathname?.startsWith("/dashboard/");
     }
-    if (href === "/find-work") {
-      return pathname === href || pathname?.startsWith("/find-work/");
+    if (href === "/recs") {
+      return pathname === href || pathname?.startsWith("/recs/");
     }
-    if (href === "/chats") {
-      return pathname === href || pathname?.startsWith("/chats/");
+    if (href === "/matches") {
+      return pathname === href || pathname?.startsWith("/matches/");
     }
     if (href === "/profile") {
       return pathname === href || pathname?.startsWith("/profile/");
@@ -87,7 +87,7 @@ export default function KindTaoSidebar() {
           )}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="p-2 cursor-pointer rounded-md hover:bg-gray-100 transition-colors"
+            className="p-2 cursor-pointer rounded-xl hover:bg-gray-100 transition-colors"
           >
             {collapsed ? (
               <FiChevronRight className="w-5 h-5 text-gray-600" />
@@ -119,7 +119,7 @@ export default function KindTaoSidebar() {
               }`}
             >
               <Icon
-                className={`w-5 h-5 flex-shrink-0 ${
+                className={`w-5 h-5 shrink-0 ${
                   active
                     ? "text-red-600"
                     : "text-gray-500 group-hover:text-red-600"

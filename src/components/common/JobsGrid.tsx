@@ -41,14 +41,14 @@ export default function JobsGrid({
       params.set("tags", searchFilters.tags.join(","));
     }
 
-    // Route to find-work with search params
+    // Route to /recs with search params
     const queryString = params.toString();
-    router.push(`/find-work${queryString ? `?${queryString}` : ""}`);
+    router.push(`/recs${queryString ? `?${queryString}` : ""}`);
   };
 
   const handleViewAll = () => {
-    // Route to find-work with no filters
-    router.push("/find-work");
+    // Route to /recs with no filters
+    router.push("/recs");
   };
 
   return (

@@ -3,18 +3,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  FiUser,
   FiHelpCircle,
-  FiLogOut,
   FiFileText,
   FiDollarSign,
   FiShield,
-  FiBell,
-  FiPlus,
-  FiHome,
-  FiBriefcase,
   FiUsers,
-  FiMessageCircle,
 } from "react-icons/fi";
 import { useAuthStore } from "@/stores/useAuthStore";
 
@@ -32,9 +25,29 @@ export default function KindBossingMorePage() {
       <h1 className="text-xl font-semibold mb-4">More</h1>
 
       <div className="bg-white border border-gray-200 rounded-lg divide-y">
-        {/* Sidebar Navigation Items */}
+        {/* Main Navigation Items from Sidebar */}
 
         <Link
+          href="/my-employees"
+          className="flex items-center justify-between px-4 py-4 hover:bg-gray-50"
+        >
+          <div className="flex items-center gap-3">
+            <FiUsers className="text-gray-600" />
+            <span className="text-gray-800">Employees</span>
+          </div>
+        </Link>
+
+        <Link
+          href="/documents"
+          className="flex items-center justify-between px-4 py-4 hover:bg-gray-50"
+        >
+          <div className="flex items-center gap-3">
+            <FiFileText className="text-gray-600" />
+            <span className="text-gray-800">Documents</span>
+          </div>
+        </Link>
+
+        {/* <Link
           href="/payslip"
           className="flex items-center justify-between px-4 py-4 hover:bg-gray-50"
         >
@@ -52,17 +65,7 @@ export default function KindBossingMorePage() {
             <FiShield className="text-gray-600" />
             <span className="text-gray-800">Government Benefits</span>
           </div>
-        </Link>
-
-        <Link
-          href="/documents"
-          className="flex items-center justify-between px-4 py-4 hover:bg-gray-50"
-        >
-          <div className="flex items-center gap-3">
-            <FiFileText className="text-gray-600" />
-            <span className="text-gray-800">Documents</span>
-          </div>
-        </Link>
+        </Link> */}
 
         <Link
           href="/contact-us"

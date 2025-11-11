@@ -44,7 +44,7 @@ export interface VerificationRequest {
 export interface KindTaoVerificationRequest {
   id: string;
   created_at: string;
-  kindtao_user_id: string;
+  user_id: string;
   status: "pending" | "approved" | "rejected";
   updated_at: string | null;
   notes: string | null;
@@ -54,7 +54,7 @@ export interface KindTaoVerificationRequest {
 export interface KindTaoVerificationDocument {
   id: string;
   created_at: string;
-  kindbossing_user_id: string;
+  user_id: string;
   file_url: string;
   size: number;
   title: string;

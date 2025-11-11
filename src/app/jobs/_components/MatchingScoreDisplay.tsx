@@ -1,6 +1,20 @@
 "use client";
 
-import { MatchingScore } from "@/services/server/JobMatchingService";
+type MatchingScore = {
+  jobId: string;
+  score: number;
+  reasons: string[];
+  breakdown: {
+    jobTypeMatch: number;
+    locationMatch: number;
+    salaryMatch: number;
+    skillsMatch: number;
+    experienceMatch: number;
+    availabilityMatch: number;
+    ratingBonus: number;
+    recencyBonus: number;
+  };
+};
 
 interface MatchingScoreDisplayProps {
   score: MatchingScore;
@@ -45,7 +59,7 @@ export default function MatchingScoreDisplay({
           <ul className="space-y-1">
             {score.reasons.map((reason, index) => (
               <li key={index} className="flex items-start">
-                <span className="w-1.5 h-1.5 bg-[#CC0000] rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                <span className="w-1.5 h-1.5 bg-[#CC0000] rounded-full mt-2 mr-2 shrink-0"></span>
                 <span>{reason}</span>
               </li>
             ))}

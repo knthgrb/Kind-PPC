@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function PricingCTA() {
   return (
-    <section className="bg-white py-40">
+    <section className="bg-white py-8 md:py-12">
       <div className="max-w-4xl mx-auto text-center px-4">
         <h2 className="sectionH2 font-bold text-[#05264E] mb-6">
           Simple pricing. Trusted connections only.
@@ -31,16 +31,18 @@ export default function PricingCTA() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
             href="/pricing"
-            className="inline-flex items-center justify-center px-8 py-3 border-2 border-gray-300 text-gray-700 font-medium rounded-lg hover:border-gray-400 transition-colors"
+            className="group inline-flex items-center justify-center px-8 py-3 border-2 border-gray-300 text-gray-700 font-medium rounded-lg hover:border-gray-400 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
           >
-            View Pricing →
+            <span>View Pricing</span>
+            <span className="ml-2 group-hover:translate-x-1 transition-transform duration-300">→</span>
           </Link>
 
           <Link
             href="/signup"
-            className="inline-flex items-center justify-center px-8 py-3 bg-[#CC0000] text-white font-medium rounded-lg hover:bg-[#a00000] transition-colors"
+            className="group inline-flex items-center justify-center px-8 py-3 bg-[#CC0000] text-white font-medium rounded-lg hover:bg-[#a00000] hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
           >
-            Start Free →
+            <span>Start Free</span>
+            <span className="ml-2 group-hover:translate-x-1 transition-transform duration-300">→</span>
           </Link>
         </div>
       </div>

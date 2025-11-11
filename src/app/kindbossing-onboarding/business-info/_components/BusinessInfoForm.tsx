@@ -151,7 +151,7 @@ export default function BusinessInfoForm() {
         },
       });
 
-      router.push("/kindbossing-dashboard");
+      router.push("/my-jobs");
     } catch (error) {
       console.error("Error updating user data:", error);
       setError("An error occurred. Please try again.");

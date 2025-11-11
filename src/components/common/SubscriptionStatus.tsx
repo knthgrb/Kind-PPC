@@ -8,6 +8,7 @@ import {
   getUserSubscription,
   cancelSubscription,
 } from "@/actions/subscription/xendit";
+import { format } from "date-fns";
 
 interface SubscriptionStatusProps {
   userRole: "kindbossing" | "kindtao";
@@ -108,11 +109,11 @@ export default function SubscriptionStatus({
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+    try {
+      return format(new Date(dateString), "MMMM d, yyyy");
+    } catch (error) {
+      return "Unknown";
+    }
   };
 
   if (loading) {
@@ -127,38 +128,44 @@ export default function SubscriptionStatus({
     );
   }
 
+  // Get tier and name with fallbacks
+  const tier = subscription?.subscription_plans?.tier || subscription?.subscription_tier || "free";
+  const planName = subscription?.subscription_plans?.name || 
+    (tier === "free" ? "Free Plan" : tier.charAt(0).toUpperCase() + tier.slice(1) + " Plan");
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          {getTierIcon(subscription?.subscription_plans?.tier || "free")}
+          {getTierIcon(tier)}
           <div>
             <h3 className="text-lg font-semibold text-gray-900">
-              {subscription?.subscription_plans?.name || "Free Plan"}
+              {planName}
             </h3>
             <p className="text-sm text-gray-600">
-              {subscription?.subscription_plans?.tier === "free"
+              {tier === "free"
                 ? "You're on the free plan"
-                : `Active subscription - ${subscription?.subscription_plans?.tier} tier`}
+                : `Active subscription - ${tier} tier`}
             </p>
           </div>
         </div>
         <span
           className={`px-3 py-1 rounded-full text-xs font-medium ${getTierColor(
-            subscription?.subscription_plans?.tier || "free"
+            tier
           )}`}
         >
-          {subscription?.subscription_plans?.tier?.toUpperCase() || "FREE"}
+          {tier.toUpperCase()}
         </span>
       </div>
 
       {subscription && (
         <div className="space-y-3 mb-6">
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Billing Period:</span>
+            <span className="text-gray-600">Next Billing Date:</span>
             <span className="font-medium">
-              {formatDate(subscription.current_period_start)} -{" "}
-              {formatDate(subscription.current_period_end)}
+              {subscription.current_period_end
+                ? formatDate(subscription.current_period_end)
+                : "Unknown"}
             </span>
           </div>
 
@@ -171,15 +178,16 @@ export default function SubscriptionStatus({
                   : "text-red-600"
               }`}
             >
-              {subscription.status.toUpperCase()}
+              {subscription.status?.toUpperCase() || "UNKNOWN"}
             </span>
           </div>
 
           {subscription.cancel_at_period_end && (
             <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
               <p className="text-sm text-yellow-800">
-                ⚠️ Your subscription will be cancelled at the end of the current
-                billing period.
+                ⚠️ Your subscription will end on {formatDate(
+                  subscription.current_period_end
+                )}.
               </p>
             </div>
           )}
@@ -198,14 +206,14 @@ export default function SubscriptionStatus({
           <div className="text-2xl font-bold text-gray-900">
             {subscription?.subscription_plans?.swipe_credits_monthly === -1
               ? "Unlimited"
-              : subscription?.subscription_plans?.swipe_credits_monthly || "10"}
+              : subscription?.subscription_plans?.swipe_credits_monthly ?? (tier === "free" ? "10" : "0")}
           </div>
           <div className="text-xs text-gray-500">
             {subscription?.subscription_plans?.swipe_credits_monthly === -1
               ? "Unlimited daily"
-              : subscription?.subscription_plans?.swipe_credits_monthly
+              : subscription?.subscription_plans?.swipe_credits_monthly !== undefined
               ? "Daily limit"
-              : "Free plan limit"}
+              : tier === "free" ? "Free plan limit" : "Not available"}
           </div>
         </div>
 
@@ -217,7 +225,7 @@ export default function SubscriptionStatus({
             </span>
           </div>
           <div className="text-2xl font-bold text-gray-900">
-            {subscription?.subscription_plans?.boost_credits_monthly || "0"}
+            {subscription?.subscription_plans?.boost_credits_monthly ?? "0"}
           </div>
           <div className="text-xs text-gray-500">
             {subscription?.subscription_plans?.boost_credits_monthly

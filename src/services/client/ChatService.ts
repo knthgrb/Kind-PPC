@@ -467,10 +467,24 @@ export class ChatService {
   static async createConversation(matchId: string) {
     const supabase = createClient();
 
+    // First, fetch the match to get user IDs
+    const { data: matchData, error: matchError } = await supabase
+      .from("matches")
+      .select("kindbossing_user_id, kindtao_user_id")
+      .eq("id", matchId)
+      .single();
+
+    if (matchError || !matchData) {
+      throw new Error("Match not found");
+    }
+
+    // Create conversation with user IDs
     const { data, error } = await supabase
       .from("conversations")
       .insert({
         match_id: matchId,
+        kindbossing_user_id: matchData.kindbossing_user_id,
+        kindtao_user_id: matchData.kindtao_user_id,
       })
       .select()
       .single();

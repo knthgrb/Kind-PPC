@@ -536,14 +536,14 @@ export default function JobPreferencesClient({
 
         {/* Error Message */}
         {saveError && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-md mb-6">
+          <div className="p-4 bg-red-50 border border-red-200 rounded-xl mb-6">
             <p className="text-red-600 text-sm">{saveError}</p>
           </div>
         )}
 
         {/* Loading State */}
         {isSaving && (
-          <div className="p-4 bg-gray-50 border border-gray-200 rounded-md mb-6">
+          <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl mb-6">
             <p className="text-gray-600 text-sm">
               Saving your job preferences...
             </p>

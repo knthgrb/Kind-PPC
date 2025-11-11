@@ -15,13 +15,13 @@ export default function PillToggle({
     <button
       type="button"
       onClick={onChange}
-      className="h-9 rounded-md px-3 border border-[#DFDFDF] bg-[#F5F5F5] flex items-center gap-2"
+      className="h-9 rounded-xl px-3 border border-[#DFDFDF] bg-[#F5F5F5] flex items-center gap-2"
     >
       {/* checkbox square */}
       <span
         className={[
           "inline-flex items-center justify-center",
-          "w-5 h-5 rounded-[4px] border flex-shrink-0",
+          "w-5 h-5 rounded-[4px] border shrink-0",
           checked
             ? "border-[#CC0000] bg-[#CC0000]"
             : "border-[#667282] bg-[#EDEDED]",

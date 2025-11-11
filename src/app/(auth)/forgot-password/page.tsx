@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -68,7 +69,18 @@ export default function ForgotPasswordPage() {
 
   if (isSuccess) {
     return (
-      <main className="min-h-screen flex items-center justify-center px-4">
+      <main className="min-h-screen flex items-center justify-center px-4 relative">
+        {/* Logo in upper left */}
+        <Link href="/" className="absolute top-6 left-6 z-10">
+          <Image
+            src="/kindLogo.png"
+            width={120}
+            height={40}
+            alt="Kind"
+            priority
+            className="h-8 w-auto"
+          />
+        </Link>
         <section className="w-full max-w-xl rounded-2xl border border-[#DFDFDF] shadow-sm p-8 md:p-10">
           <div className="text-center">
             <div className="mb-6">
@@ -114,7 +126,7 @@ export default function ForgotPasswordPage() {
             <div className="flex justify-center">
               <Link
                 href="/login"
-                className="h-12 w-[233px] rounded-md px-4 bg-[#CB0000] text-white cursor-pointer hover:bg-[#A00000] transition-colors flex items-center justify-center"
+                className="h-12 w-[233px] rounded-xl px-4 bg-[#CB0000] text-white cursor-pointer hover:bg-[#A00000] transition-colors flex items-center justify-center"
               >
                 Back to Login
               </Link>
@@ -126,7 +138,18 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-4">
+    <main className="min-h-screen flex items-center justify-center px-4 relative">
+      {/* Logo in upper left */}
+      <Link href="/" className="absolute top-6 left-6 z-10">
+        <Image
+          src="/kindLogo.png"
+          width={120}
+          height={40}
+          alt="Kind"
+          priority
+          className="h-8 w-auto"
+        />
+      </Link>
       <section className="w-full max-w-xl rounded-2xl border border-[#DFDFDF] shadow-sm p-8 md:p-10">
         <h1 className="text-center mb-8 loginH1">Forgot Password</h1>
 
@@ -146,7 +169,7 @@ export default function ForgotPasswordPage() {
               id="email"
               type="email"
               placeholder="Enter your email address"
-              className={`input-placeholder w-full rounded-md border-1 px-4 h-12 ${
+              className={`input-placeholder w-full rounded-xl border px-4 h-12 ${
                 errors.email ? "border-red-500" : "border-[#ADADAD]"
               }`}
               {...register("email")}
@@ -174,7 +197,7 @@ export default function ForgotPasswordPage() {
             <button
               type="submit"
               disabled={isSubmitting || isLoading}
-              className="h-12 w-[233px] rounded-md px-4 bg-[#CB0000] text-white cursor-pointer hover:bg-[#A00000] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-12 w-[233px] rounded-xl px-4 bg-[#CB0000] text-white cursor-pointer hover:bg-[#A00000] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting || isLoading ? "Sending..." : "Send Reset Link"}
             </button>
@@ -185,7 +208,7 @@ export default function ForgotPasswordPage() {
         <div className="text-center">
           <p className="text-gray-600">
             Remember your password?{" "}
-            <Link href="/login" className="underline underline-offset-2">
+            <Link href="/login" className="text-[#CB0000] hover:underline">
               Back to Login
             </Link>
           </p>

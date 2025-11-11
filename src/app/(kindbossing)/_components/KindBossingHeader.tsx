@@ -80,7 +80,7 @@ export default function KindBossingHeader() {
       <div className="w-full flex justify-between items-center p-2">
         {/* Logo - Mobile only */}
         <div className="visible lg:invisible">
-          <Link href="/kindbossing-dashboard">
+          <Link href="/my-jobs">
             <Image
               src="/kindLogo.png"
               alt="Kind Logo"
@@ -105,7 +105,7 @@ export default function KindBossingHeader() {
 
             {/* User Dropdown Menu for loading state */}
             {userMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
                 <div className="py-1">
                   {/* <div className="flex items-center gap-2 px-4 py-2 text-sm text-gray-400 cursor-not-allowed">
                     <FiUser className="w-4 h-4" />
@@ -148,7 +148,7 @@ export default function KindBossingHeader() {
 
             {/* User Dropdown Menu */}
             {userMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
                 <div className="py-1">
                   {/* <Link
                     href="/my-profile"
@@ -179,7 +179,7 @@ export default function KindBossingHeader() {
           </div>
         ) : (
           <Link href="/login">
-            <button className="px-6 py-2 bg-red-600 text-white rounded-md text-lg hover:bg-red-700 cursor-pointer">
+            <button className="px-6 py-2 bg-red-600 text-white rounded-xl text-lg hover:bg-red-700 cursor-pointer">
               Sign In
             </button>
           </Link>

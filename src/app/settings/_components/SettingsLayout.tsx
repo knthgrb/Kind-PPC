@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { useAuthStore } from "@/stores/useAuthStore";
 import {
   IoNotificationsOutline,
   IoCardOutline,
   IoShieldCheckmarkOutline,
-  IoPersonOutline,
   IoMenuOutline,
   IoCloseOutline,
   IoArrowBackOutline,
@@ -55,8 +55,25 @@ export default function SettingsLayout({
   description = "Manage your account preferences and settings",
 }: SettingsLayoutProps) {
   const searchParams = useSearchParams();
-  const activeTab = searchParams.get("tab") || tabs[0]?.id || "notifications";
+  const { user } = useAuthStore();
+  const userRole = (user?.user_metadata as any)?.role || "kindtao";
+  const isKindtao = userRole === "kindtao";
+  const requestedTab = searchParams.get("tab");
+  const activeTab =
+    requestedTab && tabs.some((tab) => tab.id === requestedTab)
+      ? requestedTab
+      : tabs[0]?.id || "notifications";
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!requestedTab) return;
+    if (requestedTab === activeTab) return;
+
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", activeTab);
+    window.history.replaceState({}, "", url.toString());
+  }, [requestedTab, activeTab]);
 
   const handleTabChange = (tabId: string) => {
     const url = new URL(window.location.href);
@@ -67,7 +84,20 @@ export default function SettingsLayout({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-7xl mx-auto px-4 py-4">
+        {/* Find Work Navigation - Only for kindtao users */}
+        {isKindtao && (
+          <div className="mb-4">
+            <Link
+              href="/recs"
+              className="inline-flex hover:text-red-600 items-center gap-2 text-sm text-gray-600 transition-colors"
+            >
+              <IoArrowBackOutline className="w-4 h-4" />
+              <span>Find Work</span>
+            </Link>
+          </div>
+        )}
+
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-semibold text-gray-900 mb-2">{title}</h1>
@@ -76,7 +106,7 @@ export default function SettingsLayout({
 
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Sidebar */}
-          <div className="lg:w-64 flex-shrink-0">
+          <div className="lg:w-64 shrink-0">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               {/* Mobile menu button */}
               <div className="lg:hidden flex items-center justify-between p-4 border-b border-gray-200">
@@ -117,7 +147,7 @@ export default function SettingsLayout({
                         }`}
                       >
                         <Icon
-                          className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
+                          className={`w-5 h-5 mt-0.5 shrink-0 ${
                             isActive ? "text-red-600" : "text-gray-400"
                           }`}
                         />

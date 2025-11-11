@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
+import Link from "next/link";
 
 export default function Error({
   error,
@@ -16,20 +16,20 @@ export default function Error({
           Something went wrong!
         </h1>
         <p className="text-gray-600 mb-6">
-          {error.message || 'An unexpected error occurred during login.'}
+          {error.message || "An unexpected error occurred during login."}
         </p>
-        
+
         <div className="space-y-3">
           <button
             onClick={reset}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-xl hover:bg-blue-700 transition-colors"
           >
             Try again
           </button>
-          
+
           <Link
             href="/login"
-            className="block w-full bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition-colors"
+            className="block w-full bg-gray-600 text-white py-2 px-4 rounded-xl hover:bg-gray-700 transition-colors"
           >
             Back to Login
           </Link>

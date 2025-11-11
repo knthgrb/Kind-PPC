@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { LuFilter, LuSearch, LuCloudUpload } from "react-icons/lu";
+import { LuFilter, LuSearch, LuUploadCloud } from "react-icons/lu";
 import { FaFileAlt } from "react-icons/fa";
 import UploadDocumentModal from "@/components/modals/UploadDocumentModal";
 import PrimaryButton from "@/components/buttons/PrimaryButton";
@@ -157,7 +157,7 @@ export default function Documents() {
             onClick={() => setIsUploadDocumentModalOpen(true)}
             className="inline-flex items-center gap-2"
           >
-            <LuCloudUpload className="w-4 h-4" />
+            <LuUploadCloud className="w-4 h-4" />
             <span className="text-sm font-medium">Upload Document</span>
           </PrimaryButton>
         </div>
@@ -182,7 +182,7 @@ export default function Documents() {
             <button
               key={tab.key}
               onClick={() => setFilter(tab.key as any)}
-              className={`cursor-pointer px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`cursor-pointer px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
                 filter === tab.key
                   ? "bg-white text-[#CC0000] shadow-sm"
                   : "text-gray-600 hover:text-gray-900"

@@ -10,6 +10,7 @@ import { signup } from "@/actions/auth/signup";
 import { useParams } from "next/navigation";
 import { logger } from "@/utils/logger";
 import { AuthService } from "@/services/client/AuthService";
+import { Button } from "@/components/buttons";
 
 // Schema for validation
 const signUpSchema = z.object({
@@ -92,15 +93,26 @@ export default function SignUpPage() {
   const roleTitle = role === "kindbossing" ? "kindBossing" : "kindTao";
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-4">
-      <section className="w-full max-w-xl rounded-2xl border border-[#DFDFDF] shadow-sm p-8 md:p-10">
+    <main className="min-h-screen flex items-center justify-center px-4 py-8 relative">
+      {/* Logo in upper left */}
+      <Link href="/" className="absolute top-6 left-6 z-10">
+        <Image
+          src="/kindLogo.png"
+          width={120}
+          height={40}
+          alt="Kind"
+          priority
+          className="h-8 w-auto"
+        />
+      </Link>
+      <section className="w-full max-w-xl rounded-2xl border border-[#DFDFDF] shadow-sm p-6 md:p-8 lg:p-10">
         <h1 className="text-center mb-8 registerH1">Sign up as {roleTitle}</h1>
 
         {/* Google SSO */}
         <button
           type="button"
           onClick={() => handleGoogleSignIn()}
-          className="w-full rounded-md border cursor-pointer border-[#D8D8D8] h-12 px-4 flex items-center justify-center gap-3 mb-8"
+          className="w-full rounded-xl border cursor-pointer border-[#D8D8D8] h-12 px-4 flex items-center justify-center gap-3 mb-8 hover:bg-gray-50 transition-colors"
         >
           <Image
             src="/icons/google_ic.png"
@@ -114,7 +126,7 @@ export default function SignUpPage() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* Name row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-3">
             <div>
               <label htmlFor="firstName" className="block mb-2 registerLabel">
                 First name
@@ -123,7 +135,7 @@ export default function SignUpPage() {
                 id="firstName"
                 type="text"
                 placeholder="First name"
-                className={`registerInput w-full rounded-md border-[1px] px-4 h-12 ${
+                className={`registerInput w-full rounded-xl border px-4 h-12 ${
                   errors.firstName ? "border-red-500" : "border-[#ADADAD]"
                 }`}
                 {...register("firstName")}
@@ -143,7 +155,7 @@ export default function SignUpPage() {
                 id="lastName"
                 type="text"
                 placeholder="Last Name"
-                className={`registerInput w-full rounded-md border-[1px] px-4 h-12 ${
+                className={`registerInput w-full rounded-xl border px-4 h-12 ${
                   errors.lastName ? "border-red-500" : "border-[#ADADAD]"
                 }`}
                 {...register("lastName")}
@@ -165,7 +177,7 @@ export default function SignUpPage() {
               id="email"
               type="email"
               placeholder="Username or email address"
-              className={`registerInput w-full rounded-md border-[1px] px-4 h-12 ${
+              className={`registerInput w-full rounded-xl border px-4 h-12 ${
                 errors.email ? "border-red-500" : "border-[#ADADAD]"
               }`}
               {...register("email")}
@@ -186,7 +198,7 @@ export default function SignUpPage() {
               id="password"
               type="password"
               placeholder="Password"
-              className={`registerInput w-full rounded-md border-[1px] px-4 h-12 ${
+              className={`registerInput w-full rounded-xl border px-4 h-12 ${
                 errors.password ? "border-red-500" : "border-[#ADADAD]"
               }`}
               {...register("password")}
@@ -200,26 +212,30 @@ export default function SignUpPage() {
 
           {/* Error message */}
           {error && (
-            <div className="text-red-600 text-sm text-center">{error}</div>
+            <div className="mb-6 p-4 rounded-lg text-sm text-center bg-red-50 border border-red-200 text-red-800">
+              {error}
+            </div>
           )}
 
           {/* Submit */}
           <div className="flex justify-center">
-            <button
+            <Button
               type="submit"
+              variant="primary"
+              size="md"
               disabled={isSubmitting || isLoading}
-              className="h-12 w-[233px] rounded-md cursor-pointer px-4 bg-[#CB0000] text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-12 w-full sm:w-[233px]"
             >
               {isSubmitting || isLoading ? "Creating Account..." : "Register"}
-            </button>
+            </Button>
           </div>
         </form>
 
         {/* Footer */}
         <p className="text-center mt-6">
           Have an Account ?{" "}
-          <Link href="/login" className="underline underline-offset-2">
-            Sign in
+          <Link href="/login" className="text-[#CB0000] hover:underline">
+            Log in
           </Link>
         </p>
       </section>

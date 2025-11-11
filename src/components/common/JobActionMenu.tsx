@@ -120,7 +120,7 @@ export default function JobActionMenu({
       <button
         onClick={() => setIsOpen(!isOpen)}
         disabled={isLoading}
-        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-50"
+        className="p-2 cursor-pointer text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-50"
         title="Job actions"
       >
         <FaEllipsisH className="w-4 h-4" />
@@ -137,7 +137,7 @@ export default function JobActionMenu({
                   key={index}
                   onClick={() => handleAction(item.action)}
                   disabled={isLoading}
-                  className={`w-full flex items-center space-x-3 px-4 py-2 text-sm transition-colors ${item.color} disabled:opacity-50`}
+                  className={`w-full cursor-pointer flex items-center space-x-3 px-4 py-2 text-sm transition-colors ${item.color} disabled:opacity-50`}
                 >
                   <Icon className="w-4 h-4" />
                   <span>{item.label}</span>

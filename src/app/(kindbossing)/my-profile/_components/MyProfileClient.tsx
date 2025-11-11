@@ -101,7 +101,7 @@ export default function MyProfileClient({ user }: MyProfileClientProps) {
                     setForm((f) => ({ ...f, first_name: e.target.value }))
                   }
                   placeholder="First Name"
-                  className="w-full h-10 rounded-md text-[#667282] border border-[#ADADAD] px-3 bg-white focus:outline-none"
+                  className="w-full h-10 rounded-xl text-[#667282] border border-[#ADADAD] px-3 bg-white focus:outline-none"
                 />
                 <input
                   value={form.last_name}
@@ -109,7 +109,7 @@ export default function MyProfileClient({ user }: MyProfileClientProps) {
                     setForm((f) => ({ ...f, last_name: e.target.value }))
                   }
                   placeholder="Last Name"
-                  className="w-full h-10 rounded-md text-[#667282] border border-[#ADADAD] px-3 bg-white focus:outline-none"
+                  className="w-full h-10 rounded-xl text-[#667282] border border-[#ADADAD] px-3 bg-white focus:outline-none"
                 />
                 <input
                   value={form.email}
@@ -117,7 +117,7 @@ export default function MyProfileClient({ user }: MyProfileClientProps) {
                     setForm((f) => ({ ...f, email: e.target.value }))
                   }
                   placeholder="Email"
-                  className="w-full h-10 rounded-md text-[#667282] border border-[#ADADAD] px-3 bg-white focus:outline-none"
+                  className="w-full h-10 rounded-xl text-[#667282] border border-[#ADADAD] px-3 bg-white focus:outline-none"
                 />
                 <input
                   value={form.phone}
@@ -125,7 +125,7 @@ export default function MyProfileClient({ user }: MyProfileClientProps) {
                     setForm((f) => ({ ...f, phone: e.target.value }))
                   }
                   placeholder="Phone"
-                  className="w-full h-10 rounded-md text-[#667282] border border-[#ADADAD] px-3 bg-white focus:outline-none"
+                  className="w-full h-10 rounded-xl text-[#667282] border border-[#ADADAD] px-3 bg-white focus:outline-none"
                 />
                 <input
                   value={form.address}
@@ -133,7 +133,7 @@ export default function MyProfileClient({ user }: MyProfileClientProps) {
                     setForm((f) => ({ ...f, address: e.target.value }))
                   }
                   placeholder="Address"
-                  className="w-full h-10 rounded-md text-[#667282] border border-[#ADADAD] px-3 bg-white focus:outline-none"
+                  className="w-full h-10 rounded-xl text-[#667282] border border-[#ADADAD] px-3 bg-white focus:outline-none"
                 />
                 <input
                   value={form.city}
@@ -141,7 +141,7 @@ export default function MyProfileClient({ user }: MyProfileClientProps) {
                     setForm((f) => ({ ...f, city: e.target.value }))
                   }
                   placeholder="City"
-                  className="w-full h-10 rounded-md text-[#667282] border border-[#ADADAD] px-3 bg-white focus:outline-none"
+                  className="w-full h-10 rounded-xl text-[#667282] border border-[#ADADAD] px-3 bg-white focus:outline-none"
                 />
                 <input
                   value={form.province}
@@ -149,7 +149,7 @@ export default function MyProfileClient({ user }: MyProfileClientProps) {
                     setForm((f) => ({ ...f, province: e.target.value }))
                   }
                   placeholder="Province"
-                  className="w-full h-10 rounded-md text-[#667282] border border-[#ADADAD] px-3 bg-white focus:outline-none"
+                  className="w-full h-10 rounded-xl text-[#667282] border border-[#ADADAD] px-3 bg-white focus:outline-none"
                 />
                 <input
                   value={form.postal_code}
@@ -157,20 +157,20 @@ export default function MyProfileClient({ user }: MyProfileClientProps) {
                     setForm((f) => ({ ...f, postal_code: e.target.value }))
                   }
                   placeholder="Postal Code"
-                  className="w-full h-10 rounded-md text-[#667282] border border-[#ADADAD] px-3 bg-white focus:outline-none"
+                  className="w-full h-10 rounded-xl text-[#667282] border border-[#ADADAD] px-3 bg-white focus:outline-none"
                 />
 
                 <div className="flex justify-end gap-3">
                   <button
                     type="button"
                     onClick={() => setEditingProfile(false)}
-                    className="px-4 py-2 border rounded-md"
+                    className="px-4 py-2 border rounded-xl"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-red-600 text-white rounded-md"
+                    className="px-4 py-2 bg-red-600 text-white rounded-xl"
                   >
                     Save
                   </button>

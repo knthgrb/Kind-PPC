@@ -136,7 +136,7 @@ export default function AddBenefitModal({
                   Category
                 </label>
                 <Dropdown
-                  className="border border-[#DFDFDF] rounded-md"
+                  className="border border-[#DFDFDF] rounded-xl"
                   value={form.category}
                   options={categoryOptions}
                   placeholder="Select Category"
@@ -154,7 +154,7 @@ export default function AddBenefitModal({
                   placeholder="Enter number"
                   value={form.number}
                   onChange={(e) => setForm({ ...form, number: e.target.value })}
-                  className="w-full h-12 border border-[#DFDFDF] rounded-md px-4 text-sm outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                  className="w-full h-12 border border-[#DFDFDF] rounded-xl px-4 text-sm outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
                 />
               </div>
 
@@ -169,7 +169,7 @@ export default function AddBenefitModal({
                   onChange={(e) =>
                     setForm({ ...form, lastPaymentDate: e.target.value })
                   }
-                  className="w-full h-12 border border-[#DFDFDF] rounded-md px-4 text-sm outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                  className="w-full h-12 border border-[#DFDFDF] rounded-xl px-4 text-sm outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
                 />
               </div>
 
@@ -183,7 +183,7 @@ export default function AddBenefitModal({
                   placeholder="₱550"
                   value={form.amount}
                   onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                  className="w-full h-12 border border-[#DFDFDF] rounded-md px-4 text-sm outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                  className="w-full h-12 border border-[#DFDFDF] rounded-xl px-4 text-sm outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
                 />
               </div>
 
@@ -198,7 +198,7 @@ export default function AddBenefitModal({
                   onChange={(e) =>
                     setForm({ ...form, nextDueDate: e.target.value })
                   }
-                  className="w-full h-12 border border-[#DFDFDF] rounded-md px-4 text-sm outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                  className="w-full h-12 border border-[#DFDFDF] rounded-xl px-4 text-sm outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
                 />
               </div>
 
@@ -212,7 +212,7 @@ export default function AddBenefitModal({
                   options={statusOptions}
                   placeholder="Select Status"
                   onChange={(val) => setForm({ ...form, status: val })}
-                  className="border border-[#DFDFDF] rounded-md"
+                  className="border border-[#DFDFDF] rounded-xl"
                 />
               </div>
 
@@ -225,7 +225,7 @@ export default function AddBenefitModal({
                   placeholder="Enter notes..."
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  className="w-full min-h-[100px] border border-[#DFDFDF] rounded-md px-4 py-3 text-sm outline-none resize-y focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                  className="w-full min-h-[100px] border border-[#DFDFDF] rounded-xl px-4 py-3 text-sm outline-none resize-y focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
                 />
               </div>
             </form>

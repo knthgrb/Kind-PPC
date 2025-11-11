@@ -28,9 +28,9 @@ export default function JobCardMobile({
       style={{ maxHeight: "100%" }}
     >
       {/* Header Section - Desktop style with small profile image */}
-      <div className="p-4 border-b border-gray-100 flex-shrink-0">
+      <div className="p-4 border-b border-gray-100 shrink-0">
         <div className="flex items-start space-x-4">
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             <Image
               src="/people/darrellSteward.png" // TODO: replace with user's profile image
               alt={job.id}
@@ -79,15 +79,15 @@ export default function JobCardMobile({
           </h5>
           <ul className="text-base text-gray-700 space-y-2">
             <li className="flex items-center">
-              <span className="w-2 h-2 bg-red-500 rounded-full mr-3 flex-shrink-0"></span>
+              <span className="w-2 h-2 bg-red-500 rounded-full mr-3 shrink-0"></span>
               Experience in {job.job_type || "preferred"}
             </li>
             <li className="flex items-center">
-              <span className="w-2 h-2 bg-red-500 rounded-full mr-3 flex-shrink-0"></span>
+              <span className="w-2 h-2 bg-red-500 rounded-full mr-3 shrink-0"></span>
               Reliable and punctual
             </li>
             <li className="flex items-center">
-              <span className="w-2 h-2 bg-red-500 rounded-full mr-3 flex-shrink-0"></span>
+              <span className="w-2 h-2 bg-red-500 rounded-full mr-3 shrink-0"></span>
               Good communication skills
             </li>
           </ul>

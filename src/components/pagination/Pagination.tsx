@@ -62,7 +62,7 @@ export default function Pagination({
         <button
           onClick={() => onChange(clamp(page - 1))}
           disabled={page === 1}
-          className="inline-flex items-center gap-1 rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-1 rounded-xl border border-gray-300 px-2 py-1 text-sm text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <FaChevronLeft className="text-xs" aria-hidden />
           <span className="hidden sm:inline">Prev</span>
@@ -84,7 +84,7 @@ export default function Pagination({
               key={`page-${p}-${i}`}
               onClick={() => onChange(p)}
               aria-current={p === page ? "page" : undefined}
-              className={`px-2 cursor-pointer py-1 rounded-md text-sm font-medium transition
+              className={`px-2 cursor-pointer py-1 rounded-xl text-sm font-medium transition
         ${
           p === page
             ? "text-[#CB0000] bg-[#fefafa]"
@@ -102,7 +102,7 @@ export default function Pagination({
         <button
           onClick={() => onChange(clamp(page + 1))}
           disabled={page === totalPages}
-          className="cursor-pointer inline-flex items-center gap-1 rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="cursor-pointer inline-flex items-center gap-1 rounded-xl border border-gray-300 px-2 py-1 text-sm text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <span className="hidden sm:inline">Next</span>
           <FaChevronRight className="text-xs" aria-hidden />

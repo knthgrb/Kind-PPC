@@ -13,7 +13,11 @@ import {
   IoAddOutline,
 } from "react-icons/io5";
 
-export default function VerificationTab() {
+interface VerificationTabProps {
+  userRole: string;
+}
+
+export default function VerificationTab({ userRole }: VerificationTabProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isRequestingVerification, setIsRequestingVerification] =
@@ -112,6 +116,11 @@ export default function VerificationTab() {
   };
 
   const hasRequiredDocuments = () => {
+    // For kindbossing, only valid ID is required
+    // For kindtao, both valid ID and barangay clearance are required
+    if (userRole === "kindbossing") {
+      return hasValidId();
+    }
     return hasValidId() && hasBarangayClearance();
   };
 
@@ -236,12 +245,12 @@ export default function VerificationTab() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6 w-full overflow-x-hidden">
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
           Document Verification
         </h2>
-        <p className="text-gray-600">
+        <p className="text-sm sm:text-base text-gray-600">
           Upload your documents for verification. This helps build trust with
           employers.
         </p>
@@ -252,11 +261,11 @@ export default function VerificationTab() {
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center gap-3 mb-3">
             {getVerificationStatusInfo(currentVerificationStatus).icon}
-            <div>
+            <div className="flex-1 min-w-0">
               <h3 className="text-lg font-semibold text-gray-900">
                 Verification Status
               </h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 truncate">
                 {
                   getVerificationStatusInfo(currentVerificationStatus)
                     .description
@@ -264,9 +273,9 @@ export default function VerificationTab() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span
-              className={`px-3 py-1 rounded-full text-sm font-medium border ${
+              className={`px-3 py-1 rounded-full text-sm font-medium border whitespace-nowrap ${
                 getVerificationStatusInfo(currentVerificationStatus).color
               }`}
             >
@@ -281,7 +290,7 @@ export default function VerificationTab() {
                       .getElementById("verification-request-section")
                       ?.scrollIntoView({ behavior: "smooth" });
                   }}
-                  className="text-sm text-red-600 hover:text-red-700 font-medium"
+                  className="text-sm text-red-600 hover:text-red-700 font-medium whitespace-nowrap"
                 >
                   View Details →
                 </button>
@@ -292,74 +301,74 @@ export default function VerificationTab() {
 
       {/* Documents Section */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium text-gray-900">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <h3 className="text-base sm:text-lg font-medium text-gray-900">
             Uploaded Documents
           </h3>
           <button
             onClick={() => setIsUploadModalOpen(true)}
-            className="flex cursor-pointer items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            className="flex cursor-pointer items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm sm:text-base"
           >
             <IoAddOutline className="w-4 h-4" />
-            Add Document
+            <span>Add Document</span>
           </button>
         </div>
 
-        {/* Documents List */}
-        {uploadedDocuments && uploadedDocuments.length > 0 ? (
-          <div className="grid gap-4">
-            {uploadedDocuments.map((document) => (
-              <div
-                key={document.id}
-                className="border border-gray-200 rounded-lg p-4"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <IoDocumentOutline className="w-5 h-5 text-gray-500" />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-medium text-gray-900">
+        {/* Documents List Container */}
+        <div>
+          {uploadedDocuments && uploadedDocuments.length > 0 ? (
+            <div className="grid gap-4">
+              {uploadedDocuments.map((document) => (
+                <div
+                  key={document.id}
+                  className="border border-gray-200 rounded-lg p-3 sm:p-4 overflow-hidden"
+                >
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <IoDocumentOutline className="w-5 h-5 text-gray-500 shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0 w-full overflow-hidden">
+                      <div className="flex flex-col gap-2 mb-2">
+                        <h4 className="font-medium text-gray-900 truncate text-sm sm:text-base">
                           {document.title}
                         </h4>
                         <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${getDocumentTypeColor(
+                          className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium w-fit ${getDocumentTypeColor(
                             document.document_type
                           )}`}
                         >
                           {getDocumentTypeLabel(document.document_type)}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-xs sm:text-sm text-gray-600 truncate">
                         {(document.size / 1024 / 1024).toFixed(2)} MB •{" "}
                         {document.content_type}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 mt-1">
                         Uploaded:{" "}
                         {new Date(document.created_at).toLocaleDateString()}
                       </p>
+                      <a
+                        href={document.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block mt-2 text-xs sm:text-sm text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        View Document →
+                      </a>
                     </div>
                   </div>
-                  <a
-                    href={document.file_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                  >
-                    View Document →
-                  </a>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-            <IoDocumentOutline className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-            <p className="text-gray-600 mb-2">No documents uploaded yet</p>
-            <p className="text-sm text-gray-500">
-              Upload your verification documents to get started
-            </p>
-          </div>
-        )}
+              ))}
+            </div>
+          ) : (
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+              <IoDocumentOutline className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+              <p className="text-gray-600 mb-2">No documents uploaded yet</p>
+              <p className="text-sm text-gray-500">
+                Upload your verification documents to get started
+              </p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Verification Request Section - Only show if not pending or approved */}
@@ -370,8 +379,8 @@ export default function VerificationTab() {
             className="bg-blue-50 rounded-lg p-6 mb-8"
           >
             <div className="flex items-start gap-3 mb-4">
-              <IoShieldCheckmarkOutline className="w-6 h-6 text-blue-600 mt-1" />
-              <div>
+              <IoShieldCheckmarkOutline className="w-6 h-6 text-blue-600 mt-1 shrink-0" />
+              <div className="flex-1 min-w-0">
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
                   Request Verification
                 </h3>
@@ -380,9 +389,9 @@ export default function VerificationTab() {
                   documents:
                 </p>
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <div
-                      className={`w-2 h-2 rounded-full ${
+                      className={`w-2 h-2 rounded-full shrink-0 ${
                         hasValidId() ? "bg-green-500" : "bg-gray-300"
                       }`}
                     ></div>
@@ -394,28 +403,32 @@ export default function VerificationTab() {
                       Valid ID (Government-issued)
                     </span>
                     {hasValidId() && (
-                      <IoCheckmarkCircleOutline className="w-4 h-4 text-green-500" />
+                      <IoCheckmarkCircleOutline className="w-4 h-4 text-green-500 shrink-0" />
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`w-2 h-2 rounded-full ${
-                        hasBarangayClearance() ? "bg-green-500" : "bg-gray-300"
-                      }`}
-                    ></div>
-                    <span
-                      className={`text-sm ${
-                        hasBarangayClearance()
-                          ? "text-green-700"
-                          : "text-gray-700"
-                      }`}
-                    >
-                      Barangay Clearance
-                    </span>
-                    {hasBarangayClearance() && (
-                      <IoCheckmarkCircleOutline className="w-4 h-4 text-green-500" />
-                    )}
-                  </div>
+                  {userRole === "kindtao" && (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div
+                        className={`w-2 h-2 rounded-full shrink-0 ${
+                          hasBarangayClearance()
+                            ? "bg-green-500"
+                            : "bg-gray-300"
+                        }`}
+                      ></div>
+                      <span
+                        className={`text-sm ${
+                          hasBarangayClearance()
+                            ? "text-green-700"
+                            : "text-gray-700"
+                        }`}
+                      >
+                        Barangay Clearance
+                      </span>
+                      {hasBarangayClearance() && (
+                        <IoCheckmarkCircleOutline className="w-4 h-4 text-green-500 shrink-0" />
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -460,10 +473,10 @@ export default function VerificationTab() {
             Your Verification Request
           </h3>
           <div className="border border-gray-200 rounded-lg p-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="flex items-center gap-3">
-                <IoShieldCheckmarkOutline className="w-5 h-5 text-blue-500" />
-                <div>
+                <IoShieldCheckmarkOutline className="w-5 h-5 text-blue-500 shrink-0" />
+                <div className="min-w-0">
                   <h4 className="font-medium text-gray-900">
                     Verification Request
                   </h4>
@@ -476,7 +489,7 @@ export default function VerificationTab() {
                 </div>
               </div>
               <span
-                className={`px-2 py-1 rounded-full text-xs font-medium ${
+                className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
                   kindtaoVerificationRequest.status === "approved"
                     ? "bg-green-100 text-green-800"
                     : kindtaoVerificationRequest.status === "rejected"

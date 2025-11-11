@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { resendConfirmationEmail } from "@/actions/auth/resend-confirmation";
+import { Button } from "@/components/buttons";
 
 export default function EmailNotConfirmedPage() {
   const [email, setEmail] = useState("");
@@ -38,12 +40,24 @@ export default function EmailNotConfirmedPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
+    <main className="min-h-screen flex items-center justify-center px-4 py-8 relative">
+      {/* Logo in upper left */}
+      <Link href="/" className="absolute top-6 left-6 z-10">
+        <Image
+          src="/kindLogo.png"
+          width={120}
+          height={40}
+          alt="Kind"
+          priority
+          className="h-8 w-auto"
+        />
+      </Link>
+      <section className="w-full max-w-xl rounded-2xl border border-[#DFDFDF] shadow-sm p-6 sm:p-8 md:p-10">
+        {/* Warning Icon */}
         <div className="text-center mb-8">
-          <div className="mx-auto w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mb-4">
+          <div className="mx-auto w-16 h-16 sm:w-20 sm:h-20 bg-yellow-100 rounded-full flex items-center justify-center mb-6">
             <svg
-              className="w-8 h-8 text-yellow-600"
+              className="w-8 h-8 sm:w-10 sm:h-10 text-yellow-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -57,83 +71,104 @@ export default function EmailNotConfirmedPage() {
             </svg>
           </div>
 
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Email Not Confirmed
-          </h1>
+          <h1 className="loginH1 mb-4">Email Not Confirmed</h1>
 
-          <p className="text-gray-600">
+          <p className="text-gray-600 text-base sm:text-lg">
             Please confirm your email address before signing in.
           </p>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-3">What to do next:</h2>
-            <ol className="list-decimal list-inside space-y-2 text-gray-600">
-              <li>Check your email inbox for a confirmation email</li>
-              <li>Click the confirmation link in the email</li>
-              <li>Return here and try signing in again</li>
-            </ol>
-          </div>
-
-          <div className="mb-6">
-            <h3 className="text-md font-semibold mb-3">
-              Didn&apos;t receive the email?
-            </h3>
-            <form onSubmit={handleResendConfirmation} className="space-y-3">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email address"
-                className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none"
-                required
-              />
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? "Sending..." : "Resend Confirmation Email"}
-              </button>
-            </form>
-
-            {message && (
-              <div className="mt-3 p-3 bg-green-100 border border-green-300 rounded-md">
-                <p className="text-green-800 text-sm">{message}</p>
-              </div>
-            )}
-
-            {error && (
-              <div className="mt-3 p-3 bg-red-100 border border-red-300 rounded-md">
-                <p className="text-red-800 text-sm">{error}</p>
-              </div>
-            )}
-          </div>
-
-          <div className="border-t pt-4">
-            <Link
-              href="/login"
-              className="block w-full text-center text-blue-600 hover:text-blue-800 font-medium"
-            >
-              ← Back to Login
-            </Link>
-          </div>
+        {/* Instructions */}
+        <div className="mb-6 sm:mb-8">
+          <h2 className="text-base sm:text-lg font-semibold mb-4 text-gray-900">
+            What to do next:
+          </h2>
+          <ol className="list-decimal list-inside space-y-2 sm:space-y-3 text-gray-600 text-sm sm:text-base leading-relaxed">
+            <li>
+              Check your email inbox (and spam folder) for a confirmation email
+            </li>
+            <li>Click the confirmation link in the email</li>
+          </ol>
         </div>
 
-        <div className="mt-6 text-center">
+        {/* Resend Email Form */}
+        <div className="mb-4">
+          <h3 className="text-base sm:text-lg font-semibold mb-4 text-gray-900">
+            Didn&apos;t receive the email?
+          </h3>
+          <form onSubmit={handleResendConfirmation} className="space-y-4">
+            <div className="mb-4">
+              <label htmlFor="email" className="block mb-2 loginLabel">
+                Enter your email address
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setError("");
+                  setMessage("");
+                }}
+                placeholder="Enter your email address"
+                className={`input-placeholder w-full rounded-xl border px-4 h-12 ${
+                  error ? "border-red-500" : "border-[#ADADAD]"
+                }`}
+                required
+              />
+            </div>
+
+            <div>
+              <Button
+                type="submit"
+                variant="primary"
+                size="md"
+                fullWidth
+                disabled={isLoading}
+                className="h-12"
+              >
+                {isLoading ? "Sending..." : "Resend Confirmation Email"}
+              </Button>
+            </div>
+          </form>
+
+          {/* Success Message */}
+          {message && (
+            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-green-800 text-sm">{message}</p>
+            </div>
+          )}
+
+          {/* Error Message */}
+          {error && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-800 text-sm">{error}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Action Button */}
+        <div className="mb-4">
+          <Link href="/login" className="block">
+            <Button variant="secondary" size="md" fullWidth className="h-12">
+              ← Back to Login
+            </Button>
+          </Link>
+        </div>
+
+        {/* Footer */}
+        <div className="text-center pt-4 border-t border-gray-200">
           <p className="text-sm text-gray-500">
             Still having trouble?{" "}
             <Link
               href="/contact-us"
-              className="text-blue-600 hover:text-blue-800"
+              className="text-[#CB0000] hover:text-[#A00000] font-medium hover:underline"
             >
               Contact Support
             </Link>
           </p>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

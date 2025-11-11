@@ -104,7 +104,7 @@ export default function Header() {
 
             {/* User Dropdown Menu */}
             {userMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
                 <div className="py-1">
                   <button
                     onClick={handleSignOut}
@@ -118,7 +118,7 @@ export default function Header() {
           </div>
         ) : (
           <Link href="/login">
-            <button className="px-6 py-2 bg-red-600 text-white rounded-md text-lg hover:bg-red-700 cursor-pointer">
+            <button className="px-6 py-2 bg-red-600 text-white rounded-xl text-lg hover:bg-red-700 cursor-pointer">
               Sign In
             </button>
           </Link>

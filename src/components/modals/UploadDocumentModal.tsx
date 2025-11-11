@@ -135,9 +135,9 @@ export default function UploadDocumentModal({
 
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl border border-[#DFDFDF] shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="bg-white rounded-2xl border border-[#DFDFDF] shadow-lg w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between p-6 border-b border-gray-200 shrink-0">
             <h2 className="text-2xl font-bold text-gray-900">
               Upload Document
             </h2>
@@ -149,8 +149,8 @@ export default function UploadDocumentModal({
             </button>
           </div>
 
-          {/* Content */}
-          <div className="p-6">
+          {/* Content - Scrollable */}
+          <div className="p-6 pr-4 overflow-y-auto flex-1 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:hover:bg-gray-400">
             <form className="space-y-6">
               {/* Document Name */}
               <div>
@@ -162,7 +162,7 @@ export default function UploadDocumentModal({
                   placeholder="Enter document name"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full h-12 border border-[#DFDFDF] rounded-md px-4 text-sm outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                  className="w-full h-12 border border-[#DFDFDF] rounded-xl px-4 text-sm outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
                 />
               </div>
 
@@ -172,7 +172,7 @@ export default function UploadDocumentModal({
                   Document Type
                 </label>
                 <Dropdown
-                  className="border border-[#DFDFDF] rounded-md"
+                  className="border border-[#DFDFDF] rounded-xl"
                   value={form.type}
                   options={typeOptions}
                   placeholder="Select Document Type"
@@ -217,7 +217,7 @@ export default function UploadDocumentModal({
                   onChange={(e) =>
                     setForm({ ...form, description: e.target.value })
                   }
-                  className="w-full min-h-[100px] border border-[#DFDFDF] rounded-md px-4 py-3 text-sm outline-none resize-y focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                  className="w-full min-h-[100px] border border-[#DFDFDF] rounded-xl px-4 py-3 text-sm outline-none resize-y focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
                 />
               </div>
             </form>

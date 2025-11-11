@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { FaTimes, FaClock, FaCrown, FaGift } from "react-icons/fa";
+import { FaTimes, FaClock, FaCrown, FaGift, FaCoins } from "react-icons/fa";
 import SubscriptionModal from "./SubscriptionModal";
+import CreditPurchaseModal from "./CreditPurchaseModal";
 
 type SwipeLimitModalProps = {
   isOpen: boolean;
@@ -22,6 +23,7 @@ export default function SwipeLimitModal({
   userRole = "kindtao",
 }: SwipeLimitModalProps) {
   const [showPricingModal, setShowPricingModal] = useState(false);
+  const [showCreditPurchaseModal, setShowCreditPurchaseModal] = useState(false);
 
   const handleUpgrade = () => {
     setShowPricingModal(true);
@@ -125,10 +127,18 @@ export default function SwipeLimitModal({
           {/* Actions */}
           <div className="space-y-3">
             <button
+              onClick={() => setShowCreditPurchaseModal(true)}
+              className="w-full cursor-pointer bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 px-6 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-200 shadow-lg flex items-center justify-center gap-2"
+            >
+              <FaCoins className="w-4 h-4" />
+              <span>Buy Swipe Credits</span>
+            </button>
+
+            <button
               onClick={handleUpgrade}
               className="w-full cursor-pointer bg-gradient-to-r from-[#CC0000] to-red-600 text-white py-3 px-6 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-lg"
             >
-              <span>Upgrade</span>
+              <span>Subscribe to a Plan</span>
             </button>
 
             <button
@@ -151,6 +161,17 @@ export default function SwipeLimitModal({
         isOpen={showPricingModal}
         onClose={handlePricingModalClose}
         userRole={userRole}
+      />
+
+      {/* Credit Purchase Modal */}
+      <CreditPurchaseModal
+        isOpen={showCreditPurchaseModal}
+        onClose={() => {
+          setShowCreditPurchaseModal(false);
+          onClose();
+        }}
+        creditType="swipe_credits"
+        currentCredits={remainingSwipes}
       />
     </div>
   );

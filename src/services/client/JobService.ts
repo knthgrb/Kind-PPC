@@ -46,6 +46,7 @@ export const JobService = {
   async fetchJobsClient(filters?: JobFilters): Promise<JobPost[]> {
     const supabase = createClient();
 
+    const now = new Date().toISOString();
     let query = supabase
       .from("job_posts")
       .select(
@@ -69,6 +70,7 @@ export const JobService = {
       `
       )
       .eq("status", "active")
+      .or(`expires_at.is.null,expires_at.gt.${now}`)
       .order("created_at", { ascending: false });
 
     // Apply filters

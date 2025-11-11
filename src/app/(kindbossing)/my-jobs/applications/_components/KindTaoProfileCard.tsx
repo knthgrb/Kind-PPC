@@ -78,7 +78,7 @@ export default function KindTaoProfileCard({
   return (
     <div className="bg-white rounded-xl border border-[#E0E6F7] shadow-lg overflow-hidden cursor-grab active:cursor-grabbing select-none relative w-full max-w-sm md:max-w-lg h-full max-h-[500px] md:max-h-[600px] flex flex-col mx-auto z-10">
       {/* Header with Profile */}
-      <div className="p-4 md:p-6 border-b border-gray-100 flex-shrink-0">
+      <div className="p-4 md:p-6 border-b border-gray-100 shrink-0">
         <div className="flex items-start gap-3 md:gap-4">
           {/* Main Content */}
           <div className="flex-1 min-w-0">
@@ -91,7 +91,7 @@ export default function KindTaoProfileCard({
                   </h2>
                   {kindtaoProfile.kindtao_profile?.is_verified && (
                     <FaCheckCircle
-                      className="w-4 h-4 text-blue-500 flex-shrink-0"
+                      className="w-4 h-4 text-blue-500 shrink-0"
                       title="Verified"
                     />
                   )}
@@ -151,7 +151,7 @@ export default function KindTaoProfileCard({
                     key={index}
                     className="flex items-start text-xs md:text-sm"
                   >
-                    <span className="w-1.5 h-1.5 bg-[#CC0000] rounded-full mt-1.5 md:mt-2 mr-2 md:mr-3 flex-shrink-0"></span>
+                    <span className="w-1.5 h-1.5 bg-[#CC0000] rounded-full mt-1.5 md:mt-2 mr-2 md:mr-3 shrink-0"></span>
                     <span className="capitalize">
                       {skill.replace("_", " ")}
                     </span>
@@ -159,13 +159,13 @@ export default function KindTaoProfileCard({
                 ))
             ) : (
               <li className="flex items-start text-xs md:text-sm">
-                <span className="w-1.5 h-1.5 bg-[#CC0000] rounded-full mt-1.5 md:mt-2 mr-2 md:mr-3 flex-shrink-0"></span>
+                <span className="w-1.5 h-1.5 bg-[#CC0000] rounded-full mt-1.5 md:mt-2 mr-2 md:mr-3 shrink-0"></span>
                 <span>Skills not specified</span>
               </li>
             )}
             {kindtaoProfile.kindtao_profile?.highest_educational_attainment && (
               <li className="flex items-start text-xs md:text-sm">
-                <span className="w-1.5 h-1.5 bg-[#CC0000] rounded-full mt-1.5 md:mt-2 mr-2 md:mr-3 flex-shrink-0"></span>
+                <span className="w-1.5 h-1.5 bg-[#CC0000] rounded-full mt-1.5 md:mt-2 mr-2 md:mr-3 shrink-0"></span>
                 <span>
                   {
                     kindtaoProfile.kindtao_profile
@@ -197,7 +197,7 @@ export default function KindTaoProfileCard({
         <div className="flex-1 min-h-0"></div>
 
         {/* See Full Details Button - Always visible at bottom */}
-        <div className="mt-4 md:mt-6 flex-shrink-0">
+        <div className="mt-4 md:mt-6 shrink-0">
           <button
             onClick={onSeeFullProfile}
             className="w-full cursor-pointer py-2 md:py-3 px-3 md:px-4 bg-gray-50 text-gray-700 rounded-xl hover:bg-gray-100 transition-colors flex items-center justify-center gap-2 text-xs md:text-sm font-medium border border-gray-200"

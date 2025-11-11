@@ -7,7 +7,7 @@ interface ChipProps {
 export default function Chip({ children, onRemove, className }: ChipProps) {
   return (
     <span
-      className={`profileSkills inline-flex items-center gap-2 rounded-md border border-white bg-white px-3 py-1 ${
+      className={`profileSkills inline-flex items-center gap-2 rounded-xl border border-white bg-white px-3 py-1 ${
         className || ""
       }`}
     >

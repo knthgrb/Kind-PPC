@@ -240,7 +240,7 @@ export default function WorkHistoryClient({
             {entries.map((e, idx) => (
               <div
                 key={idx}
-                className="rounded-md border border-[#DFDFDF] overflow-hidden"
+                className="rounded-xl border border-[#DFDFDF] overflow-hidden"
               >
                 <div className="w-full px-4 h-12 flex items-center justify-between">
                   {/* Left: title + range (click to expand) */}
@@ -268,7 +268,7 @@ export default function WorkHistoryClient({
                     <button
                       type="button"
                       onClick={() => handleEdit(idx)}
-                      className="px-2 py-1 cursor-pointer rounded-md border border-[#DFDFDF]"
+                      className="px-2 py-1 cursor-pointer rounded-xl border border-[#DFDFDF]"
                     >
                       Edit
                     </button>
@@ -276,7 +276,7 @@ export default function WorkHistoryClient({
                       type="button"
                       onClick={() => handleRemove(idx)}
                       aria-label="Remove"
-                      className="px-2 py-1 cursor-pointer rounded-md border border-[#DFDFDF]"
+                      className="px-2 py-1 cursor-pointer rounded-xl border border-[#DFDFDF]"
                       title="Remove"
                     >
                       ×
@@ -321,7 +321,7 @@ export default function WorkHistoryClient({
                           {e.skillsUsed.map((skill, idx) => (
                             <span
                               key={idx}
-                              className="px-2 py-1 bg-gray-100 text-xs rounded-md"
+                              className="px-2 py-1 bg-gray-100 text-xs rounded-xl"
                             >
                               {formatSkillName(skill)}
                             </span>
@@ -339,7 +339,7 @@ export default function WorkHistoryClient({
                     )}
                     {e.isCurrentJob && (
                       <div>
-                        <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs rounded-md">
+                        <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs rounded-xl">
                           Current Job
                         </span>
                       </div>
@@ -361,7 +361,7 @@ export default function WorkHistoryClient({
               placeholder="Job Title"
               value={jobTitle}
               onChange={(e) => setJobTitle(e.target.value)}
-              className="w-full h-12 rounded-md border border-[#DFDFDF] px-4 outline-none"
+              className="w-full h-12 rounded-xl border border-[#DFDFDF] px-4 outline-none"
             />
           </div>
 
@@ -373,7 +373,7 @@ export default function WorkHistoryClient({
               placeholder="Employer/Company"
               value={company}
               onChange={(e) => setCompany(e.target.value)}
-              className="w-full h-12 rounded-md border border-[#DFDFDF] px-4 outline-none"
+              className="w-full h-12 rounded-xl border border-[#DFDFDF] px-4 outline-none"
             />
           </div>
 
@@ -447,7 +447,7 @@ export default function WorkHistoryClient({
               placeholder="Type Here…."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full min-h-[140px] rounded-md border border-[#DFDFDF] px-4 py-3 outline-none resize-y"
+              className="w-full min-h-[140px] rounded-xl border border-[#DFDFDF] px-4 py-3 outline-none resize-y"
             />
           </div>
 
@@ -459,7 +459,7 @@ export default function WorkHistoryClient({
               placeholder="City, Province"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              className="w-full h-12 rounded-md border border-[#DFDFDF] px-4 outline-none"
+              className="w-full h-12 rounded-xl border border-[#DFDFDF] px-4 outline-none"
             />
           </div>
 
@@ -473,7 +473,7 @@ export default function WorkHistoryClient({
                 {AVAILABLE_SKILLS.map((skill) => (
                   <label
                     key={skill}
-                    className="flex items-center gap-2 cursor-pointer p-2 rounded-md border border-[#DFDFDF] hover:bg-gray-50"
+                    className="flex items-center gap-2 cursor-pointer p-2 rounded-xl border border-[#DFDFDF] hover:bg-gray-50"
                   >
                     <input
                       type="checkbox"
@@ -486,7 +486,7 @@ export default function WorkHistoryClient({
                 ))}
               </div>
             ) : (
-              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
                 <p className="text-yellow-800 text-sm">
                   Please complete the Skills & Availability step first to select
                   skills for your work experience.
@@ -502,7 +502,7 @@ export default function WorkHistoryClient({
               placeholder="Additional notes about this work experience..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full min-h-[100px] rounded-md border border-[#DFDFDF] px-4 py-3 outline-none resize-y"
+              className="w-full min-h-[100px] rounded-xl border border-[#DFDFDF] px-4 py-3 outline-none resize-y"
             />
           </div>
 
@@ -511,7 +511,7 @@ export default function WorkHistoryClient({
             <button
               type="button"
               onClick={handleSave}
-              className="relative cursor-pointer inline-flex items-center gap-2 rounded-md border border-[#CC0000] px-4 h-[43px] text-[#CC0000] bg-white"
+              className="relative cursor-pointer inline-flex items-center gap-2 rounded-xl border border-[#CC0000] px-4 h-[43px] text-[#CC0000] bg-white"
             >
               {/* Plus icon when adding; simple disk-like bar when editing */}
               <span className="relative inline-flex items-center justify-center w-5 h-5 rounded-full border border-[#CC0000]">
@@ -533,7 +533,7 @@ export default function WorkHistoryClient({
               <button
                 type="button"
                 onClick={handleCancelEdit}
-                className="px-3 h-[43px] rounded-md border border-[#DFDFDF] bg-white"
+                className="px-3 h-[43px] rounded-xl border border-[#DFDFDF] bg-white"
               >
                 Cancel Edit
               </button>
@@ -544,14 +544,14 @@ export default function WorkHistoryClient({
 
         {/* Error Message */}
         {saveError && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-md mb-6">
+          <div className="p-4 bg-red-50 border border-red-200 rounded-xl mb-6">
             <p className="text-red-600 text-sm">{saveError}</p>
           </div>
         )}
 
         {/* Loading State */}
         {isSaving && (
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-md mb-6">
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl mb-6">
             <p className="text-blue-600 text-sm">Saving your work history...</p>
           </div>
         )}

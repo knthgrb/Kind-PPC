@@ -29,7 +29,7 @@ self.addEventListener("notificationclick", function (event) {
   if (action === "view" && data && data.conversationId) {
     // Navigate to specific chat conversation
     const urlToOpen = new URL(
-      `/chats/${data.conversationId}`,
+      `/matches/${data.conversationId}`,
       self.location.origin
     ).href;
     console.log("Opening chat URL:", urlToOpen);

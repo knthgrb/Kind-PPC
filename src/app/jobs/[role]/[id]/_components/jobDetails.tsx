@@ -52,7 +52,7 @@ export default function JobDetails({
             <button
               type="button"
               onClick={() => router.push(`/jobs/${role}/${job.id}/edit`)}
-              className="p-2 rounded-md hover:bg-gray-100 transition"
+              className="p-2 rounded-xl hover:bg-gray-100 transition"
               aria-label="Edit Job"
             >
               <LuPencil size={22} />
@@ -62,7 +62,7 @@ export default function JobDetails({
             <button
               type="button"
               onClick={() => setOpenDelete(true)}
-              className="p-2 rounded-md hover:bg-gray-100 transition"
+              className="p-2 rounded-xl hover:bg-gray-100 transition"
               aria-label="Delete Job"
             >
               <PiTrash size={22} />

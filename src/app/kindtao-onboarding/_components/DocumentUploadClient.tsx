@@ -267,15 +267,16 @@ export default function DocumentUploadClient({ onBack }: DocumentUploadProps) {
       if (uploadedDocuments.length > 0) {
         const supabase = createClient();
         const documentRecords = uploadedDocuments.map((doc) => ({
-          kindbossing_user_id: user.id,
+          user_id: user.id,
           title: doc.title,
           file_url: doc.file_url,
           size: doc.size,
           content_type: doc.content_type,
+          document_type: doc.title, // Will use the title as document_type for now
         }));
 
         const { error: dbError } = await supabase
-          .from("kindtao_verification_documents")
+          .from("verification_documents")
           .insert(documentRecords);
 
         if (dbError) {
@@ -315,7 +316,7 @@ export default function DocumentUploadClient({ onBack }: DocumentUploadProps) {
       }
 
       // Redirect to profile page
-      router.push("/find-work");
+      router.push("/recs");
     } catch (error) {
       logger.error("Error completing onboarding:", error);
       setSaveError("An unexpected error occurred. Please try again.");
@@ -364,7 +365,7 @@ export default function DocumentUploadClient({ onBack }: DocumentUploadProps) {
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="px-4 py-2 rounded-md cursor-pointer transition-colors bg-blue-600 text-white hover:bg-blue-700"
+          className="px-4 py-2 rounded-xl cursor-pointer transition-colors bg-blue-600 text-white hover:bg-blue-700"
         >
           Choose Files
         </button>
@@ -434,7 +435,7 @@ export default function DocumentUploadClient({ onBack }: DocumentUploadProps) {
 
       {/* Error Message */}
       {saveError && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-md mb-6">
+        <div className="p-4 bg-red-50 border border-red-200 rounded-xl mb-6">
           <p className="text-red-600 text-sm">{saveError}</p>
         </div>
       )}

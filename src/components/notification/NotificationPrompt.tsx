@@ -111,7 +111,7 @@ export default function NotificationPrompt({
     <div className="fixed top-4 right-4 z-100 max-w-sm">
       <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4">
         <div className="flex items-start space-x-3">
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             <div className="w-8 h-8 bg-[#cc0000] rounded-full flex items-center justify-center">
               <HiOutlineBell className="w-5 h-5 text-white" />
             </div>
@@ -127,13 +127,13 @@ export default function NotificationPrompt({
               <button
                 onClick={handleEnableNotifications}
                 disabled={isLoading}
-                className="inline-flex cursor-pointer items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-[#cc0000] hover:bg-[#aa0000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#cc0000] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex cursor-pointer items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-xl text-white bg-[#cc0000] hover:bg-[#aa0000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#cc0000] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? "Enabling..." : "Enable"}
               </button>
               <button
                 onClick={handleDismiss}
-                className="inline-flex cursor-pointer items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#cc0000]"
+                className="inline-flex cursor-pointer items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#cc0000]"
               >
                 Not now
               </button>
@@ -141,7 +141,7 @@ export default function NotificationPrompt({
           </div>
           <button
             onClick={handleDismiss}
-            className="flex-shrink-0 cursor-pointer text-gray-400 hover:text-gray-600"
+            className="shrink-0 cursor-pointer text-gray-400 hover:text-gray-600"
           >
             <HiX className="w-4 h-4" />
           </button>

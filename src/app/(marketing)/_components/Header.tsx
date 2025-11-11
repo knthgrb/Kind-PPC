@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { FiMenu, FiX, FiUser, FiLogOut, FiBarChart2 } from "react-icons/fi";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/buttons";
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -116,14 +117,14 @@ export default function Header() {
 
         <div className="hidden lg:flex space-x-4">
           <Link href="/signup">
-            <button className="px-6 w-30 py-2 bg-white text-lg cursor-pointer border rounded-md hover:bg-gray-50 border-gray-300">
+            <Button variant="secondary" size="md" className="w-30">
               Sign Up
-            </button>
+            </Button>
           </Link>
           <Link href="/login">
-            <button className="px-6 w-30 py-2 bg-red-600 text-white rounded-md text-lg hover:bg-red-700 cursor-pointer">
+            <Button variant="primary" size="md" className="w-30">
               Login
-            </button>
+            </Button>
           </Link>
         </div>
 
@@ -179,15 +180,8 @@ export default function Header() {
             Home
           </Link>
           <Link
-            href="/find-help"
-            className={getLinkClasses("/find-help")}
-            onClick={() => setMenuOpen(false)}
-          >
-            Find Help
-          </Link>
-          <Link
-            href="/find-work"
-            className={getLinkClasses("/find-work")}
+            href="/recs"
+            className={getLinkClasses("/recs")}
             onClick={() => setMenuOpen(false)}
           >
             Find Work
@@ -214,24 +208,24 @@ export default function Header() {
             Contact Us
           </Link>
         </nav>
-        <div className="mt-auto p-6 border-t border-gray-200 flex flex-col gap-3">
+        <div className="bg-red-600 mt-auto p-6 border-t border-gray-200 flex flex-col gap-3">
           <Link
             href="/signup"
             onClick={() => setMenuOpen(false)}
             className="w-full"
           >
-            <button className="w-full px-6 py-2 bg-white text-lg border rounded-md border-gray-300">
+            <Button variant="secondary" size="lg" fullWidth>
               Sign Up
-            </button>
+            </Button>
           </Link>
           <Link
             href="/login"
             onClick={() => setMenuOpen(false)}
             className="w-full"
           >
-            <button className="w-full px-6 py-2 bg-red-600 text-white rounded-md text-lg hover:bg-red-700">
+            <Button variant="primary" size="lg" fullWidth>
               Login
-            </button>
+            </Button>
           </Link>
         </div>
       </div>

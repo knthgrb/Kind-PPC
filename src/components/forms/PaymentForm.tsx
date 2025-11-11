@@ -172,7 +172,7 @@ export default function PaymentForm({
                 value={formData.cardNumber}
                 onChange={handleCardNumberChange}
                 placeholder="1234 5678 9012 3456"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
                 maxLength={19}
                 required
               />
@@ -193,7 +193,7 @@ export default function PaymentForm({
                       expiryMonth: e.target.value,
                     }))
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
                   required
                 >
                   <option value="">Month</option>
@@ -217,7 +217,7 @@ export default function PaymentForm({
                       expiryYear: e.target.value,
                     }))
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
                   required
                 >
                   <option value="">Year</option>
@@ -244,7 +244,7 @@ export default function PaymentForm({
                 value={formData.cvc}
                 onChange={handleInputChange}
                 placeholder="123"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
                 maxLength={4}
                 required
               />
@@ -261,7 +261,7 @@ export default function PaymentForm({
                 value={formData.cardholderName}
                 onChange={handleInputChange}
                 placeholder="John Doe"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
                 required
               />
             </div>
@@ -277,7 +277,7 @@ export default function PaymentForm({
                 value={formData.email}
                 onChange={handleInputChange}
                 placeholder="john@example.com"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
                 required
               />
             </div>
@@ -293,7 +293,7 @@ export default function PaymentForm({
                 value={formData.phone}
                 onChange={handleInputChange}
                 placeholder="+63 912 345 6789"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
               />
             </div>
           </>
@@ -313,7 +313,7 @@ export default function PaymentForm({
                 value={formData.gcashNumber}
                 onChange={handleInputChange}
                 placeholder="0912 345 6789"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
                 required
               />
             </div>
@@ -329,7 +329,7 @@ export default function PaymentForm({
                 value={formData.email}
                 onChange={handleInputChange}
                 placeholder="john@example.com"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
                 required
               />
             </div>
@@ -345,7 +345,7 @@ export default function PaymentForm({
                 value={formData.cardholderName}
                 onChange={handleInputChange}
                 placeholder="John Doe"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
                 required
               />
             </div>
@@ -357,7 +357,7 @@ export default function PaymentForm({
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 cursor-pointer px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+            className="flex-1 cursor-pointer px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
             disabled={isProcessing}
           >
             Cancel
@@ -365,7 +365,7 @@ export default function PaymentForm({
           <button
             type="submit"
             disabled={!isFormValid() || isProcessing}
-            className="flex-1 cursor-pointer px-4 py-2 bg-[#CC0000] text-white rounded-md hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+            className="flex-1 cursor-pointer px-4 py-2 bg-[#CC0000] text-white rounded-xl hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
           >
             {isProcessing
               ? "Processing..."

@@ -23,7 +23,7 @@ export default function JobCardTest({ job }: Props) {
             alt={job.name}
             width={50}
             height={50}
-            className="object-contain rounded-md"
+            className="object-contain rounded-xl"
           />
         </div>
         <div className="flex flex-col justify-center">

@@ -10,6 +10,7 @@ import { createClient } from "@/utils/supabase/client";
 import { logger } from "@/utils/logger";
 import { AuthService } from "@/services/client/AuthService";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/buttons";
 
 // Schema for validation
 const loginSchema = z.object({
@@ -91,7 +92,18 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-4">
+    <main className="min-h-screen flex items-center justify-center px-4 relative">
+      {/* Logo in upper left */}
+      <Link href="/" className="absolute top-6 left-6 z-10">
+        <Image
+          src="/kindLogo.png"
+          width={120}
+          height={40}
+          alt="Kind"
+          priority
+          className="h-8 w-auto"
+        />
+      </Link>
       <section className="w-full max-w-xl rounded-2xl border border-[#DFDFDF] shadow-sm p-8 md:p-10">
         <h1 className="text-center mb-8 loginH1">Login</h1>
 
@@ -99,7 +111,7 @@ export default function LoginPage() {
         <button
           type="button"
           onClick={handleGoogleSignIn}
-          className="w-full rounded-md border cursor-pointer border-[#D8D8D8] h-12 px-4 flex items-center justify-center gap-3 mb-8"
+          className="w-full rounded-xl border cursor-pointer border-[#D8D8D8] hover:bg-gray-50 h-12 px-4 flex items-center justify-center gap-3 mb-8"
         >
           <Image
             src="/icons/google_ic.png"
@@ -116,13 +128,13 @@ export default function LoginPage() {
           {/* Username / Email */}
           <div className="mb-6">
             <label htmlFor="email" className="block mb-2 loginLabel">
-              Enter your username or email address
+              Enter your email address
             </label>
             <input
               id="email"
               type="text"
               placeholder="Username or email address"
-              className={`input-placeholder w-full rounded-md border-1 px-4 h-12 ${
+              className={`input-placeholder w-full rounded-xl border px-4 h-12 ${
                 errors.email ? "border-red-500" : "border-[#ADADAD]"
               }`}
               {...register("email")}
@@ -147,7 +159,7 @@ export default function LoginPage() {
               id="password"
               type="password"
               placeholder="Password"
-              className={`input-placeholder w-full rounded-md border-[1px] px-4 h-12 ${
+              className={`input-placeholder w-full rounded-xl border px-4 h-12 ${
                 errors.password ? "border-red-500" : "border-[#ADADAD]"
               }`}
               {...register("password")}
@@ -164,12 +176,12 @@ export default function LoginPage() {
           </div>
 
           {/* Forgot password */}
-          <div className="mb-6 flex justify-end">
+          <div className="my-6 text-center">
             <Link
               href="/forgot-password"
-              className="underline underline-offset-2"
+              className="text-[#CB0000] hover:underline"
             >
-              Forgot Password?
+              Forgot password?
             </Link>
           </div>
 
@@ -194,32 +206,23 @@ export default function LoginPage() {
           )}
 
           {/* Submit */}
-          <div className="flex justify-center mb-6">
-            <button
-              type="submit"
-              disabled={isSubmitting || isLoading}
-              className="h-12 w-[233px] rounded-md px-4 bg-[#CB0000] text-white cursor-pointer hover:bg-[#A00000] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting || isLoading ? "Signing in..." : "Sign in"}
-            </button>
-          </div>
+          <Button
+            type="submit"
+            variant="primary"
+            size="md"
+            fullWidth
+            disabled={isSubmitting || isLoading}
+            className="h-12 mb-6"
+          >
+            {isSubmitting || isLoading ? "Signing in..." : "Sign in"}
+          </Button>
         </form>
-
-        {/* Email confirmation note - only show if no error */}
-        {!error && (
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-blue-800 text-sm text-center">
-              <strong>New user?</strong> Please check your email and click the
-              confirmation link before logging in.
-            </p>
-          </div>
-        )}
 
         {/* Footer links */}
         <p className="text-center">
-          No Account ?{" "}
-          <Link href="/signup" className="underline underline-offset-2">
-            Sign up
+          Don't have an account yet?{" "}
+          <Link href="/signup" className="text-[#CB0000] hover:underline">
+            Create an account
           </Link>
         </p>
       </section>

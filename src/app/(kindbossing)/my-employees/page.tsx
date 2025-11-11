@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { employees } from "@/lib/kindBossing/employees";
+import { useState, useEffect } from "react";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { getEmployees } from "@/actions/employees/get-employees";
+import { Employee } from "@/types/employee";
 import MyEmployeesClient from "./_components/MyEmployeesClient";
 import AddEmployeeModal from "@/components/modals/AddEmployeeModal";
 import { LuFilter, LuSearch, LuPlus } from "react-icons/lu";
@@ -9,16 +11,44 @@ import { FaUsers, FaCalendar } from "react-icons/fa";
 import PrimaryButton from "@/components/buttons/PrimaryButton";
 
 export default function MyEmployees() {
+  const { user } = useAuthStore();
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "active" | "inactive">("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
 
+  useEffect(() => {
+    if (user?.id) {
+      loadEmployees();
+    }
+  }, [user]);
+
+  const loadEmployees = async () => {
+    try {
+      setLoading(true);
+      const result = await getEmployees();
+      if (result.success) {
+        setEmployees(result.employees);
+      } else {
+        console.error("Error loading employees:", result.error);
+      }
+    } catch (error) {
+      console.error("Error loading employees:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredEmployees = employees.filter((employee) => {
     const matchesFilter =
       filter === "all" || employee.status.toLowerCase() === filter;
+    const employeeName = employee.kindtao?.user
+      ? `${employee.kindtao.user.first_name || ""} ${employee.kindtao.user.last_name || ""}`.trim()
+      : "";
     const matchesSearch =
-      employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.job.toLowerCase().includes(searchTerm.toLowerCase());
+      employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (employee.job_post?.job_title || "").toLowerCase().includes(searchTerm.toLowerCase());
     return matchesFilter && matchesSearch;
   });
 
@@ -62,7 +92,7 @@ export default function MyEmployees() {
             <button
               key={tab.key}
               onClick={() => setFilter(tab.key as any)}
-              className={`cursor-pointer px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`cursor-pointer px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
                 filter === tab.key
                   ? "bg-white text-[#CC0000] shadow-sm"
                   : "text-gray-600 hover:text-gray-900"
@@ -97,7 +127,16 @@ export default function MyEmployees() {
       </div>
 
       {/* Employees Content */}
-      {filteredEmployees.length === 0 ? (
+      {loading ? (
+        <div className="text-center py-12">
+          <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <FaUsers className="w-8 h-8 text-gray-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            Loading employees...
+          </h3>
+        </div>
+      ) : filteredEmployees.length === 0 ? (
         <div className="text-center py-12">
           <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <FaUsers className="w-8 h-8 text-gray-400" />
@@ -120,8 +159,7 @@ export default function MyEmployees() {
         isOpen={isAddEmployeeModalOpen}
         onClose={() => setIsAddEmployeeModalOpen(false)}
         onEmployeeAdded={() => {
-          // In a real app, this would refresh the employees list
-          console.log("Employee added successfully");
+          loadEmployees();
         }}
       />
     </div>

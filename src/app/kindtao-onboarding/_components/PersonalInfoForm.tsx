@@ -352,7 +352,7 @@ export default function PersonalInfoClient({ onNext }: PersonalInfoProps) {
 
         {/* Error Message */}
         {saveError && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+          <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
             <p className="text-red-600 text-sm">{saveError}</p>
           </div>
         )}

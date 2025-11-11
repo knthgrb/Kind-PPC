@@ -75,7 +75,7 @@ function ReportForm({
             placeholder="Title"
             value={form.title}
             onChange={(e) => handleChange("title", e.target.value)}
-            className="w-full rounded-md px-3 py-2 text-sm text-gray-700 border border-[#ADADAD] bg-white focus:outline-none"
+            className="w-full rounded-xl px-3 py-2 text-sm text-gray-700 border border-[#ADADAD] bg-white focus:outline-none"
           />
         </div>
 

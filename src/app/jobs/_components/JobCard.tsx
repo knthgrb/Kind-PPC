@@ -17,13 +17,13 @@ export default function JobCard({
   return (
     <div className="flex flex-col p-4 rounded-2xl bg-white border border-[#E0E6F7] transition-all w-full h-auto">
       <div className="flex mb-3">
-        <div className="mr-4 flex-shrink-0">
+        <div className="mr-4 shrink-0">
           <Image
             src="/people/darrellSteward.png" //TODO: replace with user's profile image
             alt={job.id}
             width={50}
             height={50}
-            className="object-contain rounded-md"
+            className="object-contain rounded-xl"
           />
         </div>
         <div className="flex flex-col min-w-0">

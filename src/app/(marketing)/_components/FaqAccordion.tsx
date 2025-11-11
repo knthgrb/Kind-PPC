@@ -12,15 +12,15 @@ type FaqsAccordionProps = {
 };
 
 export default function FaqAccordion({ faq }: FaqsAccordionProps) {
-  const [activeIndex, setActiveIndex] = useState<number | null>(0);
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
   const toggleAccordion = (index: number) => {
     setActiveIndex((prev) => (prev === index ? null : index));
   };
 
   return (
-    <section className="bg-white">
-      <div className="max-w-7xl bg-white mx-auto space-y-4">
+    <section className="bg-white pb-0">
+      <div className="max-w-7xl bg-white mx-auto space-y-4 pb-0">
         {faq.map((faq, index) => (
           <div
             key={index}

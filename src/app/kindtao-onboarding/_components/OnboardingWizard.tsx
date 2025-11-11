@@ -78,8 +78,8 @@ export default function OnboardingWizard() {
 
             {/* Footer skeleton */}
             <div className="mt-6 flex items-center justify-center gap-4">
-              <div className="h-[43px] bg-gray-200 rounded-md w-[160px]"></div>
-              <div className="h-[43px] bg-gray-200 rounded-md w-[188px]"></div>
+              <div className="h-[43px] bg-gray-200 rounded-xl w-[160px]"></div>
+              <div className="h-[43px] bg-gray-200 rounded-xl w-[188px]"></div>
             </div>
           </div>
         }

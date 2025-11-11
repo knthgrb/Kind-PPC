@@ -52,6 +52,48 @@ export const howItWorksSteps = [
   },
 ];
 
+export const howItWorksStepsKindTao = [
+  {
+    icon: "/homepage/how_it_works_profile.png",
+    title: "Create Your Profile",
+    description:
+      "Set up your profile with your skills, availability, location, and job preferences. Our smart matching system uses this information to find the perfect jobs for you.",
+  },
+  {
+    icon: "/homepage/how_it_works_connect.png",
+    title: "Browse & Match",
+    description:
+      "Browse personalized job matches based on your skills, location, and preferences. Swipe through jobs that match your criteria and see your compatibility score with each opportunity.",
+  },
+  {
+    icon: "/homepage/how_it_works_hire.png",
+    title: "Apply & Get Hired",
+    description:
+      "Apply to jobs with one swipe. When kindBossing approves your application, you'll be matched and can start chatting. Connect, discuss details, and get hired quickly.",
+  },
+];
+
+export const howItWorksStepsKindBossing = [
+  {
+    icon: "/homepage/how_it_works_profile.png",
+    title: "Create Your Profile",
+    description:
+      "Set up your business profile and verify your account. Add your location, business details, and hiring preferences to get started.",
+  },
+  {
+    icon: "/homepage/how_it_works_connect.png",
+    title: "Post Jobs & Review",
+    description:
+      "Post job openings with requirements, salary, and location. Our matching algorithm will show you applications from qualified kindTao. Swipe through applications to review candidates.",
+  },
+  {
+    icon: "/homepage/how_it_works_hire.png",
+    title: "Approve & Hire",
+    description:
+      "Approve applications from the best kindTao candidates. Once approved, you'll be matched and can start chatting. Discuss job details, schedule interviews, and hire the perfect fit.",
+  },
+];
+
 export const benefitsList = [
   {
     icon: "/homepage/one.png",

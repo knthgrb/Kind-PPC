@@ -111,14 +111,14 @@ function InstallPrompt() {
             {isIOS ? (
               <button
                 onClick={handleIOSInstall}
-                className="bg-blue-500 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-600 transition-colors"
+                className="bg-blue-500 text-white px-3 py-2 rounded-xl text-sm font-medium hover:bg-blue-600 transition-colors"
               >
                 How to Install
               </button>
             ) : deferredPrompt ? (
               <button
                 onClick={handleInstall}
-                className="bg-blue-500 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-600 transition-colors"
+                className="bg-blue-500 text-white px-3 py-2 rounded-xl text-sm font-medium hover:bg-blue-600 transition-colors"
               >
                 Add to Home Screen
               </button>
@@ -178,7 +178,7 @@ function InstallPrompt() {
 
             <div className="space-y-4">
               <div className="flex items-start space-x-3">
-                <div className="bg-blue-100 text-blue-600 rounded-full w-8 h-8 flex items-center justify-center text-sm font-semibold flex-shrink-0 mt-0.5">
+                <div className="bg-blue-100 text-blue-600 rounded-full w-8 h-8 flex items-center justify-center text-sm font-semibold shrink-0 mt-0.5">
                   1
                 </div>
                 <div>
@@ -193,7 +193,7 @@ function InstallPrompt() {
               </div>
 
               <div className="flex items-start space-x-3">
-                <div className="bg-blue-100 text-blue-600 rounded-full w-8 h-8 flex items-center justify-center text-sm font-semibold flex-shrink-0 mt-0.5">
+                <div className="bg-blue-100 text-blue-600 rounded-full w-8 h-8 flex items-center justify-center text-sm font-semibold shrink-0 mt-0.5">
                   2
                 </div>
                 <div>
@@ -204,7 +204,7 @@ function InstallPrompt() {
               </div>
 
               <div className="flex items-start space-x-3">
-                <div className="bg-blue-100 text-blue-100 rounded-full w-8 h-8 flex items-center justify-center text-sm font-semibold flex-shrink-0 mt-0.5">
+                <div className="bg-blue-100 text-blue-100 rounded-full w-8 h-8 flex items-center justify-center text-sm font-semibold shrink-0 mt-0.5">
                   3
                 </div>
                 <div>
@@ -218,7 +218,7 @@ function InstallPrompt() {
             <div className="mt-6 pt-4 border-t border-gray-200">
               <button
                 onClick={closeIOSModal}
-                className="w-full bg-blue-500 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-blue-600 transition-colors"
+                className="w-full bg-blue-500 text-white py-2 px-4 rounded-xl text-sm font-medium hover:bg-blue-600 transition-colors"
               >
                 Got it!
               </button>

@@ -63,7 +63,7 @@ export default function Payslip() {
             <button
               key={tab.key}
               onClick={() => setFilter(tab.key as any)}
-              className={`cursor-pointer px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`cursor-pointer px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
                 filter === tab.key
                   ? "bg-white text-[#CC0000] shadow-sm"
                   : "text-gray-600 hover:text-gray-900"

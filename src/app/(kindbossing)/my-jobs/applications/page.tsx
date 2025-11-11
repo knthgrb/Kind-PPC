@@ -9,8 +9,13 @@ import { Application } from "@/types/application";
 import { UserProfile } from "@/types/userProfile";
 import { useToastActions } from "@/stores/useToastStore";
 import { ChatService } from "@/services/client/ChatService";
+import { ApplicationService } from "@/services/client/ApplicationService";
+import { ProfileService } from "@/services/client/ProfileService";
+import { approveApplication } from "@/actions/applications/approve-application";
+import { rejectApplication } from "@/actions/applications/reject-application";
 import ApplicationSwipeInterface from "./_components/ApplicationSwipeInterface";
-import { FaUser } from "react-icons/fa";
+import { FaUser, FaArrowLeft, FaRocket } from "react-icons/fa";
+import Link from "next/link";
 
 export default function ApplicationsPage() {
   const { user } = useAuthStore();
@@ -25,6 +30,9 @@ export default function ApplicationsPage() {
   );
   const [nextKindtaoProfile, setNextKindtaoProfile] =
     useState<UserProfile | null>(null);
+  const [applicantBoostStatus, setApplicantBoostStatus] = useState<
+    Record<string, { isBoosted: boolean; boostExpiresAt: string | null }>
+  >({});
   const [jobDetails, setJobDetails] = useState<JobPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -51,97 +59,27 @@ export default function ApplicationsPage() {
 
       if (!user?.id) return;
 
-      const supabase = createClient();
+      // Use ApplicationService to fetch applications with boost priority
+      const result = await ApplicationService.getApplicationsForKindBossing(
+        user.id,
+        jobId
+      );
 
-      // Get job details if specific job ID is provided
-      if (jobId) {
-        const { data: jobData, error: jobError } = await supabase
-          .from("job_posts")
-          .select("*")
-          .eq("id", jobId)
-          .eq("kindbossing_user_id", user.id)
-          .single();
-
-        if (jobError) {
-          console.error("Error fetching job details:", jobError);
-          showError("Job not found or access denied");
-          return;
-        }
-
-        setJobDetails(jobData);
+      setApplications(result.applications);
+      setApplicantBoostStatus(result.boostStatus);
+      if (result.jobDetails) {
+        setJobDetails(result.jobDetails);
       }
-
-      // Get applications for the specific job or all user's jobs - only pending status
-      let query = supabase
-        .from("job_applications")
-        .select(
-          `
-          *,
-          job_posts!inner(job_title, location, job_description, salary, job_type)
-        `
-        )
-        .eq("status", "pending");
-
-      if (jobId) {
-        query = query.eq("job_post_id", jobId);
-      } else {
-        // Get all job IDs for this user
-        const { data: userJobs } = await supabase
-          .from("job_posts")
-          .select("id")
-          .eq("kindbossing_user_id", user.id);
-
-        if (userJobs && userJobs.length > 0) {
-          const jobIds = userJobs.map((job) => job.id);
-          query = query.in("job_post_id", jobIds);
-        } else {
-          setApplications([]);
-          return;
-        }
-      }
-
-      // Add order by after all filters
-      const { data, error } = await query.order("applied_at", {
-        ascending: false,
-      });
-
-      if (error) {
-        console.error("Error fetching applications:", error);
-        showError("Failed to load applications");
-        return;
-      }
-
-      if (!data || data.length === 0) {
-        setApplications([]);
-        return;
-      }
-
-      // Transform data to match Application interface
-      // Only pending applications are returned from the query
-      const applications: Application[] = data.map((app) => ({
-        id: app.id,
-        job_id: app.job_post_id,
-        applicant_id: app.kindtao_user_id,
-        status: app.status,
-        applied_at: app.applied_at,
-        applicant_name: "Applicant", // Anonymous for privacy
-        applicant_phone: "", // Not shown in list
-        job_title: app.job_posts?.job_title || "",
-        job_location: app.job_posts?.location || "",
-        cover_message: app.message,
-      }));
-
-      setApplications(applications);
 
       // Load first application's profile if available
-      if (applications.length > 0) {
-        await loadKindTaoProfile(applications[0].applicant_id);
-        setCurrentApplication(applications[0]);
+      if (result.applications.length > 0) {
+        await loadKindTaoProfile(result.applications[0].applicant_id);
+        setCurrentApplication(result.applications[0]);
 
         // Preload next applicant profile for blur preview
-        if (applications.length > 1) {
-          const nextProfile = await loadKindTaoProfileAsync(
-            applications[1].applicant_id
+        if (result.applications.length > 1) {
+          const nextProfile = await ProfileService.getKindTaoProfileByUserId(
+            result.applications[1].applicant_id
           );
           setNextKindtaoProfile(nextProfile);
         }
@@ -157,243 +95,15 @@ export default function ApplicationsPage() {
   const loadKindTaoProfileAsync = async (
     applicantId: string
   ): Promise<UserProfile | null> => {
-    try {
-      const supabase = createClient();
-
-      // Fetch user data
-      const { data: userData, error: userError } = await supabase
-        .from("users")
-        .select(
-          `
-          id,
-          email,
-          first_name,
-          last_name,
-          phone,
-          date_of_birth,
-          gender,
-          profile_image_url,
-          barangay,
-          municipality,
-          province,
-          zip_code,
-          swipe_credits,
-          boost_credits,
-          status
-        `
-        )
-        .eq("id", applicantId)
-        .single();
-
-      if (userError) {
-        console.error("Error fetching user data:", userError);
-        return null;
-      }
-
-      // Fetch KindTao profile data
-      const { data: kindtaoData, error: kindtaoError } = await supabase
-        .from("kindtaos")
-        .select(
-          `
-          skills,
-          languages,
-          expected_salary_range,
-          availability_schedule,
-          highest_educational_attainment,
-          rating,
-          reviews,
-          is_verified
-        `
-        )
-        .eq("user_id", applicantId)
-        .single();
-
-      // Fetch work experiences with attachments
-      const { data: workExperiences, error: workError } = await supabase
-        .from("kindtao_work_experiences")
-        .select("*")
-        .eq("kindtao_user_id", applicantId)
-        .order("start_date", { ascending: false });
-
-      // Fetch attachments for each work experience
-      if (workExperiences && workExperiences.length > 0) {
-        const experienceIds = workExperiences.map((exp) => exp.id);
-
-        const { data: attachments } = await supabase
-          .from("kindtao_work_experience_attachments")
-          .select("*")
-          .in("kindtao_work_experience_id", experienceIds);
-
-        // Attach attachments to their respective work experiences
-        const experiencesWithAttachments = workExperiences.map((exp) => ({
-          ...exp,
-          attachments:
-            attachments?.filter(
-              (att) => att.kindtao_work_experience_id === exp.id
-            ) || [],
-        }));
-
-        const profile: UserProfile = {
-          ...userData,
-          kindtao_profile: kindtaoData
-            ? {
-                skills: kindtaoData.skills,
-                languages: kindtaoData.languages,
-                expected_salary_range: kindtaoData.expected_salary_range,
-                availability_schedule: kindtaoData.availability_schedule,
-                highest_educational_attainment:
-                  kindtaoData.highest_educational_attainment,
-                rating: kindtaoData.rating,
-                reviews: kindtaoData.reviews,
-                is_verified: kindtaoData.is_verified,
-              }
-            : null,
-          work_experiences: experiencesWithAttachments,
-        };
-
-        return profile;
-      } else {
-        const profile: UserProfile = {
-          ...userData,
-          kindtao_profile: kindtaoData
-            ? {
-                skills: kindtaoData.skills,
-                languages: kindtaoData.languages,
-                expected_salary_range: kindtaoData.expected_salary_range,
-                availability_schedule: kindtaoData.availability_schedule,
-                highest_educational_attainment:
-                  kindtaoData.highest_educational_attainment,
-                rating: kindtaoData.rating,
-                reviews: kindtaoData.reviews,
-                is_verified: kindtaoData.is_verified,
-              }
-            : null,
-          work_experiences: [],
-        };
-
-        return profile;
-      }
-    } catch (error) {
-      console.error("Error loading KindTao profile:", error);
-      return null;
-    }
+    return await ProfileService.getKindTaoProfileByUserId(applicantId);
   };
 
   const loadKindTaoProfile = async (applicantId: string) => {
     try {
-      const supabase = createClient();
-
-      // Fetch user data
-      const { data: userData, error: userError } = await supabase
-        .from("users")
-        .select(
-          `
-          id,
-          email,
-          first_name,
-          last_name,
-          phone,
-          date_of_birth,
-          gender,
-          profile_image_url,
-          barangay,
-          municipality,
-          province,
-          zip_code,
-          swipe_credits,
-          boost_credits,
-          status
-        `
-        )
-        .eq("id", applicantId)
-        .single();
-
-      if (userError) {
-        console.error("Error fetching user data:", userError);
-        return;
-      }
-
-      // Fetch KindTao profile data
-      const { data: kindtaoData, error: kindtaoError } = await supabase
-        .from("kindtaos")
-        .select(
-          `
-          skills,
-          languages,
-          expected_salary_range,
-          availability_schedule,
-          highest_educational_attainment,
-          rating,
-          reviews,
-          is_verified
-        `
-        )
-        .eq("user_id", applicantId)
-        .single();
-
-      // Fetch work experiences with attachments
-      const { data: workExperiences, error: workError } = await supabase
-        .from("kindtao_work_experiences")
-        .select("*")
-        .eq("kindtao_user_id", applicantId)
-        .order("start_date", { ascending: false });
-
-      // Fetch attachments for each work experience
-      if (workExperiences && workExperiences.length > 0) {
-        const experienceIds = workExperiences.map((exp) => exp.id);
-
-        const { data: attachments } = await supabase
-          .from("kindtao_work_experience_attachments")
-          .select("*")
-          .in("kindtao_work_experience_id", experienceIds);
-
-        // Attach attachments to their respective work experiences
-        const experiencesWithAttachments = workExperiences.map((exp) => ({
-          ...exp,
-          attachments:
-            attachments?.filter(
-              (att) => att.kindtao_work_experience_id === exp.id
-            ) || [],
-        }));
-
-        const profile: UserProfile = {
-          ...userData,
-          kindtao_profile: kindtaoData
-            ? {
-                skills: kindtaoData.skills,
-                languages: kindtaoData.languages,
-                expected_salary_range: kindtaoData.expected_salary_range,
-                availability_schedule: kindtaoData.availability_schedule,
-                highest_educational_attainment:
-                  kindtaoData.highest_educational_attainment,
-                rating: kindtaoData.rating,
-                reviews: kindtaoData.reviews,
-                is_verified: kindtaoData.is_verified,
-              }
-            : null,
-          work_experiences: experiencesWithAttachments,
-        };
-
-        setKindtaoProfile(profile);
-      } else {
-        const profile: UserProfile = {
-          ...userData,
-          kindtao_profile: kindtaoData
-            ? {
-                skills: kindtaoData.skills,
-                languages: kindtaoData.languages,
-                expected_salary_range: kindtaoData.expected_salary_range,
-                availability_schedule: kindtaoData.availability_schedule,
-                highest_educational_attainment:
-                  kindtaoData.highest_educational_attainment,
-                rating: kindtaoData.rating,
-                reviews: kindtaoData.reviews,
-                is_verified: kindtaoData.is_verified,
-              }
-            : null,
-          work_experiences: [],
-        };
-
+      const profile = await ProfileService.getKindTaoProfileByUserId(
+        applicantId
+      );
+      if (profile) {
         setKindtaoProfile(profile);
       }
     } catch (error) {
@@ -406,42 +116,21 @@ export default function ApplicationsPage() {
 
     setIsProcessing(true);
     try {
-      const supabase = createClient();
+      // Use server action to approve application
+      const result = await approveApplication(
+        application.id,
+        application.job_id,
+        application.applicant_id
+      );
 
-      // Create a match
-      const { data: matchData, error: matchError } = await supabase
-        .from("matches")
-        .insert({
-          kindbossing_user_id: user?.id,
-          kindtao_user_id: application.applicant_id,
-          job_post_id: application.job_id,
-          is_active: true,
-          created_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-
-      if (matchError) {
-        console.error("Error creating match:", matchError);
-        showError("Failed to approve application");
-        return;
-      }
-
-      // Update application status to approved (this removes it from the feed)
-      const { error: updateError } = await supabase
-        .from("job_applications")
-        .update({ status: "approved" })
-        .eq("id", application.id);
-
-      if (updateError) {
-        console.error("Error updating application:", updateError);
-        showError("Failed to approve application");
+      if (!result.success) {
+        showError(result.error || "Failed to approve application");
         return;
       }
 
       // Store the approved application data for the modal
       setApprovedApplicationData({
-        matchId: matchData?.id,
+        matchId: result.matchId,
         applicantId: application.applicant_id,
       });
 
@@ -469,7 +158,7 @@ export default function ApplicationsPage() {
     setShowSwipeModalForApplication(null);
 
     if (!approvedApplicationData) {
-      router.push("/chats");
+      router.push("/matches");
       return;
     }
 
@@ -520,19 +209,19 @@ export default function ApplicationsPage() {
           // Add jobId as query parameter to maintain context
           const jobId = showSwipeModalForApplication?.job_id;
           const url = jobId
-            ? `/chats/${conversationId}?job=${jobId}`
-            : `/chats/${conversationId}`;
+            ? `/matches/${conversationId}?job=${jobId}`
+            : `/matches/${conversationId}`;
           router.push(url);
         } else {
-          router.push("/chats");
+          router.push("/matches");
         }
       } catch (error) {
         console.error("Error starting conversation:", error);
         showError("Failed to start conversation");
-        router.push("/chats");
+        router.push("/matches");
       }
     } else {
-      router.push("/chats");
+      router.push("/matches");
     }
 
     setApprovedApplicationData(null);
@@ -559,17 +248,11 @@ export default function ApplicationsPage() {
 
     setIsProcessing(true);
     try {
-      const supabase = createClient();
+      // Use server action to reject application
+      const result = await rejectApplication(application.id);
 
-      // Reject application
-      const { error: rejectError } = await supabase
-        .from("job_applications")
-        .update({ status: "rejected" })
-        .eq("id", application.id);
-
-      if (rejectError) {
-        console.error("Error rejecting application:", rejectError);
-        showError("Failed to reject application");
+      if (!result.success) {
+        showError(result.error || "Failed to reject application");
         return;
       }
 
@@ -651,6 +334,13 @@ export default function ApplicationsPage() {
         {/* Sidebar */}
         <div className="w-80 bg-white border-r border-gray-200 p-6">
           <div className="mb-6">
+            <Link
+              href="/my-jobs"
+              className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-[#CC0000] mb-3 transition-colors"
+            >
+              <FaArrowLeft className="w-4 h-4" />
+              <span>Back to My Jobs</span>
+            </Link>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
               Job Applications
             </h1>
@@ -701,6 +391,13 @@ export default function ApplicationsPage() {
       {/* Sidebar */}
       <div className="w-80 bg-white border-r border-gray-200 p-6">
         <div className="mb-6">
+          <Link
+            href="/kindbossing/my-jobs"
+            className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-[#CC0000] mb-3 transition-colors"
+          >
+            <FaArrowLeft className="w-4 h-4" />
+            <span>Back to My Jobs</span>
+          </Link>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
             Job Applications
           </h1>
@@ -743,11 +440,30 @@ export default function ApplicationsPage() {
               }}
             >
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center shrink-0">
                   <FaUser className="w-5 h-5 text-gray-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">Applicant</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium text-gray-900">
+                      {app.applicant_name || "Applicant"}
+                    </p>
+                    {(() => {
+                      // Check if this applicant has a boosted profile
+                      const boostStatus =
+                        applicantBoostStatus[app.applicant_id];
+                      const isBoosted =
+                        boostStatus?.isBoosted &&
+                        boostStatus?.boostExpiresAt &&
+                        new Date(boostStatus.boostExpiresAt) > new Date();
+                      return isBoosted ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                          <FaRocket className="w-3 h-3 mr-1" />
+                          Boosted
+                        </span>
+                      ) : null;
+                    })()}
+                  </div>
                   <p className="text-xs text-gray-500 truncate">
                     Applied {new Date(app.applied_at).toLocaleDateString()}
                   </p>

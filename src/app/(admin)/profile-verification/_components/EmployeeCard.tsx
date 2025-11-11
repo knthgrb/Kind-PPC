@@ -40,7 +40,7 @@ export default function EmployeeCard({
             alt={`${fullName} avatar`}
             width={48}
             height={48}
-            className="object-cover rounded-md"
+            className="object-cover rounded-xl"
             fallbackSrc="/profile/profile_placeholder.png"
             clickable={true}
             onError={(e) => {
@@ -96,7 +96,7 @@ export default function EmployeeCard({
 
       <button
         onClick={handleViewDetails}
-        className="w-full bg-red-600 text-white text-[0.718rem] rounded-md py-2 hover:bg-red-700 cursor-pointer transition-colors"
+        className="w-full bg-red-600 text-white text-[0.718rem] rounded-xl py-2 hover:bg-red-700 cursor-pointer transition-colors"
       >
         View Details
       </button>

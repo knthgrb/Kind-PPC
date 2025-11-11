@@ -118,7 +118,7 @@ export default function GeneratePayslipModal({
                   Employee Name
                 </label>
                 <Dropdown
-                  className="border border-[#DFDFDF] rounded-md"
+                  className="border border-[#DFDFDF] rounded-xl"
                   value={form.employeeName}
                   options={employeeOptions}
                   placeholder="Select Employee"
@@ -137,7 +137,7 @@ export default function GeneratePayslipModal({
                   onChange={(e) =>
                     setForm({ ...form, monthYear: e.target.value })
                   }
-                  className="w-full h-12 border border-[#DFDFDF] rounded-md px-4 text-sm outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                  className="w-full h-12 border border-[#DFDFDF] rounded-xl px-4 text-sm outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
                 />
               </div>
 
@@ -153,7 +153,7 @@ export default function GeneratePayslipModal({
                   onChange={(e) =>
                     setForm({ ...form, basicSalary: e.target.value })
                   }
-                  className="w-full h-12 border border-[#DFDFDF] rounded-md px-4 text-sm outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                  className="w-full h-12 border border-[#DFDFDF] rounded-xl px-4 text-sm outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
                 />
               </div>
 
@@ -169,7 +169,7 @@ export default function GeneratePayslipModal({
                   onChange={(e) =>
                     setForm({ ...form, overtimeHours: e.target.value })
                   }
-                  className="w-full h-12 border border-[#DFDFDF] rounded-md px-4 text-sm outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                  className="w-full h-12 border border-[#DFDFDF] rounded-xl px-4 text-sm outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
                 />
               </div>
 
@@ -185,7 +185,7 @@ export default function GeneratePayslipModal({
                   onChange={(e) =>
                     setForm({ ...form, overtimeRate: e.target.value })
                   }
-                  className="w-full h-12 border border-[#DFDFDF] rounded-md px-4 text-sm outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                  className="w-full h-12 border border-[#DFDFDF] rounded-xl px-4 text-sm outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
                 />
               </div>
 
@@ -201,7 +201,7 @@ export default function GeneratePayslipModal({
                   onChange={(e) =>
                     setForm({ ...form, bonuses: e.target.value })
                   }
-                  className="w-full h-12 border border-[#DFDFDF] rounded-md px-4 text-sm outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                  className="w-full h-12 border border-[#DFDFDF] rounded-xl px-4 text-sm outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
                 />
               </div>
 
@@ -215,7 +215,7 @@ export default function GeneratePayslipModal({
                   options={deductionOptions}
                   placeholder="Select Deduction"
                   onChange={(val) => setForm({ ...form, deductions: val })}
-                  className="border border-[#DFDFDF] rounded-md"
+                  className="border border-[#DFDFDF] rounded-xl"
                 />
               </div>
 
@@ -229,7 +229,7 @@ export default function GeneratePayslipModal({
                   placeholder="₱550"
                   value={form.netPay}
                   onChange={(e) => setForm({ ...form, netPay: e.target.value })}
-                  className="w-full h-12 border border-[#DFDFDF] rounded-md px-4 text-sm outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                  className="w-full h-12 border border-[#DFDFDF] rounded-xl px-4 text-sm outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
                 />
               </div>
             </form>

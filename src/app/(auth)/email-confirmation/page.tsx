@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Button } from "@/components/buttons";
 
 export default function EmailConfirmationPage() {
   const [email, setEmail] = useState("");
@@ -30,13 +31,24 @@ export default function EmailConfirmationPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-gray-50">
-      <div className="w-full max-w-md">
+    <main className="min-h-screen flex items-center justify-center px-4 py-8 relative">
+      {/* Logo in upper left */}
+      <Link href="/" className="absolute top-6 left-6 z-10">
+        <Image
+          src="/kindLogo.png"
+          width={120}
+          height={40}
+          alt="Kind"
+          priority
+          className="h-8 w-auto"
+        />
+      </Link>
+      <section className="w-full max-w-xl rounded-2xl border border-[#DFDFDF] shadow-sm p-6 sm:p-8 md:p-10">
+        {/* Success Icon */}
         <div className="text-center mb-8">
-          {/* Success Icon */}
-          <div className="mx-auto w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
+          <div className="mx-auto w-16 h-16 sm:w-20 sm:h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
             <svg
-              className="w-10 h-10 text-green-600"
+              className="w-8 h-8 sm:w-10 sm:h-10 text-green-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -52,110 +64,109 @@ export default function EmailConfirmationPage() {
 
           <h1 className="loginH1 mb-4">Check Your Email</h1>
 
-          <p className="text-gray-600 text-lg mb-2">
+          <p className="text-gray-600 text-base sm:text-lg mb-3">
             We've sent a confirmation link to
           </p>
 
           {email && (
-            <p className="text-[#CB0000] font-semibold text-lg mb-4">{email}</p>
+            <p className="text-[#CB0000] font-semibold text-base sm:text-lg mb-4 break-all px-2">
+              {email}
+            </p>
           )}
 
-          <p className="text-gray-600">
+          <p className="text-gray-600 text-sm sm:text-base">
             Please click the link in the email to confirm your account.
           </p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          {/* Gmail Integration */}
-          {isGmail && (
-            <div className="mb-6">
-              <button
-                onClick={handleGmailClick}
-                className="w-full bg-red-50 cursor-pointer hover:bg-red-100 border border-red-200 rounded-lg p-4 flex items-center justify-center gap-3 transition-colors"
-              >
-                <Image
-                  src="/icons/google_ic.png"
-                  width={24}
-                  height={24}
-                  alt="Gmail"
-                  className="w-6 h-6"
-                />
-                <span className="text-red-700 font-medium">Open Gmail</span>
-              </button>
-            </div>
-          )}
-
-          {/* Instructions */}
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-4 text-gray-900">
-              What to do next:
-            </h2>
-            <ol className="list-decimal list-inside space-y-3 text-gray-600">
-              <li>Check your email inbox (and spam folder)</li>
-              <li>Look for an email from Kind Platform</li>
-              <li>Click the "Confirm Email" button or link</li>
-              <li>Return here and try logging in</li>
-            </ol>
-          </div>
-
-          {/* Additional Help */}
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-start gap-3">
-              <svg
-                className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <div>
-                <p className="text-blue-800 text-sm font-medium mb-1">
-                  Didn't receive the email?
-                </p>
-                <p className="text-blue-700 text-sm">
-                  It may take a few minutes to arrive. Check your spam folder or{" "}
-                  <Link
-                    href="/email-not-confirmed"
-                    className="underline hover:text-blue-900"
-                  >
-                    request a new one
-                  </Link>
-                  .
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div>
-            <Link
-              href="/login"
-              className="block w-full text-center bg-[#CB0000] hover:bg-[#A00000] text-white py-3 px-4 rounded-lg font-medium transition-colors"
+        {/* Gmail Integration */}
+        {isGmail && (
+          <div className="mb-6 sm:mb-8">
+            <button
+              type="button"
+              onClick={handleGmailClick}
+              className="w-full rounded-xl border cursor-pointer border-[#D8D8D8] h-12 px-4 flex items-center justify-center gap-3 hover:bg-gray-50 transition-colors"
             >
-              Go to Login
-            </Link>
+              <Image
+                src="/icons/google_ic.png"
+                width={27}
+                height={27}
+                alt="Gmail"
+                priority
+              />
+              <span className="loginInput">Open Gmail</span>
+            </button>
+          </div>
+        )}
+
+        {/* Instructions */}
+        <div className="mb-6 sm:mb-8">
+          <h2 className="text-base sm:text-lg font-semibold mb-4 text-gray-900">
+            What to do next:
+          </h2>
+          <ol className="list-decimal list-inside space-y-2 sm:space-y-3 text-gray-600 text-sm sm:text-base leading-relaxed">
+            <li>Check your email inbox (and spam folder)</li>
+            <li>Look for an email from Kind Platform</li>
+            <li>Click the "Confirm Email" button or link</li>
+          </ol>
+        </div>
+
+        {/* Additional Help */}
+        <div className="mb-6 sm:mb-8 p-4 sm:p-5 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-start gap-3">
+            <svg
+              className="w-5 h-5 text-blue-600 mt-0.5 shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <div className="flex-1">
+              <p className="text-blue-800 text-sm font-medium mb-1">
+                Didn't receive the email?
+              </p>
+              <p className="text-blue-700 text-sm leading-relaxed">
+                It may take a few minutes to arrive. Check your spam folder or{" "}
+                <Link
+                  href="/email-not-confirmed"
+                  className="underline hover:text-blue-900 font-medium"
+                >
+                  request a new one
+                </Link>
+                .
+              </p>
+            </div>
           </div>
         </div>
 
+        {/* Action Button */}
+        <div className="mb-6">
+          <Link href="/login" className="block">
+            <Button variant="primary" size="md" fullWidth className="h-12">
+              Go to Login
+            </Button>
+          </Link>
+        </div>
+
         {/* Footer */}
-        <div className="mt-6 text-center">
+        <div className="text-center pt-4 border-t border-gray-200">
           <p className="text-sm text-gray-500">
             Need help?{" "}
             <Link
               href="/contact-us"
-              className="text-[#CB0000] hover:text-[#A00000] font-medium"
+              className="text-[#CB0000] hover:text-[#A00000] font-medium hover:underline"
             >
               Contact Support
             </Link>
           </p>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

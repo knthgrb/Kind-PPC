@@ -70,7 +70,7 @@ export default function GeneratePayslip() {
           <div>
             <label className="block text-sm mb-2">Employee Name</label>
             <Dropdown
-              className="border border-gray-300 rounded-md"
+              className="border border-gray-300 rounded-xl"
               value={form.employeeName}
               options={employeeOptions}
               placeholder="Select Employee"
@@ -85,7 +85,7 @@ export default function GeneratePayslip() {
               type="month"
               value={form.monthYear}
               onChange={(e) => setForm({ ...form, monthYear: e.target.value })}
-              className="w-full h-12 border border-gray-300 rounded-md px-3 text-sm"
+              className="w-full h-12 border border-gray-300 rounded-xl px-3 text-sm"
             />
           </div>
 
@@ -99,7 +99,7 @@ export default function GeneratePayslip() {
               onChange={(e) =>
                 setForm({ ...form, basicSalary: e.target.value })
               }
-              className="w-full h-12 border border-gray-300 rounded-md px-3 text-sm"
+              className="w-full h-12 border border-gray-300 rounded-xl px-3 text-sm"
             />
           </div>
 
@@ -113,7 +113,7 @@ export default function GeneratePayslip() {
               onChange={(e) =>
                 setForm({ ...form, overtimeHours: e.target.value })
               }
-              className="w-full h-12 border border-gray-300 rounded-md px-3 text-sm"
+              className="w-full h-12 border border-gray-300 rounded-xl px-3 text-sm"
             />
           </div>
 
@@ -127,7 +127,7 @@ export default function GeneratePayslip() {
               onChange={(e) =>
                 setForm({ ...form, overtimeRate: e.target.value })
               }
-              className="w-full h-12 border border-gray-300 rounded-md px-3 text-sm"
+              className="w-full h-12 border border-gray-300 rounded-xl px-3 text-sm"
             />
           </div>
 
@@ -139,7 +139,7 @@ export default function GeneratePayslip() {
               placeholder="Bonuses"
               value={form.bonuses}
               onChange={(e) => setForm({ ...form, bonuses: e.target.value })}
-              className="w-full h-12 border border-gray-300 rounded-md px-3 text-sm"
+              className="w-full h-12 border border-gray-300 rounded-xl px-3 text-sm"
             />
           </div>
 
@@ -162,7 +162,7 @@ export default function GeneratePayslip() {
               placeholder="₱550"
               value={form.netPay}
               onChange={(e) => setForm({ ...form, netPay: e.target.value })}
-              className="w-full h-12 border border-gray-300 rounded-md px-3 text-sm"
+              className="w-full h-12 border border-gray-300 rounded-xl px-3 text-sm"
             />
           </div>
         </form>

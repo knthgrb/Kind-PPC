@@ -8,6 +8,7 @@ import {
   FiMessageCircle,
   FiUser,
   FiMoreHorizontal,
+  FiBell,
 } from "react-icons/fi";
 
 export default function KindTaoBottomTabs() {
@@ -15,32 +16,30 @@ export default function KindTaoBottomTabs() {
   const [moreOpen, setMoreOpen] = useState(false);
 
   const isActive = (href: string) => {
-    if (href === "/find-work")
-      return pathname === href || pathname?.startsWith("/find-work/");
-    if (href === "/chats")
-      return pathname === href || pathname?.startsWith("/chats/");
+    if (href === "/recs")
+      return pathname === href || pathname?.startsWith("/recs/");
+    if (href === "/matches")
+      return pathname === href || pathname?.startsWith("/matches/");
     if (href === "/kindtao-more")
       return pathname === href || pathname?.startsWith("/kindtao-more/");
-    if (href === "/dashboard")
-      return pathname === href || pathname?.startsWith("/dashboard/");
     return pathname === href;
   };
 
   return (
-    <ul className="sm:hidden fixed bottom-0 inset-x-0 z-50 bg-white grid grid-cols-4 border-t border-gray-200">
+    <ul className="sm:hidden fixed bottom-0 inset-x-0 z-50 bg-white grid grid-cols-3 border-t border-gray-200">
       <li>
         <Link
-          href="/find-work"
+          href="/recs"
           className="flex flex-col items-center justify-center py-2 text-xs"
         >
           <FiMessageCircle
             className={`h-5 w-5 ${
-              isActive("/find-work") ? "text-red-600" : "text-gray-500"
+              isActive("/recs") ? "text-red-600" : "text-gray-500"
             }`}
           />
           <span
             className={`${
-              isActive("/find-work") ? "text-red-600" : "text-gray-600"
+              isActive("/recs") ? "text-red-600" : "text-gray-600"
             }`}
           >
             Find Work
@@ -49,39 +48,20 @@ export default function KindTaoBottomTabs() {
       </li>
       <li>
         <Link
-          href="/chats"
+          href="/matches"
           className="flex flex-col items-center justify-center py-2 text-xs"
         >
           <FiMessageCircle
             className={`h-5 w-5 ${
-              isActive("/chats") ? "text-red-600" : "text-gray-500"
+              isActive("/matches") ? "text-red-600" : "text-gray-500"
             }`}
           />
           <span
             className={`${
-              isActive("/chats") ? "text-red-600" : "text-gray-600"
+              isActive("/matches") ? "text-red-600" : "text-gray-600"
             }`}
           >
             Messages
-          </span>
-        </Link>
-      </li>
-      <li>
-        <Link
-          href="/profile"
-          className="flex flex-col items-center justify-center py-2 text-xs"
-        >
-          <FiMessageCircle
-            className={`h-5 w-5 ${
-              isActive("/profile") ? "text-red-600" : "text-gray-500"
-            }`}
-          />
-          <span
-            className={`${
-              isActive("/profile") ? "text-red-600" : "text-gray-600"
-            }`}
-          >
-            Profile
           </span>
         </Link>
       </li>

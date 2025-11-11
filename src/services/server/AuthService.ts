@@ -1,3 +1,4 @@
+import { UserSettingsService } from "@/services/server/UserSettingsService";
 import { createClient } from "@/utils/supabase/server";
 import { logger } from "@/utils/logger";
 
@@ -93,6 +94,20 @@ export const AuthService = {
         }
 
         logger.debug("User data inserted successfully into users table");
+
+        const { error: settingsError } =
+          await UserSettingsService.ensureDefaultSettingsForUser(
+            authData.user.id,
+            data.role,
+            supabase
+          );
+
+        if (settingsError) {
+          logger.error(
+            "Error ensuring default user settings after signup:",
+            settingsError
+          );
+        }
       }
 
       return { data: authData, error: null };

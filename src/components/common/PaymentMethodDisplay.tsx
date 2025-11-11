@@ -25,7 +25,7 @@ export default function PaymentMethodDisplay({
       {methods.map((method) => (
         <div
           key={method}
-          className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-md text-sm"
+          className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-xl text-sm"
         >
           {showIcons && (
             <span className="text-sm">{PAYMENT_METHOD_ICONS[method]}</span>

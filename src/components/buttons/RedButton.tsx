@@ -12,7 +12,7 @@ export default function RedButton({
     <button
       {...props}
       className={[
-        "w-[118px] h-[36px] rounded-md bg-[#CB0000] text-white cursor-pointer hover:bg-red-700 transition-colors",
+        "w-[118px] h-[36px] rounded-xl bg-[#CB0000] text-white cursor-pointer hover:bg-red-700 transition-colors",
         className,
       ].join(" ")}
     >

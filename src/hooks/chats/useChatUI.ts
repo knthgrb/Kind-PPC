@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useUserConversations } from "./useUserConversations";
 import { useConversationDetails } from "./useConversationDetails";
 import { useChat } from "./useChat";
@@ -108,6 +108,18 @@ export function useChatUI({
   const selectConversation = useCallback((conversationId: string | null) => {
     setCurrentConversationId(conversationId);
   }, []);
+
+  // Sync selectedConversationId prop with internal state (with ref to prevent double renders)
+  const lastSelectedIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (selectedConversationId !== currentConversationId && selectedConversationId !== lastSelectedIdRef.current) {
+      lastSelectedIdRef.current = selectedConversationId;
+      setCurrentConversationId(selectedConversationId);
+    } else if (!selectedConversationId && currentConversationId) {
+      lastSelectedIdRef.current = null;
+      setCurrentConversationId(null);
+    }
+  }, [selectedConversationId, currentConversationId]);
 
   return {
     // Current user

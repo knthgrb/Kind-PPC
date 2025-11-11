@@ -9,6 +9,7 @@ export default function RootLayout({
 }>) {
   return (
     <>
+      <KindTaoHeader />
       <div className="pb-20 md:pb-24">{children}</div>
       <KindTaoBottomTabs />
     </>

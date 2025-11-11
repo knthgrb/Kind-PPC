@@ -3,11 +3,12 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { FiUser, FiLogOut, FiSettings } from "react-icons/fi";
-import { FaChevronDown } from "react-icons/fa6";
+import { FaChevronDown, FaRocket } from "react-icons/fa";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useRouter, usePathname } from "next/navigation";
 import { FaRegEnvelope } from "react-icons/fa";
 import { LuBell } from "react-icons/lu";
+import { createClient } from "@/utils/supabase/client";
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -17,6 +18,7 @@ export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
   const [userDisplayName, setUserDisplayName] = useState("");
+  const [isProfileBoosted, setIsProfileBoosted] = useState(false);
 
   const getUserInitials = () => {
     if (user?.user_metadata?.first_name) {
@@ -60,6 +62,36 @@ export default function Header() {
     getUserDisplayName();
   }, [user]);
 
+  // Check profile boost status
+  useEffect(() => {
+    const checkProfileBoostStatus = async () => {
+      if (!user?.id) return;
+
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from("kindtaos")
+          .select("is_boosted, boost_expires_at")
+          .eq("user_id", user.id)
+          .single();
+
+        if (!error && data) {
+          const isBoosted =
+            data.is_boosted &&
+            data.boost_expires_at &&
+            new Date(data.boost_expires_at) > new Date();
+          setIsProfileBoosted(isBoosted);
+        }
+      } catch (error) {
+        console.error("Error checking profile boost status:", error);
+      }
+    };
+
+    if (user?.id) {
+      checkProfileBoostStatus();
+    }
+  }, [user]);
+
   // Close user menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -92,7 +124,7 @@ export default function Header() {
     <header className="bg-white sticky top-0 z-50 h-[8vh] border-b border-gray-200 flex items-center">
       <div className="w-full flex justify-between items-center p-4">
         {/* Logo */}
-        <Link href="/find-work" className="flex items-center">
+        <Link href="/recs" className="flex items-center">
           <Image
             src="/kindLogo.png"
             alt="Kind Logo"
@@ -114,30 +146,48 @@ export default function Header() {
             </div>
           ) : isAuthenticated ? (
             <div className="relative" ref={userMenuRef}>
-              <button
-                onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex items-center gap-2 cursor-pointer"
-              >
-                {/* Avatar circle with initials */}
-                <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                  {getUserInitials()}
-                </div>
-                {/* Name */}
-                <span className="hidden sm:inline text-[#1F2A56] font-medium text-sm">
-                  {userDisplayName}
-                </span>
-                {/* Dropdown icon */}
-                <FaChevronDown
-                  size={14}
-                  className={`text-[#1F2A56] transition-transform duration-200 ${
-                    userMenuOpen ? "rotate-180" : "rotate-0"
-                  }`}
-                />
-              </button>
+              <div className="flex items-center gap-2">
+                {/* Boost Profile Badge - Only show if not boosted */}
+                {!isProfileBoosted && (
+                  <Link
+                    href="/profile"
+                    className="relative flex items-center justify-center"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                  >
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors bg-white text-[#CC0000] border-2 border-[#CC0000] hover:bg-red-50 shadow-sm">
+                      <FaRocket className="w-3 h-3" />
+                      <span className="hidden sm:inline">Boost Profile</span>
+                    </div>
+                  </Link>
+                )}
+
+                <button
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  {/* Avatar circle with initials */}
+                  <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                    {getUserInitials()}
+                  </div>
+                  {/* Name */}
+                  <span className="hidden sm:inline text-[#1F2A56] font-medium text-sm">
+                    {userDisplayName}
+                  </span>
+                  {/* Dropdown icon */}
+                  <FaChevronDown
+                    size={14}
+                    className={`text-[#1F2A56] transition-transform duration-200 ${
+                      userMenuOpen ? "rotate-180" : "rotate-0"
+                    }`}
+                  />
+                </button>
+              </div>
 
               {/* User Dropdown Menu */}
               {userMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
                   <div className="py-1">
                     <Link
                       href="/profile"
@@ -174,7 +224,7 @@ export default function Header() {
                 </button>
               </Link>
               <Link href="/login">
-                <button className="px-6 py-2 bg-red-600 text-white rounded-md text-lg hover:bg-red-700 cursor-pointer">
+                <button className="px-6 py-2 bg-red-600 text-white rounded-xl text-lg hover:bg-red-700 cursor-pointer">
                   Sign In
                 </button>
               </Link>
@@ -193,26 +243,43 @@ export default function Header() {
             </div>
           ) : isAuthenticated ? (
             <div className="relative" ref={userMenuRef}>
-              <button
-                onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex items-center gap-2 cursor-pointer p-1"
-              >
-                {/* Mobile Avatar circle with initials - smaller size */}
-                <div className="w-7 h-7 bg-red-600 rounded-full flex items-center justify-center text-white font-semibold text-xs">
-                  {getUserInitials()}
-                </div>
-                {/* Mobile dropdown icon - smaller */}
-                <FaChevronDown
-                  size={12}
-                  className={`text-[#1F2A56] transition-transform duration-200 ${
-                    userMenuOpen ? "rotate-180" : "rotate-0"
-                  }`}
-                />
-              </button>
+              <div className="flex items-center gap-2">
+                {/* Boost Profile Badge - Mobile - Only show if not boosted */}
+                {!isProfileBoosted && (
+                  <Link
+                    href="/profile"
+                    className="relative flex items-center justify-center"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                  >
+                    <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-colors bg-white text-[#CC0000] border-2 border-[#CC0000] hover:bg-red-50 shadow-sm">
+                      <FaRocket className="w-3 h-3" />
+                    </div>
+                  </Link>
+                )}
+
+                <button
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center gap-2 cursor-pointer p-1"
+                >
+                  {/* Mobile Avatar circle with initials - smaller size */}
+                  <div className="w-7 h-7 bg-red-600 rounded-full flex items-center justify-center text-white font-semibold text-xs">
+                    {getUserInitials()}
+                  </div>
+                  {/* Mobile dropdown icon - smaller */}
+                  <FaChevronDown
+                    size={12}
+                    className={`text-[#1F2A56] transition-transform duration-200 ${
+                      userMenuOpen ? "rotate-180" : "rotate-0"
+                    }`}
+                  />
+                </button>
+              </div>
 
               {/* Mobile User Dropdown Menu */}
               {userMenuOpen && (
-                <div className="absolute right-0 mt-2 w-44 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                <div className="absolute right-0 mt-2 w-44 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
                   <div className="py-1">
                     <Link
                       href="/profile"
@@ -249,7 +316,7 @@ export default function Header() {
                 </button>
               </Link>
               <Link href="/login">
-                <button className="px-3 py-1.5 bg-red-600 text-white rounded-md text-sm hover:bg-red-700 cursor-pointer">
+                <button className="px-3 py-1.5 bg-red-600 text-white rounded-xl text-sm hover:bg-red-700 cursor-pointer">
                   Sign In
                 </button>
               </Link>

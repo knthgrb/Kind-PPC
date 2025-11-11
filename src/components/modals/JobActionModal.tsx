@@ -156,7 +156,7 @@ export default function JobActionModal({
                     setPasswordError("");
                   }}
                   placeholder="Enter password"
-                  className={`w-full h-12 rounded-md border px-4 outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent ${
+                  className={`w-full h-12 rounded-xl border px-4 outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent ${
                     passwordError ? "border-red-300" : "border-gray-300"
                   }`}
                 />
@@ -172,7 +172,7 @@ export default function JobActionModal({
             {/* Warning for delete action */}
             {action === "delete" && (
               <div className="flex items-start space-x-3 p-4 bg-red-50 border border-red-200 rounded-lg mb-6">
-                <FaExclamationTriangle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                <FaExclamationTriangle className="w-5 h-5 text-red-600 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-red-800">Warning</p>
                   <p className="text-sm text-red-700 mt-1">

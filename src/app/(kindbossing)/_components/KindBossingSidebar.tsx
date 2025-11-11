@@ -31,7 +31,7 @@ export default function KindBossingSidebar() {
   useEffect(() => {
     if (
       pathname?.includes("/my-jobs/applications") ||
-      pathname?.includes("/chats") ||
+      pathname?.includes("/kindbossing/messages") ||
       pathname?.includes("/notifications")
     ) {
       setCollapsed(true);
@@ -40,11 +40,6 @@ export default function KindBossingSidebar() {
 
   const navigationItems = useMemo(
     () => [
-      {
-        label: "Dashboard",
-        href: "/kindbossing-dashboard",
-        icon: FiHome,
-      },
       {
         label: "My Jobs",
         href: "/my-jobs",
@@ -58,7 +53,7 @@ export default function KindBossingSidebar() {
       },
       {
         label: "Messages",
-        href: "/chats",
+        href: "/kindbossing/messages",
         icon: FiMessageCircle,
         badge:
           unreadCounts.unreadMessages > 0
@@ -94,25 +89,25 @@ export default function KindBossingSidebar() {
   );
 
   const isActive = (href: string) => {
-    if (href === "/kindbossing-dashboard") {
-      return (
-        pathname === href || pathname?.startsWith("/kindbossing-dashboard/")
-      );
-    }
     if (href === "/my-jobs") {
       return pathname === href || pathname?.startsWith("/my-jobs/");
     }
     if (href === "/my-employees") {
       return pathname === href || pathname?.startsWith("/my-employees/");
     }
-    if (href === "/payslip") {
-      return pathname === href || pathname?.startsWith("/payslip/");
-    }
-    if (href === "/government-benefits") {
-      return pathname === href || pathname?.startsWith("/government-benefits/");
-    }
+    // if (href === "/payslip") {
+    //   return pathname === href || pathname?.startsWith("/payslip/");
+    // }
+    // if (href === "/government-benefits") {
+    //   return pathname === href || pathname?.startsWith("/government-benefits/");
+    // }
     if (href === "/documents") {
       return pathname === href || pathname?.startsWith("/documents/");
+    }
+    if (href === "/kindbossing/messages") {
+      return (
+        pathname === href || pathname?.startsWith("/kindbossing/messages/")
+      );
     }
     return pathname === href;
   };
@@ -127,7 +122,7 @@ export default function KindBossingSidebar() {
       <div className="p-4 border-b border-gray-200 h-[8vh] flex items-center">
         <div className="flex items-center justify-between w-full">
           {!collapsed && (
-            <Link href="/kindbossing-dashboard">
+            <Link href="/my-jobs">
               <Image
                 src="/kindLogo.png"
                 alt="Kind Logo"
@@ -139,7 +134,7 @@ export default function KindBossingSidebar() {
           )}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="p-2 cursor-pointer rounded-md hover:bg-gray-100 transition-colors"
+            className="p-2 cursor-pointer rounded-xl hover:bg-gray-100 transition-colors"
           >
             {collapsed ? (
               <FiChevronRight className="w-5 h-5 text-gray-600" />
@@ -175,7 +170,7 @@ export default function KindBossingSidebar() {
                 }`}
               >
                 <Icon
-                  className={`w-5 h-5 flex-shrink-0 ${
+                  className={`w-5 h-5 shrink-0 ${
                     active
                       ? "text-red-600"
                       : "text-gray-500 group-hover:text-red-600"

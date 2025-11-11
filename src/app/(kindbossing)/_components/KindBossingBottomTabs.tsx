@@ -14,12 +14,12 @@ export default function KindBossingBottomTabs() {
   const pathname = usePathname();
 
   const isActive = (href: string) => {
-    if (href === "/kindbossing-dashboard")
+    if (href === "/my-jobs")
+      return pathname === href || pathname?.startsWith("/my-jobs/");
+    if (href === "/kindbossing/messages")
       return (
-        pathname === href || pathname?.startsWith("/kindbossing-dashboard/")
+        pathname === href || pathname?.startsWith("/kindbossing/messages/")
       );
-    if (href === "/chats")
-      return pathname === href || pathname?.startsWith("/chats/");
     if (href === "/notifications")
       return pathname === href || pathname?.startsWith("/notifications/");
     if (href === "/kindbossing-more")
@@ -28,34 +28,9 @@ export default function KindBossingBottomTabs() {
   };
 
   return (
-    <nav className="lg:hidden fixed bottom-0 inset-x-0 z-50 bg-white shadow-lg">
+    <nav className="lg:hidden fixed bottom-0 inset-x-0 z-50 bg-white shadow-lg border-t border-gray-200">
       <div className="mx-auto max-w-7xl px-4">
         <ul className="grid grid-cols-4 h-16">
-          <li className="flex">
-            <Link
-              href="/kindbossing-dashboard"
-              className="flex flex-col items-center justify-center w-full py-3 text-xs transition-colors"
-            >
-              <div className="flex flex-col items-center space-y-1">
-                <FiHome
-                  className={`h-5 w-5 ${
-                    isActive("/kindbossing-dashboard")
-                      ? "text-red-600"
-                      : "text-gray-500"
-                  }`}
-                />
-                <span
-                  className={`text-xs font-medium ${
-                    isActive("/kindbossing-dashboard")
-                      ? "text-red-600"
-                      : "text-gray-600"
-                  }`}
-                >
-                  Dashboard
-                </span>
-              </div>
-            </Link>
-          </li>
           <li className="flex">
             <Link
               href="/my-jobs"
@@ -79,21 +54,50 @@ export default function KindBossingBottomTabs() {
           </li>
           <li className="flex">
             <Link
-              href="/my-employees"
+              href="/kindbossing/messages"
               className="flex flex-col items-center justify-center w-full py-3 text-xs transition-colors"
             >
               <div className="flex flex-col items-center space-y-1">
-                <FiUsers
+                <FiMessageCircle
                   className={`h-5 w-5 ${
-                    isActive("/my-employees") ? "text-red-600" : "text-gray-500"
+                    isActive("/kindbossing/messages")
+                      ? "text-red-600"
+                      : "text-gray-500"
                   }`}
                 />
                 <span
                   className={`text-xs font-medium ${
-                    isActive("/my-employees") ? "text-red-600" : "text-gray-600"
+                    isActive("/kindbossing/messages")
+                      ? "text-red-600"
+                      : "text-gray-600"
                   }`}
                 >
-                  Employees
+                  Messages
+                </span>
+              </div>
+            </Link>
+          </li>
+          <li className="flex">
+            <Link
+              href="/notifications"
+              className="flex flex-col items-center justify-center w-full py-3 text-xs transition-colors"
+            >
+              <div className="flex flex-col items-center space-y-1">
+                <FiBell
+                  className={`h-5 w-5 ${
+                    isActive("/notifications")
+                      ? "text-red-600"
+                      : "text-gray-500"
+                  }`}
+                />
+                <span
+                  className={`text-xs font-medium ${
+                    isActive("/notifications")
+                      ? "text-red-600"
+                      : "text-gray-600"
+                  }`}
+                >
+                  Notifications
                 </span>
               </div>
             </Link>

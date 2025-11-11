@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { JobService } from "@/services/client/JobService";
 import { JobPost } from "@/types/jobPosts";
-import { FaUsers, FaCalendar, FaPlus } from "react-icons/fa";
+import { FaUsers, FaCalendar, FaPlus, FaRocket } from "react-icons/fa";
 import { SlLocationPin } from "react-icons/sl";
 import { salaryFormatter, salaryRateFormatter } from "@/utils/salaryFormatter";
 import { createClient } from "@/utils/supabase/client";
@@ -13,7 +13,11 @@ import PostJobModal from "@/components/modals/PostJobModal";
 import JobActionModal from "@/components/modals/JobActionModal";
 import JobActionMenu from "@/components/common/JobActionMenu";
 import PrimaryButton from "@/components/buttons/PrimaryButton";
+import SubscriptionModal from "@/components/modals/SubscriptionModal";
+import CreditPurchaseModal from "@/components/modals/CreditPurchaseModal";
 import { updateJobStatus, deleteJobPost } from "@/actions/jobs/manage-job";
+import { boostJob } from "@/actions/jobs/boost-job";
+import { getUserSubscription } from "@/actions/subscription/xendit";
 import { useToastActions } from "@/stores/useToastStore";
 
 export default function MyJobsPage() {
@@ -40,12 +44,37 @@ export default function MyJobsPage() {
   });
   const [isEditJobModalOpen, setIsEditJobModalOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<JobPost | null>(null);
+  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
+  const [isCreditPurchaseModalOpen, setIsCreditPurchaseModalOpen] =
+    useState(false);
+  const [boostCredits, setBoostCredits] = useState<number>(0);
+  const [boostingJobId, setBoostingJobId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
       loadMyJobs();
+      loadBoostCredits();
     }
   }, [user]);
+
+  const loadBoostCredits = async () => {
+    if (!user?.id) return;
+
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("users")
+        .select("boost_credits")
+        .eq("id", user.id)
+        .single();
+
+      if (!error && data) {
+        setBoostCredits(data.boost_credits || 0);
+      }
+    } catch (error) {
+      console.error("Error loading boost credits:", error);
+    }
+  };
 
   const loadMyJobs = async () => {
     try {
@@ -137,6 +166,67 @@ export default function MyJobsPage() {
     loadMyJobs();
     setIsEditJobModalOpen(false);
     setEditingJob(null);
+  };
+
+  const handleBoostJob = async (job: JobPost) => {
+    if (!user?.id) return;
+
+    // Check if job is already boosted and not expired
+    if (job.is_boosted && job.boost_expires_at) {
+      const expiryDate = new Date(job.boost_expires_at);
+      if (expiryDate > new Date()) {
+        showError("This job is already boosted");
+        return;
+      }
+    }
+
+    // Check if job is active
+    if (job.status !== "active") {
+      showError("Only active jobs can be boosted");
+      return;
+    }
+
+    // Check boost credits
+    if (boostCredits < 1) {
+      // Check if user has subscription
+      try {
+        const subscriptionResult = await getUserSubscription();
+        const hasSubscription =
+          subscriptionResult.success &&
+          subscriptionResult.subscription &&
+          subscriptionResult.subscription.status === "active";
+
+        if (!hasSubscription) {
+          // Show subscription modal
+          setIsSubscriptionModalOpen(true);
+        } else {
+          // Show credit purchase modal
+          setIsCreditPurchaseModalOpen(true);
+        }
+      } catch (error) {
+        console.error("Error checking subscription:", error);
+        setIsSubscriptionModalOpen(true);
+      }
+      return;
+    }
+
+    // Boost the job
+    setBoostingJobId(job.id);
+    try {
+      const result = await boostJob(job.id);
+      if (result.success) {
+        showSuccess("Job boosted successfully!");
+        loadMyJobs();
+        loadBoostCredits(); // Reload boost credits
+      } else {
+        showError(result.error || "Failed to boost job");
+      }
+    } catch (error) {
+      console.error("Error boosting job:", error);
+      showError("An unexpected error occurred");
+    } finally {
+      setBoostingJobId(null);
+    }
   };
 
   const handleJobAction = (job: JobPost, action: string) => {
@@ -246,7 +336,7 @@ export default function MyJobsPage() {
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
-                className="h-10 bg-gray-200 rounded-md w-20 animate-pulse"
+                className="h-10 bg-gray-200 rounded-xl w-20 animate-pulse"
               ></div>
             ))}
           </div>
@@ -352,7 +442,7 @@ export default function MyJobsPage() {
             <button
               key={tab.key}
               onClick={() => setFilter(tab.key as any)}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`px-4 py-2 cursor-pointer rounded-xl text-sm font-medium transition-colors ${
                 filter === tab.key
                   ? "bg-white text-[#CC0000] shadow-sm"
                   : "text-gray-600 hover:text-gray-900"
@@ -402,7 +492,7 @@ export default function MyJobsPage() {
                     <h3 className="text-lg font-bold text-gray-900 line-clamp-2 mb-2 group-hover:text-[#CC0000] transition-colors">
                       {job.job_title}
                     </h3>
-                    <div className="flex items-center space-x-2 mb-3">
+                    <div className="flex items-center space-x-2 mb-3 flex-wrap gap-2">
                       <span
                         className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(
                           job.status
@@ -419,6 +509,14 @@ export default function MyJobsPage() {
                           ? "Closed"
                           : "Active"}
                       </span>
+                      {job.is_boosted &&
+                        job.boost_expires_at &&
+                        new Date(job.boost_expires_at) > new Date() && (
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border bg-red-100 text-red-800 border-red-200">
+                            <FaRocket className="w-3 h-3 mr-1" />
+                            Boosted
+                          </span>
+                        )}
                     </div>
                   </div>
                   <JobActionMenu
@@ -433,7 +531,7 @@ export default function MyJobsPage() {
                 </p>
 
                 <div className="flex items-center text-gray-500 text-sm">
-                  <SlLocationPin className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <SlLocationPin className="w-4 h-4 mr-2 shrink-0" />
                   <span className="truncate">{job.location}</span>
                 </div>
               </div>
@@ -466,14 +564,55 @@ export default function MyJobsPage() {
                   </div>
                 </div>
 
-                {/* Action Button - Fixed at bottom */}
-                <Link
-                  href={`/my-jobs/applications?jobId=${job.id}`}
-                  className="w-full bg-[#CC0000] text-white px-4 py-3 rounded-lg hover:bg-red-700 transition-colors text-center text-sm font-medium flex items-center justify-center space-x-2"
-                >
-                  <FaUsers className="w-4 h-4" />
-                  <span>View Applications</span>
-                </Link>
+                {/* Action Buttons */}
+                <div className="space-y-3">
+                  {job.status === "active" && (
+                    <button
+                      onClick={() => handleBoostJob(job)}
+                      disabled={
+                        boostingJobId === job.id ||
+                        !!(
+                          job.is_boosted &&
+                          job.boost_expires_at &&
+                          new Date(job.boost_expires_at) > new Date()
+                        )
+                      }
+                      className={`w-full px-4 py-3 rounded-lg transition-colors text-center text-sm font-medium flex items-center justify-center space-x-2 ${
+                        job.is_boosted &&
+                        job.boost_expires_at &&
+                        new Date(job.boost_expires_at) > new Date()
+                          ? "bg-red-100 text-red-700 border border-red-300 cursor-not-allowed"
+                          : "bg-[#CC0000] text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      }`}
+                    >
+                      {boostingJobId === job.id ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>Boosting...</span>
+                        </>
+                      ) : job.is_boosted &&
+                        job.boost_expires_at &&
+                        new Date(job.boost_expires_at) > new Date() ? (
+                        <>
+                          <FaRocket className="w-4 h-4" />
+                          <span>Already Boosted</span>
+                        </>
+                      ) : (
+                        <>
+                          <FaRocket className="w-4 h-4" />
+                          <span>Boost Job</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                  <Link
+                    href={`/my-jobs/applications?jobId=${job.id}`}
+                    className="w-full bg-[#CC0000] text-white px-4 py-3 rounded-lg hover:bg-red-700 transition-colors text-center text-sm font-medium flex items-center justify-center space-x-2"
+                  >
+                    <FaUsers className="w-4 h-4" />
+                    <span>View Applications</span>
+                  </Link>
+                </div>
               </div>
             </div>
           ))}
@@ -508,6 +647,27 @@ export default function MyJobsPage() {
         action={actionModal.action as any}
         jobTitle={actionModal.job?.job_title || ""}
         isLoading={actionLoading === actionModal.job?.id}
+      />
+
+      {/* Subscription Modal */}
+      <SubscriptionModal
+        isOpen={isSubscriptionModalOpen}
+        onClose={() => {
+          setIsSubscriptionModalOpen(false);
+          loadBoostCredits(); // Reload credits after modal closes
+        }}
+        userRole="kindbossing"
+      />
+
+      {/* Credit Purchase Modal */}
+      <CreditPurchaseModal
+        isOpen={isCreditPurchaseModalOpen}
+        onClose={() => {
+          setIsCreditPurchaseModalOpen(false);
+          loadBoostCredits(); // Reload credits after modal closes
+        }}
+        creditType="boost_credits"
+        currentCredits={boostCredits}
       />
     </div>
   );

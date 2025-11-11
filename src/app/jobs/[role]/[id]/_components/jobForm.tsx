@@ -50,7 +50,7 @@ export default function JobForm({ job }: { job: JobPost }) {
         <input
           value={form.title}
           onChange={(e) => setForm({ ...form, title: e.target.value })}
-          className="postJobInputPlaceholder w-full h-12 rounded-md border border-[#DFDFDF] px-4 outline-none"
+          className="postJobInputPlaceholder w-full h-12 rounded-xl border border-[#DFDFDF] px-4 outline-none"
         />
       </div>
 
@@ -60,7 +60,7 @@ export default function JobForm({ job }: { job: JobPost }) {
         <input
           value={form.location}
           onChange={(e) => setForm({ ...form, location: e.target.value })}
-          className="postJobInputPlaceholder w-full h-12 rounded-md border border-[#DFDFDF] px-4 outline-none"
+          className="postJobInputPlaceholder w-full h-12 rounded-xl border border-[#DFDFDF] px-4 outline-none"
         />
       </div>
 
@@ -76,7 +76,7 @@ export default function JobForm({ job }: { job: JobPost }) {
             }
             options={amounts}
             placeholder="Select amount"
-            className="border border-[#DFDFDF] rounded-md"
+            className="border border-[#DFDFDF] rounded-xl"
           />
           <Dropdown
             value={form.rate}
@@ -85,7 +85,7 @@ export default function JobForm({ job }: { job: JobPost }) {
             }
             options={units}
             placeholder="Select unit"
-            className="border border-[#DFDFDF] rounded-md"
+            className="border border-[#DFDFDF] rounded-xl"
           />
         </div>
       </div>
@@ -96,7 +96,7 @@ export default function JobForm({ job }: { job: JobPost }) {
         <textarea
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
-          className="postJobInputPlaceholder w-full min-h-[160px] rounded-md border border-[#DFDFDF] px-4 py-3 outline-none resize-y"
+          className="postJobInputPlaceholder w-full min-h-[160px] rounded-xl border border-[#DFDFDF] px-4 py-3 outline-none resize-y"
         />
       </div>
 

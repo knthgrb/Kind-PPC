@@ -1,10 +1,9 @@
 "use client";
 
 import React from "react";
-import { formatMMDDYYYY } from "@/utils/dateFormatter";
 import Pagination from "@/components/pagination/Pagination";
 import Link from "next/link";
-import { Employee } from "@/lib/kindBossing/employees";
+import { Employee } from "@/types/employee";
 import { FaUser, FaEye } from "react-icons/fa";
 
 interface MyEmployeesClientProps {
@@ -21,10 +20,10 @@ export default function MyEmployeesClient({
   const rows = employees.slice(from, from + pageSize);
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Active":
+    switch (status.toLowerCase()) {
+      case "active":
         return "bg-green-100 text-green-800";
-      case "Inactive":
+      case "inactive":
         return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
@@ -42,8 +41,6 @@ export default function MyEmployeesClient({
                 {[
                   "Employee",
                   "Job",
-                  "Joining Date",
-                  "Total Hours Work",
                   "Status",
                   "Action",
                 ].map((h) => (
@@ -59,7 +56,7 @@ export default function MyEmployeesClient({
             <tbody className="divide-y divide-gray-200 text-sm">
               {rows.map((employee, i) => (
                 <tr
-                  key={`${employee.name}-${from + i}`}
+                  key={`${employee.id}-${from + i}`}
                   className="hover:bg-gray-50"
                 >
                   <td className="px-6 py-4">
@@ -69,17 +66,15 @@ export default function MyEmployeesClient({
                       </div>
                       <div>
                         <div className="font-semibold text-gray-900">
-                          {employee.name}
+                          {employee.kindtao?.user
+                            ? `${employee.kindtao.user.first_name || ""} ${employee.kindtao.user.last_name || ""}`.trim() || "Unknown"
+                            : "Unknown"}
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-gray-600">{employee.job}</td>
                   <td className="px-6 py-4 text-gray-600">
-                    {formatMMDDYYYY(employee.joiningDate)}
-                  </td>
-                  <td className="px-6 py-4 text-gray-600">
-                    {employee.totalHoursWork}
+                    {employee.job_post?.job_title || "N/A"}
                   </td>
                   <td className="px-6 py-4">
                     <span
@@ -87,14 +82,12 @@ export default function MyEmployeesClient({
                         employee.status
                       )}`}
                     >
-                      {employee.status}
+                      {employee.status === "active" ? "Active" : "Inactive"}
                     </span>
                   </td>
                   <td className="px-6 py-4">
                     <Link
-                      href={`/my-employees/${encodeURIComponent(
-                        employee.name
-                      )}`}
+                      href={`/my-employees/${employee.id}`}
                       className="inline-flex items-center space-x-2 bg-[#CC0000] text-white text-xs px-3 py-2 rounded-lg hover:bg-red-700 transition-colors"
                     >
                       <FaEye className="w-3 h-3" />
@@ -112,7 +105,7 @@ export default function MyEmployeesClient({
       <div className="mt-6 space-y-4 lg:hidden">
         {rows.map((employee, i) => (
           <div
-            key={`${employee.name}-${from + i}`}
+            key={`${employee.id}-${from + i}`}
             className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
           >
             <div className="flex items-center space-x-3 mb-3">
@@ -121,34 +114,26 @@ export default function MyEmployeesClient({
               </div>
               <div className="flex-1">
                 <div className="font-semibold text-gray-900">
-                  {employee.name}
+                  {employee.kindtao?.user
+                    ? `${employee.kindtao.user.first_name || ""} ${employee.kindtao.user.last_name || ""}`.trim() || "Unknown"
+                    : "Unknown"}
                 </div>
-                <div className="text-sm text-gray-600">{employee.job}</div>
+                <div className="text-sm text-gray-600">
+                  {employee.job_post?.job_title || "N/A"}
+                </div>
               </div>
               <span
                 className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
                   employee.status
                 )}`}
               >
-                {employee.status}
+                {employee.status === "active" ? "Active" : "Inactive"}
               </span>
             </div>
 
-            <div className="space-y-2 mb-4">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Joining Date:</span>
-                <span className="font-medium">
-                  {formatMMDDYYYY(employee.joiningDate)}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Total Hours:</span>
-                <span className="font-medium">{employee.totalHoursWork}</span>
-              </div>
-            </div>
 
             <Link
-              href={`/my-employees/${encodeURIComponent(employee.name)}`}
+              href={`/my-employees/${employee.id}`}
               className="w-full bg-[#CC0000] text-white text-xs px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-center flex items-center justify-center space-x-2"
             >
               <FaEye className="w-3 h-3" />

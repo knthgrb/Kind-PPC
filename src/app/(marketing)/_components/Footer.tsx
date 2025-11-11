@@ -59,7 +59,7 @@ export default function Footer() {
           <div className="space-y-4">
             <h3 className="footerH4">Community</h3>
             <div className="flex flex-col space-y-2">
-              <Link href="/find-work" className="footerP hover:text-red-600">
+              <Link href="/recs" className="footerP hover:text-red-600">
                 Find Work
               </Link>
               <Link href="/find-help" className="footerP hover:text-red-600">

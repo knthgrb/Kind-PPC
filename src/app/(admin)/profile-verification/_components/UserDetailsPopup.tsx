@@ -243,7 +243,7 @@ export default function UserDetailsPopup({
                   >
                     <div className="flex items-start space-x-4">
                       {/* Document Image Preview */}
-                      <div className="flex-shrink-0">
+                      <div className="shrink-0">
                         {isImageFile(document.mime_type) ? (
                           <div
                             className="w-40 h-32 relative cursor-pointer hover:opacity-80 transition-opacity overflow-hidden rounded-lg border border-gray-200 bg-gray-50"
@@ -334,7 +334,7 @@ export default function UserDetailsPopup({
                           </div>
                         </div>
                         {document.verification_notes && (
-                          <div className="mt-3 p-3 bg-gray-50 rounded-md">
+                          <div className="mt-3 p-3 bg-gray-50 rounded-xl">
                             <p className="text-sm">
                               <span className="font-medium">Notes:</span>{" "}
                               {document.verification_notes}
@@ -344,10 +344,10 @@ export default function UserDetailsPopup({
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="flex-shrink-0 flex flex-col space-y-2">
+                      <div className="shrink-0 flex flex-col space-y-2">
                         <button
                           onClick={() => handleApprove(document.id)}
-                          className={`inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                          className={`inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                             document.verification_status === "approved"
                               ? "bg-green-500 hover:bg-green-600 focus:ring-green-500"
                               : "bg-green-600 hover:bg-green-700 focus:ring-green-500"
@@ -372,7 +372,7 @@ export default function UserDetailsPopup({
                         </button>
                         <button
                           onClick={() => handleReject(document.id)}
-                          className={`inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                          className={`inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                             document.verification_status === "rejected"
                               ? "bg-red-500 hover:bg-red-600 focus:ring-red-500"
                               : "bg-red-600 hover:bg-red-700 focus:ring-red-500"
@@ -425,7 +425,7 @@ export default function UserDetailsPopup({
         <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             Close
           </button>

@@ -15,6 +15,9 @@ import { JobType, JobPost } from "@/types/jobPosts";
 import {
   getRegionForProvince,
   extractProvinceFromLocation,
+  PHILIPPINE_REGIONS,
+  getAllRegions,
+  getProvincesForRegion,
 } from "@/utils/regionMapping";
 
 type PostJobModalProps = {
@@ -108,15 +111,18 @@ export default function PostJobModal({
   // form state
   const [title, setTitle] = useState("");
   const [titleSearch, setTitleSearch] = useState("");
-  const [location, setLocation] = useState("");
+  const [barangay, setBarangay] = useState("");
+  const [municipality, setMunicipality] = useState("");
   const [province, setProvince] = useState("");
   const [region, setRegion] = useState("");
+  const [selectedRegionCode, setSelectedRegionCode] = useState("");
   const [amount, setAmount] = useState("₱550");
   const [unit, setUnit] = useState("Per Day");
   const [description, setDescription] = useState("");
   const [requiredSkills, setRequiredSkills] = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState("");
   const [showSkillDropdown, setShowSkillDropdown] = useState(false);
+  const [showTitleDropdown, setShowTitleDropdown] = useState(false);
   const [jobType, setJobType] = useState<string>("daily");
 
   // new fields for enhanced matching
@@ -130,14 +136,80 @@ export default function PostJobModal({
   } | null>(null);
   const [isGeocoding, setIsGeocoding] = useState(false);
 
+  // Get all provinces for dropdown
+  const allProvinces = useMemo(() => {
+    const provinces: string[] = [];
+    PHILIPPINE_REGIONS.forEach((region) => {
+      region.provinces.forEach((prov) => {
+        provinces.push(prov);
+      });
+    });
+    return provinces.sort((a, b) => a.localeCompare(b));
+  }, []);
+
+  // Auto-populate region when province changes
+  useEffect(() => {
+    if (province) {
+      const regionInfo = getRegionForProvince(province);
+      if (regionInfo) {
+        setRegion(regionInfo.region);
+        setSelectedRegionCode(regionInfo.regionCode);
+      } else {
+        setRegion("");
+        setSelectedRegionCode("");
+      }
+    } else {
+      setRegion("");
+      setSelectedRegionCode("");
+    }
+  }, [province]);
+
   // Populate form when editing
   useEffect(() => {
     if (editingJob) {
       setTitle(editingJob.job_title || "");
       setTitleSearch(editingJob.job_title || "");
-      setLocation(editingJob.location || "");
-      setProvince((editingJob as any).province || "");
-      setRegion((editingJob as any).region || "");
+
+      // Parse location string into barangay, municipality, province
+      const locationStr = editingJob.location || "";
+      const provinceStr = (editingJob as any).province || "";
+      const regionStr = (editingJob as any).region || "";
+
+      // Try to parse location string (format: "Barangay, Municipality, Province")
+      const parts = locationStr.split(",").map((p) => p.trim());
+      if (parts.length >= 3) {
+        setBarangay(parts[0] || "");
+        setMunicipality(parts[1] || "");
+        setProvince(parts[2] || provinceStr);
+      } else if (parts.length === 2) {
+        setBarangay("");
+        setMunicipality(parts[0] || "");
+        setProvince(parts[1] || provinceStr);
+      } else if (parts.length === 1 && parts[0]) {
+        // If only one part, assume it's municipality or province
+        if (provinceStr && parts[0] !== provinceStr) {
+          setBarangay("");
+          setMunicipality(parts[0]);
+          setProvince(provinceStr);
+        } else {
+          setBarangay("");
+          setMunicipality("");
+          setProvince(provinceStr || parts[0]);
+        }
+      } else {
+        setBarangay("");
+        setMunicipality("");
+        setProvince(provinceStr);
+      }
+
+      setRegion(regionStr);
+      if (provinceStr) {
+        const regionInfo = getRegionForProvince(provinceStr);
+        if (regionInfo) {
+          setSelectedRegionCode(regionInfo.regionCode);
+        }
+      }
+
       setAmount(editingJob.salary || "₱550");
       setDescription(editingJob.job_description || "");
       setRequiredSkills(editingJob.required_skills || []);
@@ -167,9 +239,11 @@ export default function PostJobModal({
       // Reset form for new job
       setTitle("");
       setTitleSearch("");
-      setLocation("");
+      setBarangay("");
+      setMunicipality("");
       setProvince("");
       setRegion("");
+      setSelectedRegionCode("");
       setAmount("₱550");
       setDescription("");
       setRequiredSkills([]);
@@ -251,16 +325,23 @@ export default function PostJobModal({
     }
   };
 
-  // Auto-geocode when location changes
+  // Auto-geocode when location fields change
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      if (location.trim()) {
-        geocodeLocation(location);
+      // Build location string from barangay, municipality, province
+      const locationParts = [];
+      if (barangay.trim()) locationParts.push(barangay.trim());
+      if (municipality.trim()) locationParts.push(municipality.trim());
+      if (province.trim()) locationParts.push(province.trim());
+      const locationString = locationParts.join(", ");
+
+      if (locationString.trim()) {
+        geocodeLocation(locationString);
       }
     }, 1000); // Debounce for 1 second
 
     return () => clearTimeout(timeoutId);
-  }, [location]);
+  }, [barangay, municipality, province]);
 
   const addSkill = (skill: string) => {
     if (!skill || requiredSkills.includes(skill)) return;
@@ -295,9 +376,11 @@ export default function PostJobModal({
   };
 
   const handlePost = async () => {
+    // Validate required fields
     if (
       !title.trim() ||
-      !location.trim() ||
+      !municipality.trim() ||
+      !province.trim() ||
       !amount ||
       !unit ||
       !description.trim()
@@ -313,16 +396,17 @@ export default function PostJobModal({
       return;
     }
 
-    // Auto-detect province and region from location if not provided
-    let finalProvince = province;
+    // Build location string from barangay, municipality, province
+    const locationParts = [];
+    if (barangay.trim()) locationParts.push(barangay.trim());
+    if (municipality.trim()) locationParts.push(municipality.trim());
+    if (province.trim()) locationParts.push(province.trim());
+    const locationString = locationParts.join(", ");
+
+    // Ensure region is set from province
     let finalRegion = region;
-
-    if (!finalProvince) {
-      finalProvince = extractProvinceFromLocation(location) || "";
-    }
-
-    if (!finalRegion && finalProvince) {
-      const regionInfo = getRegionForProvince(finalProvince);
+    if (!finalRegion && province) {
+      const regionInfo = getRegionForProvince(province);
       finalRegion = regionInfo?.region || "";
     }
 
@@ -339,8 +423,8 @@ export default function PostJobModal({
         kindbossing_user_id: familyId,
         job_title: title,
         job_description: description,
-        location: location,
-        province: finalProvince,
+        location: locationString,
+        province: province.trim(),
         region: finalRegion,
         salary: amount,
         job_type: jobType as JobType,
@@ -405,7 +489,11 @@ export default function PostJobModal({
     // Reset form
     setTitle("");
     setTitleSearch("");
-    setLocation("");
+    setBarangay("");
+    setMunicipality("");
+    setProvince("");
+    setRegion("");
+    setSelectedRegionCode("");
     setAmount("₱550");
     setUnit("Per Day");
     setDescription("");
@@ -429,9 +517,9 @@ export default function PostJobModal({
 
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl border border-[#DFDFDF] shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div className="bg-white rounded-2xl border border-[#DFDFDF] shadow-lg w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between p-6 border-b border-gray-200 shrink-0">
             <h2 className="text-2xl font-bold text-gray-900">
               {editingJob ? "Edit Job" : "Post Job"}
             </h2>
@@ -443,8 +531,8 @@ export default function PostJobModal({
             </button>
           </div>
 
-          {/* Content */}
-          <div className="p-6">
+          {/* Content - Scrollable */}
+          <div className="p-6 pr-4 overflow-y-auto flex-1 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:hover:bg-gray-400">
             {/* Job Title with Search */}
             <div className="mb-5">
               <label className="block mb-2 text-sm font-medium text-gray-700">
@@ -456,46 +544,84 @@ export default function PostJobModal({
                   value={titleSearch}
                   onChange={(e) => {
                     setTitleSearch(e.target.value);
+                    setShowTitleDropdown(e.target.value.length > 0);
                     if (e.target.value && !title) {
                       setTitle(e.target.value);
                     }
                   }}
-                  onFocus={() => setTitleSearch(title)}
+                  onFocus={() => {
+                    setTitleSearch(title || "");
+                    setShowTitleDropdown(true);
+                  }}
+                  onBlur={() => {
+                    // Delay hiding to allow clicking on dropdown items
+                    setTimeout(() => setShowTitleDropdown(false), 200);
+                  }}
                   placeholder="Search or type job title..."
-                  className="w-full h-12 rounded-md border border-[#DFDFDF] px-4 outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                  className="w-full h-12 rounded-xl border border-[#DFDFDF] px-4 outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
                 />
-                {titleSearch && filteredJobTitles.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 bg-white border border-gray-100 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto mt-1">
-                    {filteredJobTitles.slice(0, 10).map((jobTitle) => (
-                      <button
-                        key={jobTitle}
-                        onClick={() => {
-                          setTitle(jobTitle);
-                          setTitleSearch(jobTitle);
-                        }}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm border-b border-gray-50 last:border-b-0"
-                      >
-                        {jobTitle}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                {showTitleDropdown &&
+                  titleSearch &&
+                  filteredJobTitles.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 bg-white border border-gray-100 rounded-xl shadow-lg z-10 max-h-60 overflow-y-auto mt-1">
+                      {filteredJobTitles.slice(0, 10).map((jobTitle) => (
+                        <button
+                          key={jobTitle}
+                          onClick={() => {
+                            setTitle(jobTitle);
+                            setTitleSearch(jobTitle);
+                            setShowTitleDropdown(false);
+                          }}
+                          className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm border-b border-gray-50 last:border-b-0"
+                        >
+                          {jobTitle}
+                        </button>
+                      ))}
+                    </div>
+                  )}
               </div>
             </div>
 
-            {/* Location */}
+            {/* Location - Barangay, Municipality, Province */}
             <div className="mb-5">
               <label className="block mb-2 text-sm font-medium text-gray-700">
                 Location *
               </label>
-              <input
-                required
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                type="text"
-                placeholder="Enter location (e.g., Makati City, Metro Manila)"
-                className="w-full h-12 rounded-md border border-[#DFDFDF] px-4 outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
-              />
+              <div className="space-y-3">
+                {/* Barangay */}
+                <div>
+                  <input
+                    value={barangay}
+                    onChange={(e) => setBarangay(e.target.value)}
+                    type="text"
+                    placeholder="Barangay (optional)"
+                    className="w-full h-12 rounded-xl border border-[#DFDFDF] px-4 outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                  />
+                </div>
+
+                {/* Municipality */}
+                <div>
+                  <input
+                    required
+                    value={municipality}
+                    onChange={(e) => setMunicipality(e.target.value)}
+                    type="text"
+                    placeholder="Municipality/City *"
+                    className="w-full h-12 rounded-xl border border-[#DFDFDF] px-4 outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                  />
+                </div>
+
+                {/* Province */}
+                <div>
+                  <Dropdown
+                    value={province}
+                    onChange={(value) => setProvince(value)}
+                    options={allProvinces}
+                    placeholder="Select Province *"
+                    className="border border-[#DFDFDF] rounded-xl"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Rate and Job Type */}
@@ -509,14 +635,14 @@ export default function PostJobModal({
                   onChange={setAmount}
                   options={amounts}
                   placeholder="Select amount"
-                  className="border border-[#DFDFDF] rounded-md"
+                  className="border border-[#DFDFDF] rounded-xl"
                 />
                 <Dropdown
                   value={unit}
                   onChange={setUnit}
                   options={units}
                   placeholder="Select unit"
-                  className="border border-[#DFDFDF] rounded-md"
+                  className="border border-[#DFDFDF] rounded-xl"
                 />
               </div>
             </div>
@@ -529,7 +655,7 @@ export default function PostJobModal({
               <select
                 value={jobType}
                 onChange={(e) => setJobType(e.target.value)}
-                className="w-full h-12 rounded-md border border-[#DFDFDF] px-4 outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                className="w-full h-12 rounded-xl border border-[#DFDFDF] px-4 outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
               >
                 {jobTypes.map((type) => (
                   <option key={type} value={type}>
@@ -560,10 +686,10 @@ export default function PostJobModal({
                     setTimeout(() => setShowSkillDropdown(false), 200);
                   }}
                   placeholder="Type to search skills or press Enter to add custom skill..."
-                  className="w-full h-12 rounded-md border border-[#DFDFDF] px-4 outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                  className="w-full h-12 rounded-xl border border-[#DFDFDF] px-4 outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
                 />
                 {showSkillDropdown && (
-                  <div className="absolute top-full left-0 right-0 bg-white border border-gray-100 rounded-md shadow-lg z-10 max-h-40 overflow-y-auto mt-1">
+                  <div className="absolute top-full left-0 right-0 bg-white border border-gray-100 rounded-xl shadow-lg z-10 max-h-40 overflow-y-auto mt-1">
                     {filteredSkills.length > 0 ? (
                       filteredSkills.slice(0, 8).map((skill) => (
                         <button
@@ -617,7 +743,7 @@ export default function PostJobModal({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Describe the job requirements, responsibilities, and any specific details..."
-                className="w-full min-h-[120px] rounded-md border border-[#DFDFDF] px-4 py-3 outline-none resize-y focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                className="w-full min-h-[120px] rounded-xl border border-[#DFDFDF] px-4 py-3 outline-none resize-y focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
               />
             </div>
 
@@ -638,7 +764,7 @@ export default function PostJobModal({
                     value={salaryMin}
                     onChange={(e) => setSalaryMin(e.target.value)}
                     placeholder="500"
-                    className="w-full h-12 rounded-md border border-[#DFDFDF] px-4 outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                    className="w-full h-12 rounded-xl border border-[#DFDFDF] px-4 outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
                   />
                 </div>
                 <div>
@@ -650,7 +776,7 @@ export default function PostJobModal({
                     value={salaryMax}
                     onChange={(e) => setSalaryMax(e.target.value)}
                     placeholder="800"
-                    className="w-full h-12 rounded-md border border-[#DFDFDF] px-4 outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                    className="w-full h-12 rounded-xl border border-[#DFDFDF] px-4 outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
                   />
                 </div>
                 <div>
@@ -660,7 +786,7 @@ export default function PostJobModal({
                   <select
                     value={salaryType}
                     onChange={(e) => setSalaryType(e.target.value)}
-                    className="w-full h-12 rounded-md border border-[#DFDFDF] px-4 outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                    className="w-full h-12 rounded-xl border border-[#DFDFDF] px-4 outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
                   >
                     {salaryTypes.map((type) => (
                       <option key={type} value={type}>
@@ -680,13 +806,13 @@ export default function PostJobModal({
                   type="datetime-local"
                   value={expiresAt}
                   onChange={(e) => setExpiresAt(e.target.value)}
-                  className="w-full h-12 rounded-md border border-[#DFDFDF] px-4 outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+                  className="w-full h-12 rounded-xl border border-[#DFDFDF] px-4 outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
                 />
               </div>
 
               {/* Location Status */}
               {isGeocoding && (
-                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl">
                   <p className="text-blue-600 text-sm">
                     📍 Getting location coordinates...
                   </p>
@@ -694,7 +820,7 @@ export default function PostJobModal({
               )}
 
               {locationCoordinates && (
-                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
+                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-xl">
                   <p className="text-green-600 text-sm">
                     ✅ Location coordinates:{" "}
                     {locationCoordinates.lat.toFixed(4)},{" "}

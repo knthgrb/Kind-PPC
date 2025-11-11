@@ -71,7 +71,7 @@ export default function ApplicantDetailsModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
         {/* Modal Header */}
-        <div className="p-6 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+        <div className="p-6 border-b border-gray-100 flex items-center justify-between shrink-0">
           <h2 className="text-2xl font-bold text-gray-900">
             Applicant Details
           </h2>

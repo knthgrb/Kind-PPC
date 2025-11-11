@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
 import RoleCard from "@/app/(marketing)/_components/RoleCard";
 
@@ -84,7 +86,18 @@ export default function SelectRolePage() {
 
   // Show role selection
   return (
-    <main className="min-h-screen flex items-start justify-center px-4">
+    <main className="min-h-screen flex items-start justify-center px-4 relative">
+      {/* Logo in upper left */}
+      <Link href="/" className="absolute top-6 left-6 z-10">
+        <Image
+          src="/kindLogo.png"
+          width={120}
+          height={40}
+          alt="Kind"
+          priority
+          className="h-8 w-auto"
+        />
+      </Link>
       <section className="w-full max-w-5xl">
         <div className="text-center mt-10 mb-8">
           <h1 className="mb-2 signupH1">Choose Your Role</h1>
