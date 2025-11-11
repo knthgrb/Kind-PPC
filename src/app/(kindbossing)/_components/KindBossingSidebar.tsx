@@ -27,14 +27,12 @@ export default function KindBossingSidebar() {
   const { pendingCount } = usePendingApplications();
   const { unreadCounts } = useUnreadCounts();
 
-  // Auto-collapse sidebar when on applications page
+  // Auto-collapse sidebar when on kindbossing/messages page
   useEffect(() => {
-    if (
-      pathname?.includes("/my-jobs/applications") ||
-      pathname?.includes("/kindbossing/messages") ||
-      pathname?.includes("/notifications")
-    ) {
+    if (pathname?.includes("/kindbossing/messages")) {
       setCollapsed(true);
+    } else {
+      setCollapsed(false);
     }
   }, [pathname]);
 
