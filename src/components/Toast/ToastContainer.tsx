@@ -4,7 +4,7 @@ import React from "react";
 import { useToasts } from "@/stores/useToastStore";
 import ToastItem from "./ToastItem";
 
-export default function ToastContainer() {
+const ToastContainer = () => {
   const toasts = useToasts();
 
   if (toasts.length === 0) return null;
@@ -16,4 +16,6 @@ export default function ToastContainer() {
       ))}
     </div>
   );
-}
+};
+
+export default ToastContainer;
