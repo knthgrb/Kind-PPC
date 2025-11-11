@@ -7,7 +7,7 @@ import NotificationInitializer from "@/components/notification/NotificationIniti
 import NotificationPrompt from "@/components/notification/NotificationPrompt";
 import { ToastProvider } from "@/contexts/ToastContext";
 import AuthProvider from "@/components/common/AuthProvider";
-import ToastContainer from "@/components/toast/ToastContainer";
+import ToastContainer from "@/components/toast";
 import SubscriptionSuccessHandler from "@/components/common/SubscriptionSuccessHandler";
 
 // Import the required fonts
