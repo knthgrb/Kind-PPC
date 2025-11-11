@@ -4,9 +4,15 @@ import { useState, useEffect } from "react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { JobService } from "@/services/client/JobService";
 import { JobPost } from "@/types/jobPosts";
-import { FaUsers, FaCalendar, FaPlus, FaRocket } from "react-icons/fa";
+import {
+  FaUsers,
+  FaCalendar,
+  FaPlus,
+  FaRocket,
+  FaMoneyBillWave,
+  FaBriefcase,
+} from "react-icons/fa";
 import { SlLocationPin } from "react-icons/sl";
-import { salaryFormatter, salaryRateFormatter } from "@/utils/salaryFormatter";
 import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
 import PostJobModal from "@/components/modals/PostJobModal";
@@ -483,41 +489,44 @@ export default function MyJobsPage() {
           {filteredJobs.map((job) => (
             <div
               key={job.id}
-              className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-200 group flex flex-col"
+              className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:border-[#f1c0c0] transition-all duration-200 group flex flex-col overflow-hidden"
             >
               {/* Job Header */}
-              <div className="p-6 border-b border-gray-100 flex-1 flex flex-col">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-bold text-gray-900 line-clamp-2 mb-2 group-hover:text-[#CC0000] transition-colors">
-                      {job.job_title}
-                    </h3>
-                    <div className="flex items-center space-x-2 mb-3 flex-wrap gap-2">
+              <div className="p-6 border-b border-gray-100 flex-1 flex flex-col gap-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0 space-y-3">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span
-                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(
+                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide border ${getStatusColor(
                           job.status
                         )}`}
                       >
-                        <span className="mr-1">
-                          {getStatusIcon(job.status)}
+                        <span>{getStatusIcon(job.status)}</span>
+                        <span>
+                          {job.status === "active"
+                            ? "Active"
+                            : job.status === "paused"
+                            ? "Paused"
+                            : job.status === "closed"
+                            ? "Closed"
+                            : "Active"}
                         </span>
-                        {job.status === "active"
-                          ? "Active"
-                          : job.status === "paused"
-                          ? "Paused"
-                          : job.status === "closed"
-                          ? "Closed"
-                          : "Active"}
                       </span>
                       {job.is_boosted &&
                         job.boost_expires_at &&
                         new Date(job.boost_expires_at) > new Date() && (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border bg-red-100 text-red-800 border-red-200">
-                            <FaRocket className="w-3 h-3 mr-1" />
-                            Boosted
+                          <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide bg-red-50 text-red-700 border border-red-200">
+                            <FaRocket className="w-3 h-3" />
+                            <span>Boosted</span>
                           </span>
                         )}
                     </div>
+                    <h3 className="text-xl font-semibold text-gray-900 line-clamp-2 group-hover:text-[#CC0000] transition-colors">
+                      {job.job_title}
+                    </h3>
+                    <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">
+                      {job.job_description}
+                    </p>
                   </div>
                   <JobActionMenu
                     job={job}
@@ -526,46 +535,72 @@ export default function MyJobsPage() {
                   />
                 </div>
 
-                <p className="text-gray-600 text-sm line-clamp-2 mb-4 flex-1">
-                  {job.job_description}
-                </p>
-
-                <div className="flex items-center text-gray-500 text-sm">
-                  <SlLocationPin className="w-4 h-4 mr-2 shrink-0" />
-                  <span className="truncate">{job.location}</span>
+                <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-gray-500">
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 text-gray-700">
+                    <SlLocationPin className="w-4 h-4" />
+                    <span className="truncate">{job.location}</span>
+                  </div>
+                  {job.job_type && (
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 text-gray-700">
+                      <FaBriefcase className="w-4 h-4" />
+                      <span className="capitalize">{job.job_type}</span>
+                    </div>
+                  )}
+                  {job.created_at && (
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 text-gray-700">
+                      <FaCalendar className="w-4 h-4" />
+                      <span>
+                        Posted{" "}
+                        {new Date(job.created_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Job Details */}
-              <div className="p-6">
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1">
-                      Salary
-                    </p>
-                    <p className="font-bold text-gray-900 text-lg">
-                      ₱{job.salary}
-                    </p>
-                    <p className="text-xs text-gray-500 capitalize">
-                      {job.job_type}
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1">
-                      Applications
-                    </p>
-                    <div className="flex items-center">
-                      <FaUsers className="w-4 h-4 text-gray-400 mr-2" />
-                      <p className="font-bold text-gray-900 text-lg">
-                        {applicationCounts[job.id] || 0}
+              <div className="p-6 bg-gray-50">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex gap-3 p-4 rounded-xl bg-white border border-gray-100">
+                    <span className="w-10 h-10 rounded-full bg-red-50 text-[#CC0000] flex items-center justify-center">
+                      <FaMoneyBillWave className="w-4 h-4" />
+                    </span>
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                        Salary Range
+                      </p>
+                      <p className="text-base font-semibold text-gray-900">
+                        {job.salary ? `₱${job.salary}` : "Salary negotiable"}
+                      </p>
+                      <p className="text-xs text-gray-500 capitalize">
+                        {job.job_type ? job.job_type : "Rate not specified"}
                       </p>
                     </div>
-                    <p className="text-xs text-gray-500">Pending</p>
+                  </div>
+                  <div className="flex gap-3 p-4 rounded-xl bg-white border border-gray-100">
+                    <span className="w-10 h-10 rounded-full bg-red-50 text-[#CC0000] flex items-center justify-center">
+                      <FaUsers className="w-4 h-4" />
+                    </span>
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                        Pending Applications
+                      </p>
+                      <p className="text-base font-semibold text-gray-900">
+                        {applicationCounts[job.id] || 0}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Keep your candidates engaged
+                      </p>
+                    </div>
                   </div>
                 </div>
 
                 {/* Action Buttons */}
-                <div className="space-y-3">
+                <div className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   {job.status === "active" && (
                     <button
                       onClick={() => handleBoostJob(job)}
@@ -577,18 +612,18 @@ export default function MyJobsPage() {
                           new Date(job.boost_expires_at) > new Date()
                         )
                       }
-                      className={`w-full px-4 py-3 rounded-lg transition-colors text-center text-sm font-medium flex items-center justify-center space-x-2 ${
+                      className={`w-full cursor-pointer sm:w-auto px-5 py-3 rounded-lg transition-all text-sm font-semibold flex items-center justify-center gap-2 shadow-sm ${
                         job.is_boosted &&
                         job.boost_expires_at &&
                         new Date(job.boost_expires_at) > new Date()
-                          ? "bg-red-100 text-red-700 border border-red-300 cursor-not-allowed"
+                          ? "bg-red-100 text-red-700 border border-red-200 cursor-not-allowed"
                           : "bg-[#CC0000] text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       }`}
                     >
                       {boostingJobId === job.id ? (
                         <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          <span>Boosting...</span>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <span>Boosting…</span>
                         </>
                       ) : job.is_boosted &&
                         job.boost_expires_at &&
@@ -605,9 +640,10 @@ export default function MyJobsPage() {
                       )}
                     </button>
                   )}
+
                   <Link
                     href={`/my-jobs/applications?jobId=${job.id}`}
-                    className="w-full bg-[#CC0000] text-white px-4 py-3 rounded-lg hover:bg-red-700 transition-colors text-center text-sm font-medium flex items-center justify-center space-x-2"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg border border-[#CC0000] text-[#CC0000] font-semibold text-sm hover:bg-[#cc0000]/10 transition-colors"
                   >
                     <FaUsers className="w-4 h-4" />
                     <span>View Applications</span>

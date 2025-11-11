@@ -1,6 +1,6 @@
-import KindBossingChatWindow from "../_components/KindBossingChatWindow";
+import KindBossingChatWindow from "../../_components/KindBossingChatWindow";
 
-export default async function ConversationPage({
+export default async function InterceptedConversation({
   params,
 }: {
   params: Promise<{ conversationId: string }>;
@@ -8,3 +8,4 @@ export default async function ConversationPage({
   const { conversationId } = await params;
   return <KindBossingChatWindow conversationId={conversationId} />;
 }
+
