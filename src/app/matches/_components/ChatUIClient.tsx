@@ -83,7 +83,7 @@ const UserAvatar = ({
 
   return (
     <div
-      className={`${className} bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center text-white font-semibold ${textSize}`}
+      className={`${className} bg-linear-to-br from-red-600 to-red-800 flex items-center justify-center text-white font-semibold ${textSize}`}
     >
       {initials}
     </div>
@@ -839,7 +839,14 @@ function ChatUIClient({
   // Separate loading states to prevent flickering
   const isInitialLoading =
     isLoadingConversations || (isLoadingMessages && messages.length === 0);
-  const isSidebarLoading = isLoadingConversations;
+  // Only show sidebar skeleton on initial load (when no conversations exist yet)
+  // When a conversation is selected, don't show skeleton in sidebar - only in chatbox
+  const isSidebarLoading = useMemo(() => {
+    // Only show skeleton if:
+    // 1. Conversations are loading AND we don't have any conversations yet
+    // 2. Don't show skeleton when a conversation is selected (switching conversations)
+    return isLoadingConversations && conversations.length === 0;
+  }, [isLoadingConversations, conversations.length]);
 
   // Match-related functions
   const handleSendMessage = async (match: any) => {
@@ -1053,7 +1060,11 @@ function ChatUIClient({
   // Update selected conversation when URL changes (with ref to prevent double renders)
   const lastConversationIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (conversationId && conversationId !== selectedConversationId && conversationId !== lastConversationIdRef.current) {
+    if (
+      conversationId &&
+      conversationId !== selectedConversationId &&
+      conversationId !== lastConversationIdRef.current
+    ) {
       lastConversationIdRef.current = conversationId;
       setSelectedConversationId(conversationId);
       selectConversation(conversationId);
@@ -1314,7 +1325,7 @@ function ChatUIClient({
     <div className="h-[calc(100vh-8vh)] w-full flex flex-col">
       {/* Show skeleton when both sidebar and chat window are loading */}
       {shouldShowFullLoading ? (
-        <ChatSkeleton 
+        <ChatSkeleton
           hasSelectedConversation={!!selectedConversationId}
           showSwipeSkeletonWhenEmpty={userRole === "kindtao"}
         />
@@ -1452,7 +1463,7 @@ function ChatUIClient({
                       <MessageSkeleton />
                     ) : conversationsError ? (
                       <div className="text-center text-sm text-red-500 py-4 px-2">
-                        <p className="break-words">
+                        <p className="wrap-break-word">
                           {conversationsError.message}
                         </p>
                       </div>
@@ -1541,20 +1552,26 @@ function ChatUIClient({
                       <div className="flex items-center">
                         <button
                           onClick={() => {
-                            // Navigate directly to /recs for KindTao users
+                            // Navigate based on user role
                             if (userRole === "kindtao") {
                               router.push("/recs");
+                            } else if (userRole === "kindbossing") {
+                              // For kindbossing users, navigate to messages page
+                              setSelectedConversationId(null);
+                              selectConversation(null);
+                              router.push("/kindbossing/messages");
                             } else {
                               // For other users, close the chat
                               setSelectedConversationId(null);
                               selectConversation(null);
-                              if (pathname !== "/recs") {
-                                router.push("/recs");
-                              }
                             }
                           }}
                           className="p-2 bg-[#f5f6f9] rounded hover:bg-gray-200 cursor-pointer transition-colors"
-                          title="Go to find work"
+                          title={
+                            userRole === "kindbossing"
+                              ? "Close chat"
+                              : "Go to find work"
+                          }
                         >
                           <IoClose className="w-4 h-4 text-gray-600" />
                         </button>
@@ -1631,7 +1648,7 @@ function ChatUIClient({
                                       isSent ? "text-white" : "text-[#757589]"
                                     }`}
                                   >
-                                    <span className="!font-bold">{`${sender.first_name} ${sender.last_name}`}</span>
+                                    <span className="font-bold!">{`${sender.first_name} ${sender.last_name}`}</span>
                                     <span>
                                       {formatTimestamp(msg.created_at, "chat")}
                                     </span>
