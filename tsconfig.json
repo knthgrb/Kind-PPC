@@ -32,7 +32,8 @@
       "@/helpers/*": ["./src/helpers/*"],
       "@/services/*": ["./src/services/*"],
       "@/stores/*": ["./src/stores/*"],
-      "@/constants/*": ["./src/constants/*"]
+      "@/constants/*": ["./src/constants/*"],
+      "@/contexts/*": ["./src/contexts/*"]
     }
   },
   "include": [

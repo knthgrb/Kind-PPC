@@ -5,9 +5,9 @@ import "@/styles/globals.css";
 import InstallPrompt from "@/components/pwa/InstallPrompt";
 import NotificationInitializer from "@/components/notification/NotificationInitializer";
 import NotificationPrompt from "@/components/notification/NotificationPrompt";
-import { ToastProvider } from "../contexts/ToastContext";
+import { ToastProvider } from "@/contexts/ToastContext";
 import AuthProvider from "@/components/common/AuthProvider";
-import ToastContainer from "../components/toast/ToastContainer";
+import ToastContainer from "@/components/toast/ToastContainer";
 import SubscriptionSuccessHandler from "@/components/common/SubscriptionSuccessHandler";
 
 // Import the required fonts
