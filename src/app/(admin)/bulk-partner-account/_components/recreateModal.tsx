@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { LuCloudUpload } from "react-icons/lu";
+import { LuUpload } from "react-icons/lu";
 
 type Props = {
   open: boolean;
@@ -59,7 +59,7 @@ export default function RecreateModal({ open, onClose }: Props) {
             onClick={onClose}
             className="rounded-lg flex items-center gap-2 border border-[#CB0000] bg-white px-4 py-2 text-[#CB0000] font-medium hover:bg-gray-100"
           >
-            <LuCloudUpload className="text-xl" />
+            <LuUpload className="text-xl" />
             Upload File
           </button>
         </div>

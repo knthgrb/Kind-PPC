@@ -139,18 +139,18 @@ export default function AddEmployeeModal({
       });
 
       if (result.success) {
-        setModalProps({
-          title: "Employee Added",
+      setModalProps({
+        title: "Employee Added",
           description: `${selectedKindTaoUser.name} has been added to your team successfully`,
-          buttonLabel: "Continue",
-          icon: "/icons/checkCircleOTP.png",
-          onAction: () => {
-            setModalOpen(false);
-            onClose();
-            onEmployeeAdded?.();
-          },
-        });
-        setModalOpen(true);
+        buttonLabel: "Continue",
+        icon: "/icons/checkCircleOTP.png",
+        onAction: () => {
+          setModalOpen(false);
+          onClose();
+          onEmployeeAdded?.();
+        },
+      });
+      setModalOpen(true);
       } else {
         setModalProps({
           title: "Error",
@@ -222,22 +222,22 @@ export default function AddEmployeeModal({
                   </span>
                 </div>
               ) : (
-                <Dropdown
+              <Dropdown
                   value={jobPostTitle}
                   onChange={setJobPostTitle}
-                  options={jobOptions}
-                  placeholder="Select job position"
-                  className="border border-[#DFDFDF] rounded-xl"
-                />
+                options={jobOptions}
+                placeholder="Select job position"
+                className="border border-[#DFDFDF] rounded-xl"
+              />
               )}
             </div>
 
             {/* KindTao User Selection */}
             {jobPostTitle && (
-              <div className="mb-5">
-                <label className="block mb-2 text-sm font-medium text-gray-700">
+            <div className="mb-5">
+              <label className="block mb-2 text-sm font-medium text-gray-700">
                   Employee
-                </label>
+              </label>
                 {loadingKindtaoUsers ? (
                   <div className="w-full h-12 rounded-xl border border-[#DFDFDF] px-4 flex items-center">
                     <span className="text-gray-500 text-sm">Loading employees...</span>
@@ -255,9 +255,9 @@ export default function AddEmployeeModal({
                     options={kindtaoUserOptions}
                     placeholder="Select employee"
                     className="border border-[#DFDFDF] rounded-xl"
-                  />
+              />
                 )}
-              </div>
+            </div>
             )}
 
             {/* Status */}

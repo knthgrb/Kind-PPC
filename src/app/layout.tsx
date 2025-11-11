@@ -1,5 +1,6 @@
 import { Plus_Jakarta_Sans, Barlow_Condensed } from "next/font/google";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import "@/styles/globals.css";
 import InstallPrompt from "@/components/pwa/InstallPrompt";
 import NotificationInitializer from "@/components/notification/NotificationInitializer";
@@ -44,7 +45,9 @@ export default function RootLayout({
             <InstallPrompt />
             <NotificationInitializer />
             <NotificationPrompt />
-            <SubscriptionSuccessHandler />
+            <Suspense fallback={null}>
+              <SubscriptionSuccessHandler />
+            </Suspense>
             {children}
             <ToastContainer />
           </AuthProvider>
