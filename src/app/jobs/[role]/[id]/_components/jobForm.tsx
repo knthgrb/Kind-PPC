@@ -6,37 +6,49 @@ import StepperFooter from "@/components/common/StepperFooter";
 import { JobPost, SalaryRate } from "@/types/jobPosts";
 import { amounts, units } from "@/lib/jobs";
 import Dropdown from "@/components/dropdown/Dropdown";
-import { updateJobPost } from "@/actions/jobs/update-job";
+import { updateJob } from "@/actions/jobs/update-job";
 
 export default function JobForm({ job }: { job: JobPost }) {
   const router = useRouter();
 
   const [form, setForm] = useState({
-    title: job.title,
+    title: job.job_title,
     location: job.location ?? "",
-    description: job.description,
-    salary: job.salary_max.toString(),
-    rate: (job.salary_rate as SalaryRate) ?? "Per Day",
+    description: job.job_description,
+    salary: (job.salary_max || job.salary_min || 0).toString(),
+    rate: (job.salary_type as SalaryRate) ?? "Per Day",
   });
 
   const handleSave = async () => {
     const numericSalary = parseInt(form.salary.replace(/[₱,]/g, ""), 10);
 
-    const updated = await updateJobPost(job.id, {
-      title: form.title,
+    const result = await updateJob(job.id, {
+      kindbossing_user_id: job.kindbossing_user_id,
+      job_title: form.title,
+      job_description: form.description,
       location: form.location,
-      job_type: "yaya",
-      description: form.description,
+      province: job.province,
+      region: job.region,
+      salary: `${numericSalary}`,
+      job_type: job.job_type || "yaya",
+      required_skills: job.required_skills || [],
+      work_schedule: job.work_schedule || {},
+      required_years_of_experience: job.required_years_of_experience || 0,
+      preferred_languages: job.preferred_languages || [],
+      is_boosted: job.is_boosted || false,
+      boost_expires_at: job.boost_expires_at || null,
+      status: job.status || "active",
       salary_min: numericSalary,
       salary_max: numericSalary,
-      salary_rate: form.rate,
+      salary_type: form.rate,
+      location_coordinates: job.location_coordinates || undefined,
+      expires_at: job.expires_at || undefined,
     });
 
-    if (updated) {
+    if (result.success) {
       router.push(`/jobs/kindbossing/${job.id}`);
     } else {
-      // optional: show error message
-      console.error("Failed to update job");
+      console.error("Failed to update job:", result.error);
     }
   };
 
