@@ -983,11 +983,18 @@ function ChatUIClient({
     selectedConversationId,
   });
 
-  // Only hide full loading screen when both sidebar and chat window have data
-  const shouldShowFullLoading =
-    isLoadingConversations ||
-    (isLoadingMessages && messages.length === 0) ||
-    isInitialDataLoading;
+  // Only show full loading skeleton on initial load, not when switching conversations
+  // Use useMemo to prevent unnecessary recalculations
+  const shouldShowFullLoading = useMemo(() => {
+    // Only show full loading if:
+    // 1. Conversations are loading AND we don't have any conversations yet
+    // 2. OR initial data is loading (first time)
+    // Don't show full loading when switching between conversations
+    return (
+      (isLoadingConversations && conversations.length === 0) ||
+      (isInitialDataLoading && conversations.length === 0)
+    );
+  }, [isLoadingConversations, conversations.length, isInitialDataLoading]);
 
   // Memoize sorted conversations to prevent unnecessary re-sorting
   const sortedConversations = useMemo(() => {
@@ -1043,11 +1050,18 @@ function ChatUIClient({
     lastProcessedMessageRef.current = null;
   }, [selectedConversationId]);
 
-  // Update selected conversation when URL changes
+  // Update selected conversation when URL changes (with ref to prevent double renders)
+  const lastConversationIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (conversationId && conversationId !== selectedConversationId) {
+    if (conversationId && conversationId !== selectedConversationId && conversationId !== lastConversationIdRef.current) {
+      lastConversationIdRef.current = conversationId;
       setSelectedConversationId(conversationId);
       selectConversation(conversationId);
+    } else if (!conversationId && selectedConversationId) {
+      // Reset when conversationId is cleared
+      lastConversationIdRef.current = null;
+      setSelectedConversationId(null);
+      selectConversation(null);
     }
   }, [conversationId, selectedConversationId, selectConversation]);
 
@@ -1300,7 +1314,10 @@ function ChatUIClient({
     <div className="h-[calc(100vh-8vh)] w-full flex flex-col">
       {/* Show skeleton when both sidebar and chat window are loading */}
       {shouldShowFullLoading ? (
-        <ChatSkeleton />
+        <ChatSkeleton 
+          hasSelectedConversation={!!selectedConversationId}
+          showSwipeSkeletonWhenEmpty={userRole === "kindtao"}
+        />
       ) : (
         <>
           <div className="flex flex-1 h-full overflow-hidden relative">
