@@ -34,7 +34,7 @@ function Avatar({
       .toUpperCase()}` || "U";
   return (
     <div
-      className={`${className} bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center text-white font-semibold text-base`}
+      className={`${className} bg-linear-to-br from-red-600 to-red-800 flex items-center justify-center text-white font-semibold text-base`}
     >
       {initials}
     </div>

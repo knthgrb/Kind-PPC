@@ -337,28 +337,53 @@ export default function ApplicationsPage() {
     }
   };
 
+  const getApplicantDisplayName = (application?: Application | null) => {
+    if (!application) return "Applicant";
+    const fromMap = applicantNames[application.applicant_id];
+    if (fromMap && fromMap !== "Applicant") {
+      return fromMap;
+    }
+    if (
+      application.applicant_name &&
+      application.applicant_name !== "Applicant"
+    ) {
+      return application.applicant_name;
+    }
+    return "Applicant";
+  };
+
+  const currentApplicantName = getApplicantDisplayName(currentApplication);
+  const upcomingApplication =
+    currentIndex + 1 < applications.length
+      ? applications[currentIndex + 1]
+      : null;
+  const nextApplicantName = getApplicantDisplayName(upcomingApplication);
+
   if (loading) {
     return (
-      <div className="flex h-[calc(100vh-8vh)] bg-gray-50">
-        {/* Sidebar Skeleton */}
-        <div className="w-80 bg-white border-r border-gray-200 p-6">
-          <div className="space-y-4">
-            <div className="h-8 bg-gray-200 rounded w-48 animate-pulse"></div>
-            <div className="h-4 bg-gray-200 rounded w-32 animate-pulse"></div>
-            <div className="space-y-3">
+      <div className="flex flex-col h-[calc(100vh-8vh)] bg-gray-50">
+        {/* Header skeleton */}
+        <div className="px-6 pt-6 pb-2">
+          <div className="h-4 w-28 bg-gray-200 rounded animate-pulse mb-3"></div>
+          <div className="flex items-center gap-2">
+            <div className="h-6 w-48 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-5 w-20 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+        </div>
+
+        {/* Card skeleton */}
+        <div className="flex-1 flex items-center justify-center px-4">
+          <div className="w-full max-w-sm md:max-w-md">
+            <div className="h-[500px] md:h-[540px] bg-gray-200 rounded-2xl animate-pulse"></div>
+            <div className="flex items-center justify-center gap-6 mt-6">
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="h-16 bg-gray-200 rounded animate-pulse"
+                  className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-gray-200 animate-pulse"
                 ></div>
               ))}
             </div>
           </div>
-        </div>
-
-        {/* Main Content Skeleton */}
-        <div className="flex-1 flex items-center justify-center">
-          <div className="w-full max-w-md h-[600px] bg-gray-200 rounded-2xl animate-pulse"></div>
         </div>
       </div>
     );
@@ -366,31 +391,35 @@ export default function ApplicationsPage() {
 
   if (applications.length === 0) {
     return (
-      <div className="flex h-[calc(100vh-8vh)] bg-gray-50">
-        {/* Sidebar */}
-        <div className="w-80 bg-white border-r border-gray-200 p-6">
-          <div className="mb-6">
-            <Link
-              href="/my-jobs"
-              className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-[#CC0000] mb-3 transition-colors"
-            >
-              <FaArrowLeft className="w-4 h-4" />
-              <span>Back to My Jobs</span>
-            </Link>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              Job Applications
-            </h1>
-            <p className="text-gray-600 text-sm">
-              {jobDetails
-                ? `Applications for "${jobDetails.job_title}"`
-                : "All job applications"}
-            </p>
+      <div className="flex flex-col h-[calc(100vh-8vh)] bg-gray-50">
+        {/* Header */}
+        <div className="px-6 pt-6 pb-2">
+          <Link
+            href="/my-jobs"
+            className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-[#CC0000] transition-colors"
+          >
+            <FaArrowLeft className="w-4 h-4" />
+            <span>Back to My Jobs</span>
+          </Link>
+          <div className="mt-3 flex items-center gap-2 flex-wrap">
+            {jobDetails?.job_title ? (
+              <>
+                <h1 className="text-2xl font-extrabold text-gray-900">
+                  {jobDetails.job_title}
+                </h1>
+                <span className="text-sm text-gray-500">Applications</span>
+              </>
+            ) : (
+              <h1 className="text-2xl font-bold text-gray-900">
+                Job Applications
+              </h1>
+            )}
           </div>
         </div>
 
-        {/* Empty State */}
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
+        {/* Centered Empty State */}
+        <div className="flex-1 flex items-center justify-center px-4">
+          <div className="text-center max-w-md">
             <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg
                 className="w-12 h-12 text-gray-400"
@@ -402,7 +431,7 @@ export default function ApplicationsPage() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0z"
                 />
               </svg>
             </div>
@@ -411,7 +440,7 @@ export default function ApplicationsPage() {
                 ? "No Applications for This Job"
                 : "No Applications Yet"}
             </h3>
-            <p className="text-gray-600 max-w-md">
+            <p className="text-gray-600">
               {selectedJobId
                 ? "No candidates have applied to this specific job yet. Check back later for new applications."
                 : "When candidates apply to your jobs, they'll appear here for you to review and approve."}
@@ -423,153 +452,89 @@ export default function ApplicationsPage() {
   }
 
   return (
-    <div className="flex flex-col md:flex-row overflow-hidden h-[calc(100vh-8vh)] bg-gray-50">
-      {/* Sidebar */}
-      <div className="w-80 bg-white border-r border-gray-200 p-6">
-        <div className="mb-6">
-          <Link
-            href="/my-jobs"
-            className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-[#CC0000] mb-3 transition-colors"
-          >
-            <FaArrowLeft className="w-4 h-4" />
-            <span>Back to My Jobs</span>
-          </Link>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Job Applications
-          </h1>
-          <p className="text-gray-600 text-sm">
-            {jobDetails
-              ? `Applications for "${jobDetails.job_title}"`
-              : "All job applications"}
-          </p>
-        </div>
-
-        {/* Applications List */}
-        <div className="space-y-3">
-          <div className="text-sm text-gray-500 mb-3">
-            {applications.length} application
-            {applications.length !== 1 ? "s" : ""} pending
-          </div>
-
-          {applications.map((app, index) => (
-            <div
-              key={app.id}
-              className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                index === currentIndex
-                  ? "border-[#CC0000] bg-red-50"
-                  : "border-gray-200 hover:border-gray-300"
-              }`}
-              onClick={async () => {
-                setCurrentIndex(index);
-                setCurrentApplication(app);
-                await loadKindTaoProfile(app.applicant_id);
-
-                // Preload next applicant profile if available
-                if (index + 1 < applications.length) {
-                  const nextProfile = await loadKindTaoProfileAsync(
-                    applications[index + 1].applicant_id
-                  );
-                  setNextKindtaoProfile(nextProfile);
-                } else {
-                  setNextKindtaoProfile(null);
-                }
-              }}
-            >
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center shrink-0">
-                  <FaUser className="w-5 h-5 text-gray-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-gray-900">
-                      {applicantNames[app.applicant_id] ||
-                        app.applicant_name ||
-                        "Applicant"}
-                    </p>
-                    {(() => {
-                      // Check if this applicant has a boosted profile
-                      const boostStatus =
-                        applicantBoostStatus[app.applicant_id];
-                      const isBoosted =
-                        boostStatus?.isBoosted &&
-                        boostStatus?.boostExpiresAt &&
-                        new Date(boostStatus.boostExpiresAt) > new Date();
-                      return isBoosted ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
-                          <FaRocket className="w-3 h-3 mr-1" />
-                          Boosted
-                        </span>
-                      ) : null;
-                    })()}
-                  </div>
-                  <p className="text-xs text-gray-500 truncate">
-                    Applied {new Date(app.applied_at).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
+    <div className="flex flex-col overflow-hidden h-[calc(100vh-8vh)] bg-gray-50">
+      {/* Header */}
+      <div className="px-6 pt-6 pb-2">
+        <Link
+          href="/my-jobs"
+          className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-[#CC0000] transition-colors"
+        >
+          <FaArrowLeft className="w-4 h-4" />
+          <span>Back to My Jobs</span>
+        </Link>
+        <div className="mt-3 flex items-center gap-3 flex-wrap">
+          {jobDetails?.job_title ? (
+            <>
+              <h1 className="text-2xl font-extrabold text-gray-900">
+                {jobDetails.job_title}
+              </h1>
+              <span className="text-sm text-gray-500">Applications</span>
+              {jobDetails?.job_type && (
+                <span className="ml-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200 capitalize">
+                  {jobDetails.job_type}
+                </span>
+              )}
+            </>
+          ) : (
+            <h1 className="text-2xl font-bold text-gray-900">
+              Job Applications
+            </h1>
+          )}
         </div>
       </div>
 
-      {/* Main Content - Swipe Interface */}
-      <div className="flex-1 flex flex-col w-full">
-        {/* Job Cards Area */}
-        <div className="flex-1 flex flex-col relative">
-          {/* Job Swiper - Full Height */}
-          <div className="flex-1 flex items-center justify-center p-1 md:p-4">
-            <div className="w-full max-w-sm md:max-w-md h-full flex items-center justify-center">
-              {currentApplication && kindtaoProfile ? (
-                <ApplicationSwipeInterface
-                  application={currentApplication}
-                  kindtaoProfile={kindtaoProfile}
-                  jobDetails={jobDetails}
-                  currentIndex={currentIndex}
-                  totalApplications={applications.length}
-                  isProcessing={isProcessing}
-                  onApprove={() =>
-                    handleApplicationApproved(currentApplication)
-                  }
-                  onReject={() => handleApplicationRejected(currentApplication)}
-                  onNext={handleNextApplication}
-                  onPrevious={handlePreviousApplication}
-                  onStartMessaging={handleStartMessaging}
-                  onSaveForLater={handleSaveForLaterAction}
-                  forceShowModal={
-                    showSwipeModalForApplication?.id === currentApplication?.id
-                  }
-                  canGoNext={currentIndex < applications.length - 1}
-                  canGoPrevious={currentIndex > 0}
-                  nextApplication={applications[currentIndex + 1] || null}
-                  nextKindtaoProfile={nextKindtaoProfile}
-                />
-              ) : (
-                <div className="text-center">
-                  <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg
-                      className="w-12 h-12 text-gray-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Loading Profile...
-                  </h3>
-                  <p className="text-gray-600">
-                    Please wait while we load the candidate's profile.
-                  </p>
-                </div>
-              )}
+      {/* Centered Swipe UI */}
+      <div className="flex-1 flex items-center justify-center px-4 md:px-6">
+        <div className="w-full max-w-sm md:max-w-md">
+          {currentApplication && kindtaoProfile ? (
+            <ApplicationSwipeInterface
+              application={currentApplication}
+              kindtaoProfile={kindtaoProfile}
+              jobDetails={jobDetails}
+              currentIndex={currentIndex}
+              totalApplications={applications.length}
+              isProcessing={isProcessing}
+              onApprove={() => handleApplicationApproved(currentApplication)}
+              onReject={() => handleApplicationRejected(currentApplication)}
+              onNext={handleNextApplication}
+              onPrevious={handlePreviousApplication}
+              onStartMessaging={handleStartMessaging}
+              onSaveForLater={handleSaveForLaterAction}
+              forceShowModal={
+                showSwipeModalForApplication?.id === currentApplication?.id
+              }
+              canGoNext={currentIndex < applications.length - 1}
+              canGoPrevious={currentIndex > 0}
+              nextApplication={applications[currentIndex + 1] || null}
+              nextKindtaoProfile={nextKindtaoProfile}
+              applicantName={currentApplicantName}
+              nextApplicantName={nextApplicantName}
+            />
+          ) : (
+            <div className="text-center">
+              <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg
+                  className="w-12 h-12 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Loading Profile...
+              </h3>
+              <p className="text-gray-600">
+                Please wait while we load the candidate's profile.
+              </p>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

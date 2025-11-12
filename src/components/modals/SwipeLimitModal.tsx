@@ -128,7 +128,7 @@ export default function SwipeLimitModal({
           <div className="space-y-3">
             <button
               onClick={() => setShowCreditPurchaseModal(true)}
-              className="w-full cursor-pointer bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 px-6 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-200 shadow-lg flex items-center justify-center gap-2"
+              className="w-full cursor-pointer bg-linear-to-r from-orange-500 to-orange-600 text-white py-3 px-6 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-200 shadow-lg flex items-center justify-center gap-2"
             >
               <FaCoins className="w-4 h-4" />
               <span>Buy Swipe Credits</span>
@@ -136,7 +136,7 @@ export default function SwipeLimitModal({
 
             <button
               onClick={handleUpgrade}
-              className="w-full cursor-pointer bg-gradient-to-r from-[#CC0000] to-red-600 text-white py-3 px-6 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-lg"
+              className="w-full cursor-pointer bg-linear-to-r from-[#CC0000] to-red-600 text-white py-3 px-6 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-lg"
             >
               <span>Subscribe to a Plan</span>
             </button>

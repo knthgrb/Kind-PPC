@@ -9,8 +9,8 @@ import {
   FaCalendar,
   FaPlus,
   FaRocket,
-  FaMoneyBillWave,
   FaBriefcase,
+  FaEye,
 } from "react-icons/fa";
 import { SlLocationPin } from "react-icons/sl";
 import { createClient } from "@/utils/supabase/client";
@@ -25,6 +25,7 @@ import { updateJobStatus, deleteJobPost } from "@/actions/jobs/manage-job";
 import { boostJob } from "@/actions/jobs/boost-job";
 import { getUserSubscription } from "@/actions/subscription/xendit";
 import { useToastActions } from "@/stores/useToastStore";
+import JobDetailsModal from "./_components/JobDetailsModal";
 
 export default function MyJobsPage() {
   const { user } = useAuthStore();
@@ -55,6 +56,9 @@ export default function MyJobsPage() {
     useState(false);
   const [boostCredits, setBoostCredits] = useState<number>(0);
   const [boostingJobId, setBoostingJobId] = useState<string | null>(null);
+  const [selectedJobForDetails, setSelectedJobForDetails] =
+    useState<JobPost | null>(null);
+  const [isJobDetailsModalOpen, setIsJobDetailsModalOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -141,19 +145,6 @@ export default function MyJobsPage() {
         return "bg-red-100 text-red-800 border-red-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
-    }
-  };
-
-  const getStatusIcon = (status?: string) => {
-    switch (status) {
-      case "active":
-        return "🟢";
-      case "paused":
-        return "⏸️";
-      case "closed":
-        return "🔒";
-      default:
-        return "🟢";
     }
   };
 
@@ -367,30 +358,11 @@ export default function MyJobsPage() {
               </div>
 
               {/* Job Details Skeleton */}
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <div className="h-3 bg-gray-200 rounded w-20 mb-1 animate-pulse"></div>
-                    <div className="h-5 bg-gray-200 rounded w-32 mb-1 animate-pulse"></div>
-                    <div className="h-3 bg-gray-200 rounded w-16 animate-pulse"></div>
-                  </div>
-                  <div className="text-right">
-                    <div className="h-3 bg-gray-200 rounded w-16 mb-1 animate-pulse"></div>
-                    <div className="h-5 bg-gray-200 rounded w-20 animate-pulse"></div>
-                  </div>
-                </div>
-
-                {/* Application Count Skeleton */}
-                <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 rounded-lg">
-                  <div className="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
-                  <div className="h-4 bg-gray-200 rounded w-8 animate-pulse"></div>
-                </div>
-
+              <div className="p-6 bg-gray-50">
                 {/* Action Buttons Skeleton */}
-                <div className="flex space-x-2">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <div className="flex-1 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
-                  <div className="w-10 h-10 bg-gray-200 rounded animate-pulse"></div>
-                  <div className="w-10 h-10 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="flex-1 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
                 </div>
               </div>
             </div>
@@ -497,27 +469,23 @@ export default function MyJobsPage() {
                   <div className="flex-1 min-w-0 space-y-3">
                     <div className="flex flex-wrap items-center gap-2">
                       <span
-                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide border ${getStatusColor(
+                        className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide border ${getStatusColor(
                           job.status
                         )}`}
                       >
-                        <span>{getStatusIcon(job.status)}</span>
-                        <span>
-                          {job.status === "active"
-                            ? "Active"
-                            : job.status === "paused"
-                            ? "Paused"
-                            : job.status === "closed"
-                            ? "Closed"
-                            : "Active"}
-                        </span>
+                        {job.status === "active"
+                          ? "Active"
+                          : job.status === "paused"
+                          ? "Paused"
+                          : job.status === "closed"
+                          ? "Closed"
+                          : "Active"}
                       </span>
                       {job.is_boosted &&
                         job.boost_expires_at &&
                         new Date(job.boost_expires_at) > new Date() && (
-                          <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide bg-red-50 text-red-700 border border-red-200">
-                            <FaRocket className="w-3 h-3" />
-                            <span>Boosted</span>
+                          <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide bg-red-50 text-red-700 border border-red-200">
+                            Boosted
                           </span>
                         )}
                     </div>
@@ -564,90 +532,68 @@ export default function MyJobsPage() {
 
               {/* Job Details */}
               <div className="p-6 bg-gray-50">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="flex gap-3 p-4 rounded-xl bg-white border border-gray-100">
-                    <span className="w-10 h-10 rounded-full bg-red-50 text-[#CC0000] flex items-center justify-center">
-                      <FaMoneyBillWave className="w-4 h-4" />
-                    </span>
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                        Salary Range
-                      </p>
-                      <p className="text-base font-semibold text-gray-900">
-                        {job.salary ? `₱${job.salary}` : "Salary negotiable"}
-                      </p>
-                      <p className="text-xs text-gray-500 capitalize">
-                        {job.job_type ? job.job_type : "Rate not specified"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex gap-3 p-4 rounded-xl bg-white border border-gray-100">
-                    <span className="w-10 h-10 rounded-full bg-red-50 text-[#CC0000] flex items-center justify-center">
-                      <FaUsers className="w-4 h-4" />
-                    </span>
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                        Pending Applications
-                      </p>
-                      <p className="text-base font-semibold text-gray-900">
-                        {applicationCounts[job.id] || 0}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        Keep your candidates engaged
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
                 {/* Action Buttons */}
-                <div className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  {job.status === "active" && (
+                <div className="flex flex-col gap-3">
+                  {/* Boost Button/Badge Row */}
+                  {job.status === "active" &&
+                  job.is_boosted &&
+                  job.boost_expires_at &&
+                  new Date(job.boost_expires_at) > new Date() ? (
+                    <div className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-red-200 bg-red-50 text-red-700 text-xs sm:text-sm font-semibold flex-wrap">
+                      <FaRocket className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                      <span className="whitespace-nowrap">Boost active</span>
+                      <span className="text-xs font-normal text-red-600/80 whitespace-nowrap">
+                        until{" "}
+                        {new Date(job.boost_expires_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  ) : job.status === "active" ? (
                     <button
                       onClick={() => handleBoostJob(job)}
-                      disabled={
-                        boostingJobId === job.id ||
-                        !!(
-                          job.is_boosted &&
-                          job.boost_expires_at &&
-                          new Date(job.boost_expires_at) > new Date()
-                        )
-                      }
-                      className={`w-full cursor-pointer sm:w-auto px-5 py-3 rounded-lg transition-all text-sm font-semibold flex items-center justify-center gap-2 shadow-sm ${
-                        job.is_boosted &&
-                        job.boost_expires_at &&
-                        new Date(job.boost_expires_at) > new Date()
-                          ? "bg-red-100 text-red-700 border border-red-200 cursor-not-allowed"
-                          : "bg-[#CC0000] text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                      }`}
+                      disabled={boostingJobId === job.id}
+                      className="w-full px-4 py-2.5 rounded-lg transition-all text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 shadow-sm bg-[#CC0000] text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >
                       {boostingJobId === job.id ? (
                         <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin shrink-0" />
                           <span>Boosting…</span>
-                        </>
-                      ) : job.is_boosted &&
-                        job.boost_expires_at &&
-                        new Date(job.boost_expires_at) > new Date() ? (
-                        <>
-                          <FaRocket className="w-4 h-4" />
-                          <span>Already Boosted</span>
                         </>
                       ) : (
                         <>
-                          <FaRocket className="w-4 h-4" />
+                          <FaRocket className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
                           <span>Boost Job</span>
                         </>
                       )}
                     </button>
-                  )}
+                  ) : null}
 
-                  <Link
-                    href={`/my-jobs/applications?jobId=${job.id}`}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg border border-[#CC0000] text-[#CC0000] font-semibold text-sm hover:bg-[#cc0000]/10 transition-colors"
-                  >
-                    <FaUsers className="w-4 h-4" />
-                    <span>View Applications</span>
-                  </Link>
+                  {/* Action Buttons Row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                      onClick={() => {
+                        setSelectedJobForDetails(job);
+                        setIsJobDetailsModalOpen(true);
+                      }}
+                      className="w-full cursor-pointer inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-semibold text-xs sm:text-sm hover:bg-gray-50 transition-colors"
+                    >
+                      <FaEye className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                      <span className="truncate">View Details</span>
+                    </button>
+                    <Link
+                      href={`/my-jobs/applications?jobId=${job.id}`}
+                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[#CC0000] text-[#CC0000] font-semibold text-xs sm:text-sm hover:bg-[#cc0000]/10 transition-colors"
+                    >
+                      <FaUsers className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                      <span className="flex items-center gap-1.5 min-w-0">
+                        <span className="truncate">Applications</span>
+                        {applicationCounts[job.id] > 0 && (
+                          <span className="px-1.5 py-0.5 bg-[#CC0000] text-white text-xs font-bold rounded-full shrink-0">
+                            {applicationCounts[job.id]}
+                          </span>
+                        )}
+                      </span>
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>
@@ -704,6 +650,18 @@ export default function MyJobsPage() {
         }}
         creditType="boost_credits"
         currentCredits={boostCredits}
+      />
+
+      {/* Job Details Modal */}
+      <JobDetailsModal
+        isOpen={isJobDetailsModalOpen}
+        onClose={() => {
+          setIsJobDetailsModalOpen(false);
+          setSelectedJobForDetails(null);
+        }}
+        job={selectedJobForDetails}
+        familyId={user?.id || ""}
+        onJobEdited={handleJobEdited}
       />
     </div>
   );

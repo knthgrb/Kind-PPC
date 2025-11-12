@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { FiMessageCircle, FiUsers, FiChevronDown, FiChevronRight } from "react-icons/fi";
+import {
+  FiMessageCircle,
+  FiUsers,
+  FiChevronDown,
+  FiChevronRight,
+} from "react-icons/fi";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useChatUI } from "@/hooks/chats/useChatUI";
 import { useUnreadCounts } from "@/hooks/useUnreadCounts";
@@ -57,7 +62,7 @@ const UserAvatar = ({
 
   return (
     <div
-      className={`${className} bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center text-white font-semibold ${textSize}`}
+      className={`${className} bg-linear-to-br from-red-600 to-red-800 flex items-center justify-center text-white font-semibold ${textSize}`}
     >
       {initials}
     </div>
@@ -449,9 +454,7 @@ export default function KindBossingChatSidebar({
           <MessageSkeleton />
         ) : conversationsError ? (
           <div className="text-center text-sm text-red-500 py-4 px-2">
-            <p className="wrap-break-word">
-              {conversationsError.message}
-            </p>
+            <p className="wrap-break-word">{conversationsError.message}</p>
           </div>
         ) : sortedConversations.length === 0 ? (
           <div className="text-center text-sm text-[#757589] py-4 px-2">
@@ -476,4 +479,3 @@ export default function KindBossingChatSidebar({
     </div>
   );
 }
-

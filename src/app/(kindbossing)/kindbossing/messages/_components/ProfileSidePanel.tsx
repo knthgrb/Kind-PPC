@@ -42,7 +42,7 @@ const UserAvatar = ({
 
   return (
     <div
-      className={`${className} bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center text-white font-semibold ${textSize}`}
+      className={`${className} bg-linear-to-br from-red-600 to-red-800 flex items-center justify-center text-white font-semibold ${textSize}`}
     >
       {initials}
     </div>
@@ -427,4 +427,3 @@ export const ProfileSidePanelSkeleton = () => (
     </div>
   </div>
 );
-

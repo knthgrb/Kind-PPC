@@ -30,7 +30,7 @@ export default function RadarAnimation({
       {/* Outer pulsing circle - Red theme */}
       <div
         key={`outer-${animationKey}`}
-        className="absolute w-40 h-40 rounded-full bg-gradient-to-r from-red-200 to-red-300 opacity-20 animate-ping"
+        className="absolute w-40 h-40 rounded-full bg-linear-to-r from-red-200 to-red-300 opacity-20 animate-ping"
         style={{
           animationDuration: "2.5s",
           animationIterationCount: "infinite",
@@ -81,7 +81,7 @@ export default function RadarAnimation({
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center">
+          <div className="w-full h-full bg-linear-to-br from-red-400 to-red-600 flex items-center justify-center">
             <svg
               className="w-8 h-8 text-white"
               fill="currentColor"

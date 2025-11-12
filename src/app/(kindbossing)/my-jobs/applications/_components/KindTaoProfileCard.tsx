@@ -35,6 +35,7 @@ interface KindTaoProfileCardProps {
   jobDetails: JobPost | null;
   onSeeFullProfile?: () => void;
   isProcessing: boolean;
+  applicantName?: string;
 }
 
 export default function KindTaoProfileCard({
@@ -43,6 +44,7 @@ export default function KindTaoProfileCard({
   jobDetails,
   isProcessing,
   onSeeFullProfile,
+  applicantName,
 }: KindTaoProfileCardProps) {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -75,8 +77,17 @@ export default function KindTaoProfileCard({
     return parts.join(", ") || "Location not specified";
   };
 
+  const inferredName = [kindtaoProfile.first_name, kindtaoProfile.last_name]
+    .filter(Boolean)
+    .join(" ");
+  const displayName =
+    applicantName?.trim() || inferredName || application.applicant_name || "Applicant";
+
+  const expectedSalary =
+    kindtaoProfile.kindtao_profile?.expected_salary_range || "N/A";
+
   return (
-    <div className="bg-white rounded-xl border border-[#E0E6F7] shadow-lg overflow-hidden cursor-grab active:cursor-grabbing select-none relative w-full max-w-sm md:max-w-lg h-full max-h-[500px] md:max-h-[600px] flex flex-col mx-auto z-10">
+    <div className="bg-white rounded-xl border border-[#E0E6F7] shadow-lg overflow-hidden cursor-grab active:cursor-grabbing select-none relative w-full max-w-sm md:max-w-lg max-h-[70vh] md:h-[600px] flex flex-col mx-auto z-10">
       {/* Header with Profile */}
       <div className="p-4 md:p-6 border-b border-gray-100 shrink-0">
         <div className="flex items-start gap-3 md:gap-4">
@@ -87,7 +98,7 @@ export default function KindTaoProfileCard({
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="text-lg md:text-xl font-bold text-gray-900 leading-tight">
-                    Applicant
+                    {displayName}
                   </h2>
                   {kindtaoProfile.kindtao_profile?.is_verified && (
                     <FaCheckCircle
@@ -99,9 +110,7 @@ export default function KindTaoProfileCard({
               </div>
               <div className="text-right ml-3 md:ml-4">
                 <div className="text-xl md:text-2xl font-bold text-[#CC0000] leading-none">
-                  ₱
-                  {kindtaoProfile.kindtao_profile?.expected_salary_range ||
-                    "N/A"}
+                  ₱{expectedSalary}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
                   expected salary
@@ -121,21 +130,7 @@ export default function KindTaoProfileCard({
       </div>
 
       {/* Profile Details */}
-      <div className="flex-1 p-4 md:p-6 flex flex-col min-h-0">
-        {/* Job Description Preview */}
-        <div className="mb-4">
-          <h3 className="text-base font-semibold text-gray-900 mb-2">
-            About Candidate
-          </h3>
-          <p className="text-gray-700 leading-relaxed text-xs md:text-sm">
-            {application.cover_message
-              ? application.cover_message.length > 100
-                ? `${application.cover_message.substring(0, 100)}...`
-                : application.cover_message
-              : "No cover message provided."}
-          </p>
-        </div>
-
+      <div className="flex-1 p-4 md:p-6 flex flex-col min-h-0 overflow-y-auto">
         {/* Key Skills Preview */}
         <div className="mb-4">
           <h3 className="text-sm md:text-base font-semibold text-gray-900 mb-2">
@@ -192,6 +187,23 @@ export default function KindTaoProfileCard({
             </p>
           </div>
         )}
+
+        {/* Additional Details (helps balance height when content is short) */}
+        <div className="mt-2">
+          <h3 className="text-sm md:text-base font-semibold text-gray-900 mb-2">
+            Additional Details
+          </h3>
+          <ul className="space-y-1 text-gray-700 text-xs md:text-sm">
+            <li>
+              <span className="font-medium">Location:</span> {getLocationString()}
+            </li>
+            {kindtaoProfile.kindtao_profile?.highest_educational_attainment && (
+              <li>
+                <span className="font-medium">Education:</span> {kindtaoProfile.kindtao_profile.highest_educational_attainment}
+              </li>
+            )}
+          </ul>
+        </div>
 
         {/* Spacer to push button to bottom */}
         <div className="flex-1 min-h-0"></div>

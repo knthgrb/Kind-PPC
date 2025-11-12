@@ -33,6 +33,8 @@ interface ApplicationSwipeInterfaceProps {
   canGoPrevious: boolean;
   nextApplication?: Application | null;
   nextKindtaoProfile?: UserProfile | null;
+  applicantName?: string;
+  nextApplicantName?: string;
 }
 
 export default function ApplicationSwipeInterface({
@@ -53,6 +55,8 @@ export default function ApplicationSwipeInterface({
   canGoPrevious,
   nextApplication,
   nextKindtaoProfile,
+  applicantName,
+  nextApplicantName,
 }: ApplicationSwipeInterfaceProps) {
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -238,6 +242,7 @@ export default function ApplicationSwipeInterface({
         jobDetails={jobDetails}
         onMessage={handleMessage}
         onSaveForLater={handleSaveForLater}
+        applicantName={applicantName}
       />
 
       <ApplicantDetailsModal
@@ -248,10 +253,10 @@ export default function ApplicationSwipeInterface({
         jobDetails={jobDetails}
       />
 
-      <div className="w-full max-w-sm md:max-w-md mx-auto h-full overflow-visible">
+      <div className="w-full max-w-sm md:max-w-md mx-auto h-full overflow-visible flex flex-col items-center justify-center pb-16">
         {/* Swipe Container */}
         <div
-          className="relative w-full h-full max-h-[500px] md:max-h-[600px] mx-auto overflow-visible"
+          className="relative w-full mx-auto overflow-visible"
           style={{ touchAction: "pan-y pinch-zoom" }}
         >
           {/* Preview Card (Blurred) */}
@@ -274,6 +279,7 @@ export default function ApplicationSwipeInterface({
                   jobDetails={jobDetails}
                   isProcessing={false}
                   onSeeFullProfile={() => {}}
+                  applicantName={nextApplicantName}
                 />
               </div>
             </div>
@@ -282,7 +288,7 @@ export default function ApplicationSwipeInterface({
           {/* Card */}
           <div
             ref={cardRef}
-            className="w-full h-full flex items-center justify-center"
+            className="w-full flex items-center justify-center"
             style={{ zIndex: 2, overflow: "visible" }}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
@@ -291,7 +297,7 @@ export default function ApplicationSwipeInterface({
             <div
               className="w-full transition-transform duration-150"
               style={{
-                transform: `translateX(${offset.x}px) rotate(${rotation}deg)`,
+                transform: `translate(${offset.x}px, ${offset.y}px) rotate(${rotation}deg)`,
                 transition: isDragging
                   ? "none"
                   : "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease-out",
@@ -329,82 +335,77 @@ export default function ApplicationSwipeInterface({
                 jobDetails={jobDetails}
                 isProcessing={isProcessing}
                 onSeeFullProfile={() => setShowDetailsModal(true)}
+                applicantName={applicantName}
               />
             </div>
           </div>
-        </div>
 
-        {/* Action Buttons - Fixed position, don't move with card */}
-        <div className="absolute bottom-20 md:bottom-4 left-1/2 transform -translate-x-1/2 z-20">
-          <div className="flex items-center gap-4 md:gap-8 w-64 md:w-80 justify-between">
-            {/* Skip Button - Always visible, changes color when swiping left */}
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (!isDragging) {
-                  onReject();
-                }
-              }}
-              disabled={isDragging}
-              className={`flex items-center justify-center w-12 h-12 md:w-16 md:h-16 rounded-full transition-colors shadow-xl ${
-                offset.x > 20 ? "invisible" : ""
-              } ${
-                offset.x < -20
-                  ? "bg-red-500 text-white hover:bg-red-600"
-                  : "bg-white text-gray-600 hover:bg-gray-50 border-2 border-gray-200"
-              } disabled:opacity-50`}
-              title="Skip this candidate"
-            >
-              <FaTimes className="w-5 h-5 md:w-7 md:h-7" />
-            </button>
+          {/* Fixed (not transforming) Attached Action Buttons */}
+          <div className="absolute left-1/2 -translate-x-1/2 -bottom-7 md:-bottom-8 z-20">
+            <div className="flex items-center gap-6 md:gap-8">
+              {/* Skip */}
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (!isDragging) onReject();
+                }}
+                disabled={isDragging}
+                className={`flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full transition-colors shadow-xl ${
+                  offset.x > 20 ? "invisible" : ""
+                } ${
+                  offset.x < -20
+                    ? "bg-red-500 text-white hover:bg-red-600"
+                    : "bg-white text-gray-600 hover:bg-gray-50 border-2 border-gray-200"
+                } disabled:opacity-50`}
+                title="Skip this candidate"
+              >
+                <FaTimes className="w-5 h-5 md:w-6 md:h-6" />
+              </button>
 
-            {/* Rewind Button - Always visible, disabled when no history */}
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (!isDragging) {
-                  handleRewind();
+              {/* Rewind */}
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (!isDragging) handleRewind();
+                }}
+                disabled={isDragging || rewindHistory.length === 0}
+                className={`flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full transition-colors shadow-xl ${
+                  offset.x > 20 || offset.x < -20 ? "invisible" : ""
+                } ${
+                  rewindHistory.length > 0
+                    ? "bg-gray-500 text-white hover:bg-gray-600"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                } disabled:opacity-50`}
+                title={
+                  rewindHistory.length > 0
+                    ? "Rewind to previous candidate"
+                    : "No previous candidate to rewind to"
                 }
-              }}
-              disabled={isDragging || rewindHistory.length === 0}
-              className={`flex cursor-pointer items-center justify-center w-10 h-10 md:w-14 md:h-14 rounded-full transition-colors shadow-xl ${
-                offset.x > 20 || offset.x < -20 ? "invisible" : ""
-              } ${
-                rewindHistory.length > 0
-                  ? "bg-gray-500 text-white hover:bg-gray-600"
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
-              } disabled:opacity-50`}
-              title={
-                rewindHistory.length > 0
-                  ? "Rewind to previous candidate"
-                  : "No previous candidate to rewind to"
-              }
-            >
-              <FaUndo className="w-4 h-4 md:w-6 md:h-6" />
-            </button>
+              >
+                <FaUndo className="w-4 h-4 md:w-5 md:h-5" />
+              </button>
 
-            {/* Apply Button - Always visible, changes color when swiping right */}
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (!isDragging) {
-                  setShowSwipeModal(true);
-                }
-              }}
-              className={`flex items-center cursor-pointer justify-center w-12 h-12 md:w-16 md:h-16 rounded-full transition-colors shadow-xl ${
-                offset.x < -20 ? "invisible" : ""
-              } ${
-                offset.x > 20
-                  ? "bg-green-500 text-white hover:bg-green-600"
-                  : "bg-[#CC0000] text-white hover:bg-red-700"
-              } disabled:opacity-50`}
-              title="Approve and start messaging"
-            >
-              <FaCheck className="w-5 h-5 md:w-7 md:h-7" />
-            </button>
+              {/* Approve */}
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (!isDragging) onApprove();
+                }}
+                className={`flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full transition-colors shadow-xl ${
+                  offset.x < -20 ? "invisible" : ""
+                } ${
+                  offset.x > 20
+                    ? "bg-green-500 text-white hover:bg-green-600"
+                    : "bg-[#CC0000] text-white hover:bg-red-700"
+                } disabled:opacity-50`}
+                title="Approve and start messaging"
+              >
+                <FaCheck className="w-5 h-5 md:w-6 md:h-6" />
+              </button>
+            </div>
           </div>
         </div>
       </div>

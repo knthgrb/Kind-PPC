@@ -38,7 +38,7 @@ export default function LoadingSpinner({
 
   if (variant === "fullscreen") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-50 to-indigo-100">
         <div className="text-center">
           <div className="mt-6">
             <h2 className="text-xl font-semibold text-gray-800 mb-2">

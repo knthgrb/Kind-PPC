@@ -91,6 +91,8 @@ export default function DesktopJobSwipe({
   const [initialLoading, setInitialLoading] = useState(
     initialJobs.length === 0
   );
+  // Always show an intro radar for UX continuity even if SSR already fetched jobs
+  const [showIntroRadar, setShowIntroRadar] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [isApplying, setIsApplying] = useState(false);
   const [isSkipping, setIsSkipping] = useState(false);
@@ -119,7 +121,11 @@ export default function DesktopJobSwipe({
   const [lastTouchTime, setLastTouchTime] = useState(0);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // No intro radar if jobs already present; we only show radar on actual fetches
+  // Ensure intro radar shows for at least 1.2s on first mount
+  useEffect(() => {
+    const t = setTimeout(() => setShowIntroRadar(false), 1200);
+    return () => clearTimeout(t);
+  }, []);
 
   // Calculate tilt and rotation based on drag distance
   const getTiltTransform = () => {
@@ -586,14 +592,31 @@ export default function DesktopJobSwipe({
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, [goToPrevious, goToNext, handleApply, handleSkip, jobs, currentIndex]);
 
-  // Show initial loading state
+  // Force an intro radar pulse regardless of server-side data readiness
+  if (showIntroRadar) {
+    return (
+      <div className="relative w-full h-full flex items-center justify-center">
+        <div className="text-center">
+          <RadarAnimation
+            isVisible={true}
+            userProfileImage={
+              user?.user_metadata?.profile_image_url || undefined
+            }
+            className="mb-4"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Show initial loading state (legacy path for when there are no jobs yet)
   if (initialLoading) {
     return (
       <div className="relative w-full h-full flex items-center justify-center">
         <div className="text-center">
           {showTimeoutMessage ? (
             <div className="max-w-md mx-auto px-4">
-              <div className="w-32 h-32 bg-gradient-to-br from-red-100 to-red-200 rounded-full flex items-center justify-center mx-auto mb-6">
+              <div className="w-32 h-32 bg-linear-to-br from-red-100 to-red-200 rounded-full flex items-center justify-center mx-auto mb-6">
                 <svg
                   className="w-16 h-16 text-red-400"
                   fill="none"
@@ -701,7 +724,7 @@ export default function DesktopJobSwipe({
     return (
       <div className="relative w-full h-full flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-4">
-          <div className="w-32 h-32 bg-gradient-to-br from-red-100 to-red-200 rounded-full flex items-center justify-center mx-auto mb-6">
+          <div className="w-32 h-32 bg-linear-to-br from-red-100 to-red-200 rounded-full flex items-center justify-center mx-auto mb-6">
             <svg
               className="w-16 h-16 text-red-400"
               fill="none"

@@ -64,7 +64,6 @@ type DesktopLayoutProps = {
   pageSize: number;
 };
 
-
 export default function DesktopLayout({
   initialJobs,
   initialMatchingScores,
@@ -458,7 +457,7 @@ export default function DesktopLayout({
 
     return (
       <div
-        className={`${baseClasses} bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center text-white font-semibold ${textSize}`}
+        className={`${baseClasses} bg-linear-to-br from-red-600 to-red-800 flex items-center justify-center text-white font-semibold ${textSize}`}
       >
         {initials}
       </div>
@@ -935,7 +934,6 @@ export default function DesktopLayout({
         }}
         initialPreferences={jobPreferences || undefined}
       />
-
     </div>
   );
 }

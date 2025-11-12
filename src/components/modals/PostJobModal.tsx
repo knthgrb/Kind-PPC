@@ -22,6 +22,7 @@ import {
   getProvincesForRegion,
 } from "@/utils/regionMapping";
 import { useToastActions } from "@/stores/useToastStore";
+import { boostJob } from "@/actions/jobs/boost-job";
 
 // Zod schema for form validation
 const jobFormSchema = z.object({
@@ -175,6 +176,7 @@ export default function PostJobModal({
     lng: number;
   } | null>(null);
   const [isGeocoding, setIsGeocoding] = useState(false);
+  const [boostOnPost, setBoostOnPost] = useState(false);
 
   // Work schedule fields
   const [scheduleType, setScheduleType] = useState<string>("full-time");
@@ -520,6 +522,29 @@ export default function PostJobModal({
           editingJob ? "updated" : "posted"
         } successfully`
       );
+
+      // Optionally boost immediately after successful create/update
+      try {
+        if (boostOnPost) {
+          const jobId =
+            editingJob?.id || (result as unknown as { id: string })?.id;
+          if (jobId) {
+            const boostResult = await boostJob(jobId);
+            if (!boostResult.success) {
+              showError(
+                boostResult.error ||
+                  "Unable to boost job now. You can boost it from My Jobs."
+              );
+            } else {
+              showSuccess("Job boosted successfully!");
+            }
+          }
+        }
+      } catch (e) {
+        // Non-fatal: posting worked; boosting failed
+        console.error("Boost on post failed:", e);
+        showError("Boost attempt failed. You can boost it from My Jobs.");
+      }
 
       // Close modal and navigate
       onClose();
@@ -1041,20 +1066,31 @@ export default function PostJobModal({
             </div>
 
             {/* Footer */}
-            <div className="flex justify-end space-x-3">
-              <SecondaryButton onClick={handleClose} disabled={isSubmitting}>
-                Cancel
-              </SecondaryButton>
-              <PrimaryButton
-                onClick={handleSubmit(onSubmit)}
-                disabled={isSubmitting}
-              >
-                {isSubmitting
-                  ? "Processing..."
-                  : editingJob
-                  ? "Update Job"
-                  : "Post Job"}
-              </PrimaryButton>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={boostOnPost}
+                  onChange={(e) => setBoostOnPost(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 accent-[#CC0000]"
+                />
+                Boost this job (uses 1 boost credit)
+              </label>
+              <div className="flex justify-end gap-3">
+                <SecondaryButton onClick={handleClose} disabled={isSubmitting}>
+                  Cancel
+                </SecondaryButton>
+                <PrimaryButton
+                  onClick={handleSubmit(onSubmit)}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting
+                    ? "Processing..."
+                    : editingJob
+                    ? "Update Job"
+                    : "Post Job"}
+                </PrimaryButton>
+              </div>
             </div>
           </div>
         </div>
