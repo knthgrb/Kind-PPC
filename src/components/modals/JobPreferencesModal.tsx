@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { FiX } from "react-icons/fi";
-import { JobPreferencesService } from "@/services/client/JobPreferencesService";
+import { JobPreferencesService } from "@/services/JobPreferencesService";
 import { useToastActions } from "@/stores/useToastStore";
 import { JOB_CATEGORIES } from "@/constants/jobCategories";
 
@@ -113,12 +113,64 @@ export default function JobPreferencesModal({
   const [isSaving, setIsSaving] = useState(false);
   const { showSuccess, showError } = useToastActions();
 
+  const CACHE_KEY = "job_preferences_cache";
+  const CACHE_TIMESTAMP_KEY = "job_preferences_cache_timestamp";
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+  // Load from localStorage helper
+  const loadFromCache = (): JobPreferences | null => {
+    if (typeof window === "undefined") return null;
+
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      const timestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY);
+
+      if (cached && timestamp) {
+        const age = Date.now() - parseInt(timestamp, 10);
+        if (age < CACHE_DURATION) {
+          return JSON.parse(cached);
+        } else {
+          // Cache expired, remove it
+          localStorage.removeItem(CACHE_KEY);
+          localStorage.removeItem(CACHE_TIMESTAMP_KEY);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading from cache:", error);
+    }
+    return null;
+  };
+
+  // Save to localStorage helper
+  const saveToCache = (prefs: JobPreferences) => {
+    if (typeof window === "undefined") return;
+
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(prefs));
+      localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
+    } catch (error) {
+      console.error("Error saving to cache:", error);
+    }
+  };
+
   // Fetch job preferences when modal opens
   useEffect(() => {
-    if (isOpen && !initialPreferences) {
-      fetchJobPreferences();
-    } else if (initialPreferences) {
-      setPreferences(initialPreferences);
+    if (isOpen) {
+      if (initialPreferences) {
+        // Use provided preferences and cache them
+        setPreferences(initialPreferences);
+        saveToCache(initialPreferences);
+      } else {
+        // Check cache first
+        const cached = loadFromCache();
+        if (cached) {
+          setPreferences(cached);
+          setIsLoading(false);
+        } else {
+          // No cache, fetch from server
+          fetchJobPreferences();
+        }
+      }
     }
   }, [isOpen, initialPreferences]);
 
@@ -131,9 +183,10 @@ export default function JobPreferencesModal({
         console.error("Error fetching job preferences:", error);
       } else if (data) {
         setPreferences(data);
+        saveToCache(data); // Cache the fetched data
       }
     } catch (error) {
-      showError("Error", "Failed to load job preferences. Please try again.");
+      showError("Failed to load job preferences. Please try again.");
       console.error("Error fetching job preferences:", error);
     } finally {
       setIsLoading(false);
@@ -200,6 +253,8 @@ export default function JobPreferencesModal({
         await JobPreferencesService.updateJobPreferences(preferences);
       if (success) {
         showSuccess("Job preferences saved successfully!");
+        // Update cache with saved preferences
+        saveToCache(preferences);
         onSave(preferences);
         onClose();
       } else {
@@ -216,7 +271,7 @@ export default function JobPreferencesModal({
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9999] p-4">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-9999 p-4">
       <div className="bg-white rounded-lg max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">

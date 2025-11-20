@@ -31,7 +31,7 @@ export default function KindTaoSidebar() {
     },
     {
       label: "Messages",
-      href: "/kindtao/messages",
+      href: "/kindtao/matches",
       icon: FiMessageCircle,
     },
     {
@@ -53,8 +53,8 @@ export default function KindTaoSidebar() {
     if (href === "/recs") {
       return pathname === href || pathname?.startsWith("/recs/");
     }
-    if (href === "/matches") {
-      return pathname === href || pathname?.startsWith("/matches/");
+    if (href === "/kindtao/matches") {
+      return pathname === href || pathname?.startsWith("/kindtao/matches/");
     }
     if (href === "/profile") {
       return pathname === href || pathname?.startsWith("/profile/");

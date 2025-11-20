@@ -1,39 +1,43 @@
-import "@/styles/globals.css";
-import KindTaoHeader from "../_components/KindTaoHeader";
-import KindTaoBottomTabs from "../_components/KindTaoBottomTabs";
-import FindWorkChatSidebarServer from "./_components/FindWorkChatSidebarServer";
+"use client";
 
-export default function FindWorkLayout({
+import React from "react";
+import { usePathname } from "next/navigation";
+import KindTaoHeader from "@/app/(kindtao)/_components/KindTaoHeader";
+import KindTaoBottomTabs from "@/app/(kindtao)/_components/KindTaoBottomTabs";
+
+export default function KindTaoLayout({
   children,
   conversation,
 }: {
   children: React.ReactNode;
   conversation: React.ReactNode;
 }) {
+  const pathname = usePathname();
+  // Hide header and bottom tabs on mobile for conversation pages
+  const isMessagesPath = pathname?.startsWith("/kindtao/messages");
+  const isConversationPage =
+    Boolean(isMessagesPath) && pathname !== "/kindtao/messages";
+
   return (
-    <div className="relative h-screen bg-gray-50">
-      <KindTaoHeader />
-
-      {/* Main content */}
-      <div className="h-[calc(100vh-8vh)] relative">
-        {/* Mobile: show ONLY swipe UI (no sidebar, no conversation panel) */}
-        <div className="md:hidden h-full">{children}</div>
-
-        {/* Desktop: left sidebar + content; no slide animation */}
-        <div className="hidden md:flex h-full">
-          <FindWorkChatSidebarServer />
-          <div className="flex-1 min-w-0 relative h-full">
-            <div className={`${conversation ? "hidden" : "block"} h-full`}>
-              {children}
-            </div>
-            <div className={`${conversation ? "block" : "hidden"} h-full`}>
-              {conversation}
-            </div>
-          </div>
-        </div>
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      {/* Hide header on mobile for conversation pages */}
+      <div className={isConversationPage ? "hidden lg:block" : ""}>
+        <KindTaoHeader />
       </div>
-
-      <KindTaoBottomTabs />
+      <main
+        className={`flex-1 flex flex-col ${
+          isConversationPage ? "lg:pb-0" : "pb-16 lg:pb-0"
+        }`}
+      >
+        <div className="flex-1 flex flex-col bg-gray-50 relative overflow-hidden">
+          {children}
+          {conversation}
+        </div>
+      </main>
+      {/* Hide bottom tabs on mobile for conversation pages */}
+      <div className={isConversationPage ? "hidden lg:block" : ""}>
+        <KindTaoBottomTabs />
+      </div>
     </div>
   );
 }

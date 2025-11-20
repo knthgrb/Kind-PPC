@@ -2,7 +2,7 @@
  * Shared utilities for chat message conversion and formatting
  */
 
-import type { ChatMessage } from "@/services/client/realtimeService";
+import type { ChatMessage } from "@/services/realtimeService";
 import type { MessageWithUser, User } from "@/types/chat";
 
 /**

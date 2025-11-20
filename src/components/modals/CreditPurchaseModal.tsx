@@ -61,7 +61,7 @@ export default function CreditPurchaseModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-100 p-4">
       <div className="bg-white rounded-2xl max-w-2xl w-full p-6 relative max-h-[90vh] overflow-y-auto">
         {/* Close button */}
         <button
@@ -111,7 +111,7 @@ export default function CreditPurchaseModal({
                 <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
               </div>
 
-              <div className="space-y-2 mb-4 flex-grow">
+              <div className="space-y-2 mb-4 grow">
                 <div className="flex items-center justify-center text-sm">
                   <FaCheck className="text-green-500 mr-2" />
                   <span className="text-gray-700">

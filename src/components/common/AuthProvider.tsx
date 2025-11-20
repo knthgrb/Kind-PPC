@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useAuthStore } from "@/stores/useAuthStore";
 
 export default function AuthProvider({
@@ -8,12 +8,15 @@ export default function AuthProvider({
   children: React.ReactNode;
 }) {
   const { initializeAuth } = useAuthStore();
+  const hasInitialized = useRef(false);
 
   useEffect(() => {
-    const cleanup = initializeAuth();
-
-    return cleanup;
-  }, []);
+    // Only initialize once, even in React Strict Mode
+    if (!hasInitialized.current) {
+      hasInitialized.current = true;
+    initializeAuth();
+    }
+  }, [initializeAuth]);
 
   return <>{children}</>;
 }

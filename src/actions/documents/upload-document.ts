@@ -1,128 +1,95 @@
 "use server";
 
-import { createClient } from "@/utils/supabase/server";
-import { revalidatePath } from "next/cache";
+import { getServerActionContext } from "@/utils/server-action-context";
+import { api } from "@/utils/convex/server";
+import { logger } from "@/utils/logger";
+import { extractStorageIdFromResponse } from "@/utils/convex/storage";
 
 export async function uploadDocument(
   formData: FormData
-): Promise<{ success: boolean; data: any | null; error: string | null }> {
+): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = await createClient();
+    const { convex, user, error } = await getServerActionContext({
+      requireUser: true,
+    });
 
-    // Get the current user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    if (error || !user) {
+      return { success: false, error: "Unauthorized" };
+    }
 
-    if (authError || !user) {
-      return {
-        success: false,
-        data: null,
-        error: "Not authenticated. Please sign in and try again.",
-      };
+    if (!convex) {
+      return { success: false, error: "Database connection failed" };
+    }
+
+    // Extract user ID
+    const userId =
+      (user as { userId?: string | null })?.userId ??
+      (user as { id?: string | null })?.id ??
+      (user as { _id?: string | null })?._id ??
+      null;
+
+    if (!userId) {
+      return { success: false, error: "User ID not found" };
     }
 
     // Extract form data
     const title = formData.get("title") as string;
-    const type = formData.get("type") as string;
+    const documentType = formData.get("type") as string;
     const file = formData.get("file") as File;
 
-    // Validate inputs
-    if (!title || !type || !file) {
-      return {
-        success: false,
-        data: null,
-        error: "Please provide document name, type, and select a file.",
-      };
+    if (!title || !documentType || !file) {
+      return { success: false, error: "Missing required fields" };
     }
 
-    // Validate file
-    if (file.size === 0) {
-      return {
-        success: false,
-        data: null,
-        error: "Please select a file to upload.",
-      };
+    // Generate upload URL from Convex
+    const uploadUrl = await convex.mutation(api.storage.generateUploadUrl);
+
+    // Upload file to Convex storage
+    const uploadResult = await fetch(uploadUrl, {
+      method: "POST",
+      headers: { "Content-Type": file.type },
+      body: file,
+    });
+
+    if (!uploadResult.ok) {
+      throw new Error(`Upload failed: ${uploadResult.statusText}`);
     }
 
-    // Check file size (max 10MB)
-    const MAX_FILE_SIZE = 10 * 1024 * 1024;
-    if (file.size > MAX_FILE_SIZE) {
-      return {
-        success: false,
-        data: null,
-        error: "File size exceeds 10MB limit.",
-      };
+    // Get storage ID (Convex returns it as text)
+    const storageId = await extractStorageIdFromResponse(uploadResult);
+
+    // Get file URL from storage ID
+    const fileUrl = await convex.query(api.storage.getFileUrl, {
+      storageId: storageId as any,
+    });
+
+    if (!fileUrl) {
+      throw new Error("Failed to get file URL");
     }
 
-    // Generate unique file name
-    const fileExt = file.name.split(".").pop();
-    const fileName = `${Date.now()}_${Math.random()
-      .toString(36)
-      .substring(7)}.${fileExt}`;
-    const filePath = `${user.id}/${fileName}`;
+    // Save document metadata to verification_documents table
+    await convex.mutation(api.documents.createVerificationDocument, {
+      user_id: userId,
+      file_url: fileUrl,
+      title: title,
+      size: file.size,
+      content_type: file.type,
+      document_type: documentType,
+    });
 
-    // Upload file to storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from("kindbossing-documents")
-      .upload(filePath, file, {
-        cacheControl: "3600",
-        upsert: false,
-      });
+    logger.info("Verification document uploaded successfully:", {
+      userId,
+      title,
+      documentType,
+    });
 
-    if (uploadError) {
-      console.error("❌ File upload failed:", uploadError);
-      return {
-        success: false,
-        data: null,
-        error: uploadError.message,
-      };
-    }
-
-    // Get public URL for the uploaded file
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from("kindbossing-documents").getPublicUrl(filePath);
-
-    // Save document metadata to database
-    const { data, error } = await supabase
-      .from("kindbossing_documents")
-      .insert({
-        kindbossing_user_id: user.id,
-        file_url: publicUrl,
-        title: title,
-        size: file.size,
-        content_type: file.type,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error("❌ Document metadata save failed:", error);
-      // Try to cleanup the uploaded file
-      await supabase.storage.from("kindbossing-documents").remove([filePath]);
-      return {
-        success: false,
-        data: null,
-        error: error.message,
-      };
-    }
-
-    revalidatePath("/documents");
-    console.log("✅ Document uploaded successfully:", data);
-    return {
-      success: true,
-      data,
-      error: null,
-    };
-  } catch (error) {
-    console.error("❌ Unexpected error uploading document:", error);
+    return { success: true };
+  } catch (err) {
+    logger.error("Failed to upload verification document:", err);
     return {
       success: false,
-      data: null,
-      error:
-        error instanceof Error ? error.message : "Failed to upload document",
+      error: err instanceof Error ? err.message : "Failed to upload document",
     };
   }
 }
+

@@ -98,7 +98,7 @@ function InstallPrompt() {
 
   return (
     <>
-      <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg z-[9999] p-4">
+      <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg z-9999 p-4">
         <div className="flex items-center justify-between max-w-md mx-auto">
           <div className="flex-1">
             <h3 className="font-semibold text-gray-900 text-sm">Install App</h3>
@@ -149,7 +149,7 @@ function InstallPrompt() {
 
       {/* iOS Installation Modal */}
       {showIOSModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-60 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">

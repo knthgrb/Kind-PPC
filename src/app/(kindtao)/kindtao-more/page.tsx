@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FiUser, FiHelpCircle, FiLogOut } from "react-icons/fi";
+import { FiHelpCircle, FiLogOut } from "react-icons/fi";
 import { useAuthStore } from "@/stores/useAuthStore";
 
 export default function KindTaoMorePage() {
@@ -18,7 +18,7 @@ export default function KindTaoMorePage() {
     <section className="max-w-2xl mx-auto p-4 sm:p-6">
       <h1 className="text-xl font-semibold mb-4">More</h1>
 
-      <div className="bg-white border border-gray-200 rounded-lg divide-y">
+      <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-200">
         <Link
           href="/contact-us"
           className="flex items-center justify-between px-4 py-4 hover:bg-gray-50"

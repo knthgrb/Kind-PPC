@@ -1,146 +1,28 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { useState, lazy, Suspense, useEffect } from "react";
+import { useMemo, useState, lazy, Suspense } from "react";
 import { IoArrowBack, IoCreateOutline } from "react-icons/io5";
-import { FaRocket } from "react-icons/fa";
-import { IoClose } from "react-icons/io5";
 import Card from "@/components/common/Card";
 import Chip from "@/components/common/Chip";
 import type { UserProfile } from "@/types/userProfile";
 import { capitalizeWords } from "@/utils/capitalize";
 import SupabaseImage from "@/components/common/SupabaseImage";
 import WorkExperienceSection from "./WorkExperienceSection";
-import SubscriptionModal from "@/components/modals/SubscriptionModal";
-import CreditPurchaseModal from "@/components/modals/CreditPurchaseModal";
-import { boostProfile } from "@/actions/profile/boost-profile";
-import { getUserSubscription } from "@/actions/subscription/xendit";
-import { useAuthStore } from "@/stores/useAuthStore";
-import { useToastActions } from "@/stores/useToastStore";
-import { createClient } from "@/utils/supabase/client";
+import { useRouter } from "next/navigation";
 
-// Lazy load the EditProfileModal
-const EditProfileModal = lazy(() => import("./EditProfileModal"));
+import dynamic from "next/dynamic";
+const EditProfileModal = dynamic(() => import("./EditProfileModal"), {
+  ssr: false,
+});
 
 interface ProfileClientProps {
   user: UserProfile;
 }
 
 export default function ProfileClient({ user }: ProfileClientProps) {
-  const { user: authUser } = useAuthStore();
-  const { showSuccess, showError } = useToastActions();
+  const router = useRouter();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
-  const [isCreditPurchaseModalOpen, setIsCreditPurchaseModalOpen] =
-    useState(false);
-  const [boostCredits, setBoostCredits] = useState<number>(0);
-  const [isBoosting, setIsBoosting] = useState(false);
-  const [isProfileBoosted, setIsProfileBoosted] = useState(false);
-  const [boostExpiresAt, setBoostExpiresAt] = useState<string | null>(null);
-  const [isBoostBannerDismissed, setIsBoostBannerDismissed] = useState(false);
-
-  useEffect(() => {
-    if (authUser?.id) {
-      loadBoostCredits();
-      loadProfileBoostStatus();
-    }
-  }, [authUser]);
-
-  const loadBoostCredits = async () => {
-    if (!authUser?.id) return;
-
-    try {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from("users")
-        .select("boost_credits")
-        .eq("id", authUser.id)
-        .single();
-
-      if (!error && data) {
-        setBoostCredits(data.boost_credits || 0);
-      }
-    } catch (error) {
-      console.error("Error loading boost credits:", error);
-    }
-  };
-
-  const loadProfileBoostStatus = async () => {
-    if (!authUser?.id) return;
-
-    try {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from("kindtaos")
-        .select("is_boosted, boost_expires_at")
-        .eq("user_id", authUser.id)
-        .single();
-
-      if (!error && data) {
-        setIsProfileBoosted(data.is_boosted || false);
-        setBoostExpiresAt(data.boost_expires_at || null);
-      }
-    } catch (error) {
-      console.error("Error loading profile boost status:", error);
-    }
-  };
-
-  const handleBoostProfile = async () => {
-    if (!authUser?.id) return;
-
-    // Check if profile is already boosted and not expired
-    if (isProfileBoosted && boostExpiresAt) {
-      const expiryDate = new Date(boostExpiresAt);
-      if (expiryDate > new Date()) {
-        showError("Your profile is already boosted");
-        return;
-      }
-    }
-
-    // Check boost credits
-    if (boostCredits < 1) {
-      // Check if user has subscription
-      try {
-        const subscriptionResult = await getUserSubscription();
-        const hasSubscription =
-          subscriptionResult.success &&
-          subscriptionResult.subscription &&
-          subscriptionResult.subscription.status === "active";
-
-        if (!hasSubscription) {
-          // Show subscription modal
-          setIsSubscriptionModalOpen(true);
-        } else {
-          // Show credit purchase modal
-          setIsCreditPurchaseModalOpen(true);
-        }
-      } catch (error) {
-        console.error("Error checking subscription:", error);
-        setIsSubscriptionModalOpen(true);
-      }
-      return;
-    }
-
-    // Boost the profile
-    setIsBoosting(true);
-    try {
-      const result = await boostProfile();
-      if (result.success) {
-        showSuccess("Profile boosted successfully!");
-        loadBoostCredits();
-        loadProfileBoostStatus();
-      } else {
-        showError(result.error || "Failed to boost profile");
-      }
-    } catch (error) {
-      console.error("Error boosting profile:", error);
-      showError("An unexpected error occurred");
-    } finally {
-      setIsBoosting(false);
-    }
-  };
 
   const {
     first_name,
@@ -163,6 +45,20 @@ export default function ProfileClient({ user }: ProfileClientProps) {
   const fullAddress = [barangay, municipality, province, zip_code]
     .filter(Boolean)
     .join(", ");
+
+  const boostExpiryTimestamp = (() => {
+    if (!kindtao_profile?.boost_expires_at) return null;
+    if (typeof kindtao_profile.boost_expires_at === "number") {
+      return kindtao_profile.boost_expires_at;
+    }
+    const parsed = new Date(kindtao_profile.boost_expires_at as any).getTime();
+    return Number.isNaN(parsed) ? null : parsed;
+  })();
+
+  const isBoostActive =
+    Boolean(kindtao_profile?.is_boosted) &&
+    boostExpiryTimestamp !== null &&
+    boostExpiryTimestamp > Date.now();
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return null;
@@ -196,414 +92,300 @@ export default function ProfileClient({ user }: ProfileClientProps) {
       .join(" ");
   };
 
-  const handleDismissBoostBanner = () => {
-    setIsBoostBannerDismissed(true);
-  };
+  const availabilityBadges = useMemo(() => {
+    if (!kindtao_profile?.availability_schedule) return [];
+    return Object.entries(kindtao_profile.availability_schedule)
+      .map(([day, schedule]) => {
+        const scheduleData = schedule as {
+          available: boolean;
+          hours?: [string, string];
+        };
+        if (!scheduleData.available) return null;
+        return {
+          day,
+          hours: Array.isArray(scheduleData.hours)
+            ? scheduleData.hours.filter(Boolean).join(" – ")
+            : null,
+        };
+      })
+      .filter(Boolean) as { day: string; hours: string | null }[];
+  }, [kindtao_profile?.availability_schedule]);
 
-  // Show boost banner if:
-  // 1. Not dismissed
-  // 2. Profile is not currently boosted
-  const shouldShowBoostBanner =
-    !isBoostBannerDismissed &&
-    !(
-      isProfileBoosted &&
-      boostExpiresAt &&
-      new Date(boostExpiresAt) > new Date()
-    );
+  const primaryDetails = [
+    { label: "Email", value: email },
+    { label: "Phone", value: phone },
+    {
+      label: "Date of Birth",
+      value:
+        date_of_birth &&
+        `${formatDate(date_of_birth)}${
+          getAge(date_of_birth) ? ` (${getAge(date_of_birth)} yrs)` : ""
+        }`,
+    },
+    { label: "Gender", value: gender ? capitalizeWords(gender) : null },
+    { label: "Address", value: fullAddress },
+  ].filter((detail) => Boolean(detail.value));
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Back Button and Actions */}
-        <div className="flex items-center justify-between mb-6">
+      <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <Link
             href="/recs"
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+            className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
           >
-            <IoArrowBack className="w-5 h-5" />
-            <span>Find Work</span>
+            <IoArrowBack className="w-4 h-4" />
+            Back to jobs
           </Link>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setIsEditModalOpen(true)}
-              className="flex cursor-pointer items-center gap-2 text-red-600 hover:text-red-700 transition-colors"
-            >
-              <IoCreateOutline className="w-5 h-5" />
-              <span>Edit Profile</span>
-            </button>
-          </div>
+          <button
+            onClick={() => setIsEditModalOpen(true)}
+            className="inline-flex cursor-pointer items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 bg-gray-100 text-gray-900 text-sm font-medium hover:bg-gray-200 transition-colors"
+          >
+            <IoCreateOutline className="w-4 h-4" />
+            Edit profile
+          </button>
         </div>
 
-        {/* Boost Profile Banner - Top of Page */}
-        {shouldShowBoostBanner && (
-          <Card className="mb-6 border-2 border-[#CC0000] relative">
-            <button
-              onClick={handleDismissBoostBanner}
-              className="absolute top-3 cursor-pointer right-3 p-1 text-gray-400 hover:text-gray-600 transition-colors"
-              aria-label="Dismiss boost banner"
-            >
-              <IoClose className="w-5 h-5" />
-            </button>
-            <div className="flex items-center justify-between pr-8">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <FaRocket className="w-5 h-5 text-[#CC0000]" />
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Boost Your Profile
-                  </h3>
-                </div>
-                <p className="text-sm text-gray-600">
-                  Increase the chance to be seen by employers when they review
-                  applications
-                </p>
-              </div>
-              <button
-                onClick={handleBoostProfile}
-                disabled={isBoosting}
-                className="flex cursor-pointer items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium bg-[#CC0000] text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isBoosting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Boosting...</span>
-                  </>
-                ) : (
-                  <>
-                    <FaRocket className="w-4 h-4" />
-                    <span>Boost Now</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </Card>
-        )}
-
-        {/* Profile Header */}
-        <Card className="mb-6">
-          <div className="flex flex-col md:flex-row gap-6">
-            <div className="shrink-0">
+        <Card className="p-6">
+          <div className="flex flex-col gap-6 md:flex-row">
+            <div className="flex flex-col items-center text-center md:text-left md:items-start gap-4">
               {profile_image_url ? (
                 <SupabaseImage
                   filePath={profile_image_url}
-                  alt={fullName || "Profile"}
-                  width={120}
-                  height={120}
-                  className="rounded-full object-cover border-4 border-red-600 shadow-lg"
+                  alt={fullName || "Profile photo"}
+                  width={136}
+                  height={136}
+                  className="rounded-2xl object-cover border border-gray-200"
                 />
               ) : (
-                <div className="w-30 h-30 bg-red-600 rounded-full flex items-center justify-center shadow-lg">
-                  <span className="text-4xl font-bold text-white">
-                    {first_name ? first_name.charAt(0).toUpperCase() : "?"}
-                  </span>
+                <div className="w-32 h-32 rounded-2xl bg-gray-200 flex items-center justify-center text-4xl font-semibold text-gray-600">
+                  {first_name ? first_name.charAt(0).toUpperCase() : "?"}
                 </div>
               )}
             </div>
-            <div className="flex-1">
-              <div className="mb-4">
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">
+
+            <div className="flex-1 space-y-4">
+              <div>
+                <h1 className="text-2xl font-semibold text-gray-900">
                   {fullName || "No name provided"}
                 </h1>
-                <div className="flex flex-wrap gap-3 items-center">
+                <div className="flex flex-wrap items-center gap-2 mt-2">
                   {kindtao_profile?.is_verified ? (
-                    <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-sm font-medium text-green-800">
-                        Verified
-                      </span>
-                    </div>
+                    <span className="inline-flex items-center gap-2 rounded-full bg-green-50 px-3 py-1 text-sm font-medium text-green-800 border border-green-100">
+                      Verified
+                    </span>
                   ) : (
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
-                        <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-yellow-800">
-                          Not Verified
-                        </span>
-                      </div>
-                      <a
-                        href="/settings?tab=verification"
-                        className="text-sm font-medium text-red-600 hover:text-red-700 transition-colors"
-                      >
-                        Verify Now →
-                      </a>
-                    </div>
+                    <Link
+                      href="/settings?tab=verification"
+                      className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-800 border border-blue-100 hover:bg-blue-100 transition-colors"
+                    >
+                      Complete verification
+                    </Link>
                   )}
-                  {isProfileBoosted &&
-                    boostExpiresAt &&
-                    new Date(boostExpiresAt) > new Date() && (
-                      <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-                        <FaRocket className="w-3 h-3 text-[#CC0000]" />
-                        <span className="text-sm font-medium text-red-800">
-                          Profile Boosted
-                        </span>
-                      </div>
-                    )}
-                  {status && (
-                    <div className="bg-gray-100 border border-gray-200 rounded-lg px-3 py-2">
-                      <span className="text-sm font-medium text-gray-700">
-                        {capitalizeWords(status)}
-                      </span>
-                    </div>
+                  {isBoostActive ? (
+                    <span className="inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-1 text-sm font-medium text-rose-800 border border-rose-100">
+                      Boosted
+                    </span>
+                  ) : (
+                    <Link
+                      href="/settings?tab=subscription"
+                      className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-800 border border-blue-100 hover:bg-blue-100 transition-colors"
+                    >
+                      Boost profile
+                    </Link>
+                  )}
+                  {status && status !== "active" && (
+                    <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700 border border-gray-200">
+                      {capitalizeWords(status)}
+                    </span>
                   )}
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                {email && (
-                  <div>
-                    <span className="font-medium text-gray-700">Email:</span>
-                    <div className="bg-white rounded-lg px-3 py-2 mt-1">
-                      <p className="text-gray-900">{email}</p>
-                    </div>
-                  </div>
-                )}
-                {phone && (
-                  <div>
-                    <span className="font-medium text-gray-700">Phone:</span>
-                    <div className="bg-white rounded-lg px-3 py-2 mt-1">
-                      <p className="text-gray-900">{phone}</p>
-                    </div>
-                  </div>
-                )}
-                {date_of_birth && (
-                  <div>
-                    <span className="font-medium text-gray-700">
-                      Date of Birth:
-                    </span>
-                    <div className="bg-white rounded-lg px-3 py-2 mt-1">
-                      <p className="text-gray-900">
-                        {formatDate(date_of_birth)} ({getAge(date_of_birth)}{" "}
-                        years old)
+              {primaryDetails.length > 0 && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {primaryDetails.map((detail) => (
+                    <div key={detail.label}>
+                      <p className="text-xs uppercase tracking-wide text-gray-500">
+                        {detail.label}
+                      </p>
+                      <p className="text-sm text-gray-900 mt-1">
+                        {detail.value}
                       </p>
                     </div>
-                  </div>
-                )}
-                {gender && (
-                  <div>
-                    <span className="font-medium text-gray-700">Gender:</span>
-                    <div className="bg-white rounded-lg px-3 py-2 mt-1">
-                      <p className="text-gray-900">{capitalizeWords(gender)}</p>
-                    </div>
-                  </div>
-                )}
-                {fullAddress && (
-                  <div className="md:col-span-2">
-                    <span className="font-medium text-gray-700">Address:</span>
-                    <div className="bg-white rounded-lg px-3 py-2 mt-1">
-                      <p className="text-gray-900">{fullAddress}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </Card>
 
-        {/* KindTao Profile Information */}
         {kindtao_profile && (
           <div className="space-y-6">
-            {/* Skills */}
-            {kindtao_profile.skills && kindtao_profile.skills.length > 0 && (
-              <Card>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                  Skills
-                </h2>
-                <div className="flex flex-wrap gap-2">
-                  {kindtao_profile.skills.map((skill, index) => (
-                    <Chip key={index}>{formatSkill(skill)}</Chip>
-                  ))}
-                </div>
-              </Card>
-            )}
-
-            {/* Languages */}
-            {kindtao_profile.languages &&
-              kindtao_profile.languages.length > 0 && (
-                <Card>
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                    Languages
-                  </h2>
-                  <div className="flex flex-wrap gap-2">
-                    {kindtao_profile.languages.map((language, index) => (
-                      <Chip key={index}>{capitalizeWords(language)}</Chip>
-                    ))}
-                  </div>
-                </Card>
-              )}
-
-            {/* Education & Salary */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid gap-6 md:grid-cols-2">
               {kindtao_profile.highest_educational_attainment && (
-                <Card>
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                <Card className="p-5">
+                  <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">
                     Education
-                  </h2>
-                  <span className="inline-block bg-white rounded-lg px-3 py-2 text-gray-700">
+                  </p>
+                  <p className="text-lg font-medium text-gray-900">
                     {capitalizeWords(
                       kindtao_profile.highest_educational_attainment
                     )}
-                  </span>
+                  </p>
                 </Card>
               )}
 
               {kindtao_profile.expected_salary_range && (
-                <Card>
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                    Expected Salary
-                  </h2>
-                  <span className="inline-block bg-white rounded-lg px-3 py-2 text-gray-700">
+                <Card className="p-5">
+                  <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">
+                    Expected salary
+                  </p>
+                  <p className="text-lg font-medium text-gray-900">
                     {kindtao_profile.expected_salary_range}
-                  </span>
+                  </p>
                 </Card>
               )}
             </div>
 
-            {/* Rating & Reviews */}
+            {(kindtao_profile.skills?.length ||
+              kindtao_profile.languages?.length) && (
+              <div className="grid gap-6 md:grid-cols-2">
+                {kindtao_profile.skills &&
+                  kindtao_profile.skills.length > 0 && (
+                    <Card className="p-5">
+                      <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg font-semibold text-gray-900">
+                          Skills
+                        </h2>
+                        <span className="text-sm text-gray-500">
+                          {kindtao_profile.skills.length} listed
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {kindtao_profile.skills.map((skill, index) => (
+                          <Chip key={index}>{formatSkill(skill)}</Chip>
+                        ))}
+                      </div>
+                    </Card>
+                  )}
+
+                {kindtao_profile.languages &&
+                  kindtao_profile.languages.length > 0 && (
+                    <Card className="p-5">
+                      <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg font-semibold text-gray-900">
+                          Languages
+                        </h2>
+                        <span className="text-sm text-gray-500">
+                          {kindtao_profile.languages.length} listed
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {kindtao_profile.languages.map((language, index) => (
+                          <Chip key={index}>{capitalizeWords(language)}</Chip>
+                        ))}
+                      </div>
+                    </Card>
+                  )}
+              </div>
+            )}
+
             {(kindtao_profile.rating ||
               (kindtao_profile.reviews &&
                 kindtao_profile.reviews.length > 0)) && (
-              <Card>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                  Rating & Reviews
-                </h2>
-                {kindtao_profile.rating && (
-                  <div className="mb-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl font-bold text-yellow-500">
-                        {kindtao_profile.rating.toFixed(1)}
-                      </span>
-                      <div className="flex">
-                        {[...Array(5)].map((_, i) => (
-                          <span
-                            key={i}
-                            className={`text-lg ${
-                              i < Math.floor(kindtao_profile.rating!)
-                                ? "text-yellow-400"
-                                : "text-gray-300"
-                            }`}
-                          >
-                            ★
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {kindtao_profile.reviews &&
-                  kindtao_profile.reviews.length > 0 && (
+              <Card className="p-5">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  {kindtao_profile.rating && (
                     <div>
-                      <h3 className="font-medium text-gray-900 mb-2">
-                        Recent Reviews
-                      </h3>
-                      <div className="space-y-2">
-                        {kindtao_profile.reviews
-                          .slice(0, 3)
-                          .map((review, index) => (
-                            <p
-                              key={index}
-                              className="text-sm text-gray-600 bg-gray-50 p-3 rounded"
-                            >
-                              "{review}"
-                            </p>
-                          ))}
-                      </div>
+                      <p className="text-xs uppercase tracking-wide text-gray-500">
+                        Average rating
+                      </p>
+                      <p className="text-3xl font-semibold text-gray-900">
+                        {kindtao_profile.rating.toFixed(1)}
+                      </p>
                     </div>
                   )}
+                  {kindtao_profile.reviews &&
+                    kindtao_profile.reviews.length > 0 && (
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900 mb-3">
+                          Recent reviews
+                        </p>
+                        <div className="space-y-2">
+                          {kindtao_profile.reviews.slice(0, 3).map((review) => (
+                            <p
+                              key={review}
+                              className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg"
+                            >
+                              “{review}”
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                </div>
               </Card>
             )}
 
-            {/* Availability Schedule */}
-            {kindtao_profile.availability_schedule && (
-              <Card>
+            {availabilityBadges.length > 0 && (
+              <Card className="p-5">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                  Available Days
+                  Availability
                 </h2>
                 <div className="flex flex-wrap gap-2">
-                  {Object.entries(kindtao_profile.availability_schedule)
-                    .filter(([day, schedule]) => {
-                      const scheduleData = schedule as {
-                        available: boolean;
-                        hours?: [string, string];
-                      };
-                      return scheduleData.available;
-                    })
-                    .map(([day, schedule]) => {
-                      const scheduleData = schedule as {
-                        available: boolean;
-                        hours?: [string, string];
-                      };
-                      return (
-                        <div
-                          key={day}
-                          className="bg-gray-50 rounded-lg px-3 py-2"
-                        >
-                          <span className="font-medium text-gray-900 capitalize">
-                            {day}
-                          </span>
-                          {scheduleData.hours && (
-                            <span className="text-sm text-gray-600 ml-2">
-                              {scheduleData.hours[0]} - {scheduleData.hours[1]}
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
+                  {availabilityBadges.map((slot) => (
+                    <div
+                      key={slot.day}
+                      className="rounded-xl bg-gray-100 px-3 py-2 text-sm text-gray-700"
+                    >
+                      <span className="capitalize">{slot.day}</span>
+                      {slot.hours && (
+                        <span className="text-gray-500 ml-2">{slot.hours}</span>
+                      )}
+                    </div>
+                  ))}
                 </div>
-                {Object.entries(kindtao_profile.availability_schedule).filter(
-                  ([day, schedule]) => {
-                    const scheduleData = schedule as {
-                      available: boolean;
-                      hours?: [string, string];
-                    };
-                    return scheduleData.available;
-                  }
-                ).length === 0 && (
-                  <p className="text-gray-500 text-sm">No available days set</p>
-                )}
               </Card>
             )}
           </div>
         )}
 
-        {/* Work Experience Section */}
         {work_experiences && work_experiences.length > 0 && (
           <WorkExperienceSection
             workExperiences={work_experiences}
-            onUpdate={() => setRefreshTrigger((prev) => prev + 1)}
+            onUpdate={() => router.refresh()}
           />
         )}
 
-        {/* No KindTao Profile Message */}
         {!kindtao_profile && (
-          <Card>
-            <div className="text-center py-8">
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">
-                Complete Your KindTao Profile
-              </h2>
-              <p className="text-gray-600 mb-4">
-                Add your skills, languages, and other information to make your
-                profile more attractive to employers.
-              </p>
-              <Link
-                href="/kindtao-onboarding"
-                className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Complete Profile
-              </Link>
-            </div>
+          <Card className="p-8 text-center space-y-4">
+            <h2 className="text-xl font-semibold text-gray-900">
+              Complete your KindTao profile
+            </h2>
+            <p className="text-gray-600">
+              Add your skills, languages, salary expectations, and availability
+              so employers can understand your experience.
+            </p>
+            <Link
+              href="/kindtao-onboarding"
+              className="inline-flex items-center justify-center rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 transition-colors"
+            >
+              Go to onboarding
+            </Link>
           </Card>
         )}
       </div>
 
-      {/* Edit Profile Modal - Lazy Loaded */}
       {isEditModalOpen && (
         <Suspense
           fallback={
             <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
               <div className="bg-white rounded-lg p-6">
-                <div className="animate-pulse">
-                  <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/2 mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+                <div className="animate-pulse space-y-3">
+                  <div className="h-4 bg-gray-200 rounded w-32" />
+                  <div className="h-3 bg-gray-200 rounded w-48" />
+                  <div className="h-3 bg-gray-200 rounded w-24" />
                 </div>
               </div>
             </div>
@@ -616,27 +398,6 @@ export default function ProfileClient({ user }: ProfileClientProps) {
           />
         </Suspense>
       )}
-
-      {/* Subscription Modal */}
-      <SubscriptionModal
-        isOpen={isSubscriptionModalOpen}
-        onClose={() => {
-          setIsSubscriptionModalOpen(false);
-          loadBoostCredits();
-        }}
-        userRole="kindtao"
-      />
-
-      {/* Credit Purchase Modal */}
-      <CreditPurchaseModal
-        isOpen={isCreditPurchaseModalOpen}
-        onClose={() => {
-          setIsCreditPurchaseModalOpen(false);
-          loadBoostCredits();
-        }}
-        creditType="boost_credits"
-        currentCredits={boostCredits}
-      />
     </div>
   );
 }

@@ -1,14 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Dropdown from "@/components/dropdown/Dropdown";
-import { postJob } from "@/actions/jobs/post-job";
-import { updateJob } from "@/actions/jobs/update-job";
+import { postJob, updateJob, boostJob } from "@/actions/jobs";
 import { FaTimes, FaPlus, FaTimes as FaRemove } from "react-icons/fa";
 import PrimaryButton from "../buttons/PrimaryButton";
 import SecondaryButton from "../buttons/SecondaryButton";
@@ -22,7 +20,7 @@ import {
   getProvincesForRegion,
 } from "@/utils/regionMapping";
 import { useToastActions } from "@/stores/useToastStore";
-import { boostJob } from "@/actions/jobs/boost-job";
+import { logger } from "@/utils/logger";
 
 // Zod schema for form validation
 const jobFormSchema = z.object({
@@ -122,7 +120,6 @@ export default function PostJobModal({
   onJobPosted,
   editingJob,
 }: PostJobModalProps) {
-  const router = useRouter();
   const { showSuccess, showError } = useToastActions();
 
   // React Hook Form setup
@@ -383,13 +380,13 @@ export default function PostJobModal({
       if (data.results && data.results.length > 0) {
         const { lat, lng } = data.results[0].location;
         setLocationCoordinates({ lat, lng });
-        console.log("Geocoded location:", { lat, lng });
+        logger.debug("Geocoded location:", { lat, lng });
       } else {
-        console.warn("No coordinates found for location:", address);
+        logger.warn("No coordinates found for location:", { address });
         setLocationCoordinates(null);
       }
     } catch (error) {
-      console.error("Geocoding error:", error);
+      logger.error("Geocoding error:", error);
       setLocationCoordinates(null);
     } finally {
       setIsGeocoding(false);
@@ -533,7 +530,7 @@ export default function PostJobModal({
             if (!boostResult.success) {
               showError(
                 boostResult.error ||
-                  "Unable to boost job now. You can boost it from My Jobs."
+                  "Unable to boost job now. You can boost it from Job Posts."
               );
             } else {
               showSuccess("Job boosted successfully!");
@@ -542,16 +539,15 @@ export default function PostJobModal({
         }
       } catch (e) {
         // Non-fatal: posting worked; boosting failed
-        console.error("Boost on post failed:", e);
-        showError("Boost attempt failed. You can boost it from My Jobs.");
+        logger.error("Boost on post failed:", e);
+        showError("Boost attempt failed. You can boost it from Job Posts.");
       }
 
-      // Close modal and navigate
+      // Close modal and refresh
       onClose();
       onJobPosted?.();
-      router.push(`/my-jobs`);
     } catch (err) {
-      console.error("Failed to post job:", err);
+      logger.error("Failed to post job:", err);
       showError("Something went wrong while posting the job.");
     }
   };
@@ -590,10 +586,10 @@ export default function PostJobModal({
   return createPortal(
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/40 z-50" onClick={handleClose} />
+      <div className="fixed inset-0 bg-black/40 z-100" onClick={handleClose} />
 
       {/* Modal */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl border border-[#DFDFDF] shadow-lg w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200 shrink-0">
@@ -1030,7 +1026,7 @@ export default function PostJobModal({
                         type="checkbox"
                         checked={selectedDays.includes(day)}
                         onChange={() => toggleDay(day)}
-                        className="w-4 h-4 text-[#CC0000] border-gray-300 rounded focus:ring-[#CC0000]"
+                        className="w-4 h-4 accent-[#CC0000] border-gray-300 rounded focus:ring-[#CC0000]"
                       />
                       <span className="text-sm text-gray-700">{day}</span>
                     </label>
@@ -1087,8 +1083,8 @@ export default function PostJobModal({
                   {isSubmitting
                     ? "Processing..."
                     : editingJob
-                    ? "Update Job"
-                    : "Post Job"}
+                      ? "Update Job"
+                      : "Post Job"}
                 </PrimaryButton>
               </div>
             </div>

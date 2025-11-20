@@ -54,7 +54,7 @@ export default function Dropdown({
 
       {/* Dropdown options */}
       {expanded && !disabled && (
-        <div className="absolute mt-1 w-full max-h-60 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-md z-[60]">
+        <div className="absolute mt-1 w-full max-h-60 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-md z-60">
           {options.map((opt) => (
             <button
               key={opt}

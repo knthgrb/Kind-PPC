@@ -1,0 +1,154 @@
+---
+alwaysApply: true
+---
+
+# Logging Rules
+
+## General Rule
+
+**Always use the logger from `utils/logger.ts` instead of direct console methods.** The logger is environment-aware and filters logs appropriately based on the environment.
+
+## Import Statement
+
+```typescript
+import { logger } from "@/utils/logger";
+```
+
+## Log Levels and When to Use Them
+
+### `logger.error()`
+
+Use for **errors** that indicate failures or exceptional conditions:
+
+- API request failures
+- Database operation failures
+- Unhandled exceptions
+- Critical system errors
+- Authentication/authorization failures
+
+**Example:**
+
+```typescript
+try {
+  await saveUserData(data);
+} catch (error) {
+  logger.error("Failed to save user data:", error);
+  throw error;
+}
+```
+
+### `logger.warn()`
+
+Use for **warnings** about potentially problematic situations:
+
+- Deprecated API usage
+- Invalid input that was handled gracefully
+- Performance concerns
+- Missing optional data
+- Fallback behavior triggered
+
+**Example:**
+
+```typescript
+if (!user.preferences) {
+  logger.warn("User preferences not found, using defaults");
+  user.preferences = defaultPreferences;
+}
+```
+
+### `logger.info()`
+
+Use for **informational messages** about normal application flow:
+
+- Successful operations (important ones)
+- State changes
+- User actions (login, logout, etc.)
+- Business logic milestones
+- Configuration loaded
+
+**Example:**
+
+```typescript
+logger.info("User logged in successfully:", { userId: user.id });
+logger.info("Job application submitted:", { jobId, applicationId });
+```
+
+### `logger.debug()`
+
+Use for **detailed diagnostic information** useful during development:
+
+- Function entry/exit
+- Variable values
+- Detailed flow tracking
+- Intermediate calculation results
+- Detailed request/response data
+
+**Example:**
+
+```typescript
+logger.debug("Processing job match:", { jobId, userId, criteria });
+logger.debug("Filtered results:", { count: results.length, results });
+```
+
+## Best Practices
+
+1. **Never use `console.log()`, `console.error()`, `console.warn()`, or `console.info()` directly**
+
+   - Always use the logger from `utils/logger.ts`
+
+2. **Include context in log messages**
+
+   - Add relevant data objects to help with debugging
+   - Use structured logging when possible
+
+3. **Use appropriate log levels**
+
+   - Don't use `error` for expected conditions
+   - Don't use `debug` for important business events
+   - Reserve `warn` for recoverable issues
+
+4. **Log at the right level of abstraction**
+
+   - Log in service layers and actions, not in UI components
+   - Log errors at the point where they're caught and handled
+
+5. **Avoid logging sensitive information**
+   - Never log passwords, tokens, or PII in production
+   - Use `debug` level for detailed data that should only appear in development
+
+## Examples
+
+### Good Logging
+
+```typescript
+import { logger } from "@/utils/logger";
+
+// In a service
+export async function createJob(jobData: JobData) {
+  logger.debug("Creating job:", { title: jobData.title });
+
+  try {
+    const job = await db.jobs.create(jobData);
+    logger.info("Job created successfully:", { jobId: job.id });
+    return job;
+  } catch (error) {
+    logger.error("Failed to create job:", { error, jobData });
+    throw error;
+  }
+}
+```
+
+### Bad Logging
+
+```typescript
+// ❌ Don't use console methods directly
+console.log("Creating job");
+console.error("Error:", error);
+
+// ❌ Don't use wrong log levels
+logger.error("User preferences not found"); // Should be warn
+logger.debug("User logged in"); // Should be info
+
+// ❌ Don't log sensitive data
+logger.info("User password:", password); // Never log passwords
+```

@@ -1,68 +1,49 @@
 "use server";
 
-import { createClient } from "@/utils/supabase/server";
-
-export interface Document {
-  id: string;
-  created_at: string;
-  kindbossing_user_id: string;
-  file_url: string;
-  title: string;
-  size: number;
-  content_type: string | null;
-}
+import { getServerActionContext } from "@/utils/server-action-context";
+import { api } from "@/utils/convex/server";
+import { logger } from "@/utils/logger";
 
 export async function getDocuments(): Promise<{
   success: boolean;
-  data: Document[] | null;
-  error: string | null;
+  documents?: any[];
+  error?: string;
 }> {
   try {
-    const supabase = await createClient();
+    const { convex, user, error } = await getServerActionContext({
+      requireUser: true,
+    });
 
-    // Get the current user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return {
-        success: false,
-        data: null,
-        error: "Not authenticated. Please sign in and try again.",
-      };
+    if (error || !user) {
+      return { success: false, error: "Unauthorized" };
     }
 
-    // Fetch documents
-    const { data, error } = await supabase
-      .from("kindbossing_documents")
-      .select("*")
-      .eq("kindbossing_user_id", user.id)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("❌ Error fetching documents:", error);
-      return {
-        success: false,
-        data: null,
-        error: error.message,
-      };
+    if (!convex) {
+      return { success: false, error: "Database connection failed" };
     }
 
-    console.log("✅ Documents fetched successfully:", data);
-    return {
-      success: true,
-      data,
-      error: null,
-    };
-  } catch (error) {
-    console.error("❌ Unexpected error fetching documents:", error);
+    // Extract user ID
+    const userId =
+      (user as { userId?: string | null })?.userId ??
+      (user as { id?: string | null })?.id ??
+      (user as { _id?: string | null })?._id ??
+      null;
+
+    if (!userId) {
+      return { success: false, error: "User ID not found" };
+    }
+
+    const documents = await convex.query(api.documents.getKindBossingDocuments, {
+      userId,
+    });
+
+    return { success: true, documents: documents as any[] };
+  } catch (err) {
+    logger.error("Failed to get documents:", err);
     return {
       success: false,
-      data: null,
-      error:
-        error instanceof Error ? error.message : "Failed to fetch documents",
+      error: err instanceof Error ? err.message : "Failed to get documents",
     };
   }
 }
+

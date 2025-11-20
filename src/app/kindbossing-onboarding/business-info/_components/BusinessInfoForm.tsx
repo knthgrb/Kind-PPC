@@ -2,18 +2,20 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
-import { useAuthStore } from "@/stores/useAuthStore";
+import { useConvex } from "convex/react";
+import { api } from "@/utils/convex/client";
+import { useSession } from "@/lib/auth-client";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { logger } from "@/utils/logger";
 
 export default function BusinessInfoForm() {
   const [isLoading, setIsLoading] = useState(false);
-  const { user } = useAuthStore();
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const supabase = createClient();
+  const convex = useConvex();
+  const { data: session } = useSession();
 
   const formSchema = z.object({
     businessName: z.string().optional(),
@@ -105,55 +107,60 @@ export default function BusinessInfoForm() {
 
       const { lat, lon } = geocodeData[0];
 
-      const [{ error: userErr }, { error: kbErr }] = await Promise.all([
-        supabase
-          .from("users")
-          .update({
+      if (!session?.user?.id) {
+        throw new Error("No authenticated user");
+      }
+
+      const userId = session.user.id;
+
+      // Capitalize first letter of location fields
+      const capitalizedBarangay =
+        data.barangay.trim().charAt(0).toUpperCase() +
+        data.barangay.trim().slice(1);
+      const capitalizedMunicipality =
+        data.municipality.trim().charAt(0).toUpperCase() +
+        data.municipality.trim().slice(1);
+      const capitalizedProvince =
+        data.province.trim().charAt(0).toUpperCase() +
+        data.province.trim().slice(1);
+
+      // Update user and kindbossing in parallel
+      await Promise.all([
+        convex.mutation(api.users.updateUser, {
+          userId,
+          updates: {
             phone: formattedPhone,
-            barangay:
-              data.barangay.trim().charAt(0).toUpperCase() +
-              data.barangay.trim().slice(1),
-            municipality:
-              data.municipality.trim().charAt(0).toUpperCase() +
-              data.municipality.trim().slice(1),
-            province:
-              data.province.trim().charAt(0).toUpperCase() +
-              data.province.trim().slice(1),
-            zip_code: (data.zipCode ?? "").trim() || null,
-            location_coordinates: lat && lon ? `(${lon},${lat})` : null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", user!.id),
-        supabase.from("kindbossings").upsert(
-          {
-            id: crypto.randomUUID(),
-            user_id: user!.id,
-            business_name: (data.businessName ?? "").trim() || null,
+            barangay: capitalizedBarangay,
+            municipality: capitalizedMunicipality,
+            province: capitalizedProvince,
+            zip_code: data.zipCode ? Number(data.zipCode.trim()) : undefined,
+            location_coordinates:
+              lat && lon
+                ? {
+                    lat: parseFloat(lat),
+                    lng: parseFloat(lon),
+                  }
+                : undefined,
           },
-          { onConflict: "user_id" }
-        ),
+        }),
+        convex.mutation(api.kindbossings.upsertKindBossing, {
+          user_id: userId,
+          business_name:
+            (data.businessName ?? "").trim() || undefined,
+        }),
       ]);
 
-      if (userErr) {
-        console.error("Error updating users:", userErr);
-        setError("An error occurred. Please try again.");
-        return;
-      }
-      if (kbErr) {
-        console.error("Error upserting kindbossings:", kbErr);
-        setError("An error occurred. Please try again.");
-        return;
-      }
-
-      await supabase.auth.updateUser({
-        data: {
+      // Mark onboarding as complete
+      await convex.mutation(api.users.updateUser, {
+        userId,
+        updates: {
           has_completed_onboarding: true,
         },
       });
 
-      router.push("/my-jobs");
+      router.push("/my-job-posts");
     } catch (error) {
-      console.error("Error updating user data:", error);
+      logger.error("Error updating user data:", error);
       setError("An error occurred. Please try again.");
     } finally {
       setIsLoading(false);

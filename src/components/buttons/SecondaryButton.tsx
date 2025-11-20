@@ -19,7 +19,7 @@ export default function SecondaryButton({
   };
 
   const baseClasses =
-    "px-6 py-3 border cursor-pointer border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors";
+    "px-6 py-3 border cursor-pointer border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors";
   const sizeClass = sizeClasses[size];
   const combinedClassName = className
     ? `${baseClasses} ${sizeClass} ${className}`

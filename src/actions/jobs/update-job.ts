@@ -1,95 +1,113 @@
 "use server";
 
-import { createClient } from "@/utils/supabase/server";
-import { JobPostInput } from "@/types/jobPosts";
+import { getServerActionContext } from "@/utils/server-action-context";
+import { api } from "@/utils/convex/server";
 import { logger } from "@/utils/logger";
+import { JobPostInput } from "@/types/jobPosts";
 
-export async function updateJob(jobId: string, job: JobPostInput) {
+export async function updateJob(
+  jobId: string,
+  jobData: Partial<JobPostInput>
+): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = await createClient();
+    const { convex, user, error } = await getServerActionContext({
+      requireUser: true,
+    });
 
-    // Get current user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return {
-        success: false,
-        error: "Not authenticated",
-      };
+    if (error || !user) {
+      return { success: false, error: "Unauthorized" };
     }
 
-    // Verify job belongs to user
-    const { data: existingJob, error: jobError } = await supabase
-      .from("job_posts")
-      .select("kindbossing_user_id")
-      .eq("id", jobId)
-      .single();
-
-    if (jobError || !existingJob) {
-      return {
-        success: false,
-        error: "Job not found",
-      };
+    if (!convex) {
+      return { success: false, error: "Database connection failed" };
     }
 
-    if (existingJob.kindbossing_user_id !== user.id) {
-      return {
-        success: false,
-        error: "Unauthorized to modify this job",
-      };
+    // Extract user ID
+    const userId =
+      (user as { userId?: string | null })?.userId ??
+      (user as { id?: string | null })?.id ??
+      (user as { _id?: string | null })?._id ??
+      null;
+
+    if (!userId) {
+      return { success: false, error: "User ID not found" };
     }
 
-    const payload = {
-      job_title: job.job_title,
-      job_description: job.job_description,
-      location: job.location,
-      province: job.province,
-      region: job.region,
-      salary: job.salary,
-      job_type: job.job_type,
-      required_skills: job.required_skills,
-      work_schedule: job.work_schedule,
-      required_years_of_experience: job.required_years_of_experience,
-      preferred_languages: job.preferred_languages,
-      is_boosted: job.is_boosted,
-      boost_expires_at: job.boost_expires_at,
-      status: job.status,
-      // Enhanced matching fields
-      salary_min: job.salary_min,
-      salary_max: job.salary_max,
-      salary_type: job.salary_type,
-      location_coordinates: job.location_coordinates,
-      expires_at: job.expires_at,
-      updated_at: new Date().toISOString(),
-    };
+    // Verify the job belongs to the user
+    const existingJob = await convex.query(api.jobs.getJobById, {
+      jobId,
+    }) as any;
 
-    const { data, error } = await supabase
-      .from("job_posts")
-      .update(payload)
-      .eq("id", jobId)
-      .select("*")
-      .single();
-
-    if (error) {
-      logger.error("Error updating job:", error);
-      return {
-        success: false,
-        error: "Failed to update job",
-      };
+    if (!existingJob) {
+      return { success: false, error: "Job not found" };
     }
 
-    return {
-      success: true,
-      data,
-    };
-  } catch (error) {
-    logger.error("Unexpected error in updateJob:", error);
+    if (existingJob.kindbossing_user_id !== userId) {
+      return { success: false, error: "Unauthorized to update this job" };
+    }
+
+    // Parse location coordinates if provided
+    let locationCoordinates: { lat: number; lng: number } | undefined;
+    if (jobData.location_coordinates) {
+      try {
+        // Handle POINT format: POINT(lng lat)
+        const pointMatch = jobData.location_coordinates.match(
+          /POINT\(([^ ]+) ([^ ]+)\)/
+        );
+        if (pointMatch) {
+          locationCoordinates = {
+            lng: parseFloat(pointMatch[1]),
+            lat: parseFloat(pointMatch[2]),
+          };
+        } else {
+          // Try parsing as JSON
+          const parsed = JSON.parse(jobData.location_coordinates);
+          if (parsed.lat && parsed.lng) {
+            locationCoordinates = { lat: parsed.lat, lng: parsed.lng };
+          }
+        }
+      } catch (e) {
+        logger.warn("Failed to parse location coordinates:", e);
+      }
+    }
+
+    // Convert expires_at to timestamp if provided
+    const expiresAt = jobData.expires_at
+      ? new Date(jobData.expires_at).getTime()
+      : undefined;
+
+    await convex.mutation(api.jobs.updateJob, {
+      jobId: existingJob._id,
+      updates: {
+        job_title: jobData.job_title,
+        job_description: jobData.job_description,
+        required_skills: jobData.required_skills,
+        salary: jobData.salary,
+        salary_min: jobData.salary_min,
+        salary_max: jobData.salary_max,
+        salary_type: jobData.salary_type,
+        work_schedule: jobData.work_schedule,
+        required_years_of_experience: jobData.required_years_of_experience,
+        location: jobData.location,
+        location_coordinates: locationCoordinates,
+        preferred_languages: jobData.preferred_languages,
+        status: jobData.status,
+        job_type: jobData.job_type,
+        province: jobData.province,
+        region: jobData.region,
+        expires_at: expiresAt,
+      },
+    });
+
+    logger.info("Job updated successfully:", { jobId, userId });
+
+    return { success: true };
+  } catch (err) {
+    logger.error("Failed to update job:", err);
     return {
       success: false,
-      error: "An unexpected error occurred",
+      error: err instanceof Error ? err.message : "Failed to update job",
     };
   }
 }
+

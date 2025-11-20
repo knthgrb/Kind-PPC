@@ -9,7 +9,7 @@ import { z } from "zod";
 import { signup } from "@/actions/auth/signup";
 import { useParams } from "next/navigation";
 import { logger } from "@/utils/logger";
-import { AuthService } from "@/services/client/AuthService";
+import { AuthService } from "@/services/AuthService";
 import { Button } from "@/components/buttons";
 
 // Schema for validation
@@ -84,10 +84,33 @@ export default function SignUpPage() {
 
   // Add this function to handle Google OAuth
   const handleGoogleSignIn = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
     const { error } = await AuthService.signInWithGoogle(
       `${window.location.origin}/oauth/google/callback?role=${role}`
     );
-    if (error) logger.error("Error:", error);
+      
+      if (error) {
+        // Only log if error has a meaningful message
+        const errorMessage = error instanceof Error 
+          ? error.message 
+          : (error as any)?.message || String(error);
+        
+        if (errorMessage && errorMessage !== "{}" && errorMessage !== "[object Object]") {
+          logger.error("Google sign-in error:", error);
+          setError(errorMessage || "An error occurred during Google sign-in. Please try again.");
+        }
+        // Note: OAuth redirects the browser, so if there's no error message,
+        // the redirect likely succeeded and we don't need to show an error
+      }
+    } catch (err) {
+      logger.error("Google sign-in exception:", err);
+      setError("An error occurred during Google sign-in. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const roleTitle = role === "kindbossing" ? "kindBossing" : "kindTao";
@@ -112,7 +135,8 @@ export default function SignUpPage() {
         <button
           type="button"
           onClick={() => handleGoogleSignIn()}
-          className="w-full rounded-xl border cursor-pointer border-[#D8D8D8] h-12 px-4 flex items-center justify-center gap-3 mb-8 hover:bg-gray-50 transition-colors"
+          disabled={isLoading}
+          className="w-full rounded-xl border cursor-pointer border-[#D8D8D8] h-12 px-4 flex items-center justify-center gap-3 mb-8 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Image
             src="/icons/google_ic.png"
@@ -121,7 +145,9 @@ export default function SignUpPage() {
             alt="Google"
             priority
           />
-          <span className="registerInput">Continue with Google</span>
+          <span className="registerInput">
+            {isLoading ? "Signing in..." : "Continue with Google"}
+          </span>
         </button>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">

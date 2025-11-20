@@ -3,24 +3,13 @@ const nextConfig = {
   typescript: { ignoreBuildErrors: true },
   images: {
     remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "axnrfmgphcyffmeqzgbq.supabase.co",
-        port: "",
-        pathname: "/storage/v1/object/public/**",
-      },
-      {
-        protocol: "https",
-        hostname: "axnrfmgphcyffmeqzgbq.supabase.co",
-        port: "",
-        pathname: "/storage/v1/object/sign/**",
-      },
-      {
-        protocol: "https",
-        hostname: "axnrfmgphcyffmeqzgbq.supabase.co",
-        port: "",
-        pathname: "/storage/v1/render/image/public/**",
-      },
+      // Add your file storage domain here (e.g., Convex File Storage, S3, Cloudinary, etc.)
+      // Example for Convex:
+      // {
+      //   protocol: "https",
+      //   hostname: "*.convex.cloud",
+      //   pathname: "/api/storage/**",
+      // },
     ],
   },
   async headers() {

@@ -1,10 +1,16 @@
+"use client";
+
 import KindTaoOnboardingHeader from "./_components/KindTaoOnboardingHeader";
+import { useAuthSync } from "@/stores/useAuthStore";
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Sync auth state with Better Auth session
+  useAuthSync();
+
   return (
     <div className="h-screen overflow-hidden flex flex-col">
       <KindTaoOnboardingHeader />

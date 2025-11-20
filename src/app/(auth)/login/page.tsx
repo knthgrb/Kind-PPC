@@ -6,11 +6,11 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { createClient } from "@/utils/supabase/client";
 import { logger } from "@/utils/logger";
-import { AuthService } from "@/services/client/AuthService";
+import { AuthService } from "@/services/AuthService";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/buttons";
+import { authClient } from "@/lib/auth-client";
 
 // Schema for validation
 const loginSchema = z.object({
@@ -45,37 +45,87 @@ export default function LoginPage() {
     }
   };
 
+  const routeAfterLogin = async () => {
+    try {
+      const response = await fetch("/api/users/me", {
+        method: "GET",
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        router.replace("/recs");
+        return;
+      }
+
+      const payload = await response.json();
+      const user = payload.user;
+
+      if (!user?.role) {
+        router.replace("/select-role");
+        return;
+      }
+
+      if (user.role === "kindbossing") {
+        const target = user.has_completed_onboarding
+          ? "/my-job-posts"
+          : "/kindbossing-onboarding/business-info";
+        router.replace(target);
+        return;
+      }
+
+      if (user.role === "kindtao") {
+        const target = user.has_completed_onboarding
+          ? "/recs"
+          : "/kindtao-onboarding";
+        router.replace(target);
+        return;
+      }
+
+      if (user.role === "admin") {
+        router.replace("/admin");
+        return;
+      }
+
+      router.replace("/");
+    } catch (apiError) {
+      logger.error("Failed to determine role after login:", apiError);
+      router.replace("/recs");
+    }
+  };
+
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     setError(null);
     setErrorType(null);
 
     try {
-      // Use client-side authentication so AuthProvider can detect the session change
-      const supabase = createClient();
-      const { data: authData, error: authError } =
-        await supabase.auth.signInWithPassword({
-          email: data.email,
-          password: data.password,
-        });
+      // Use Better Auth client for sign in
+      const result = await authClient.signIn.email({
+        email: data.email,
+        password: data.password,
+      });
 
-      if (authError) {
-        if (authError.message === "Email not confirmed") {
+      if (result.error) {
+        if (result.error.message?.includes("email not verified") || result.error.message?.includes("Email not confirmed")) {
           setError(
             "Email not confirmed! Please check your email and click the confirmation link before logging in."
           );
           setErrorType("email_not_confirmed");
         } else {
           setError(
-            authError.message ||
+            result.error.message ||
               "An error occurred during login. Please try again."
           );
           setErrorType("general_error");
         }
         return;
       }
+      
+      // Refresh to update auth state
       router.refresh();
+      await routeAfterLogin();
     } catch (err) {
+      logger.error("Login error:", err);
       setError("An error occurred during login. Please try again.");
       setErrorType("general_error");
     } finally {
@@ -85,10 +135,36 @@ export default function LoginPage() {
 
   // Add this function to handle Google OAuth
   const handleGoogleSignIn = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      setErrorType(null);
+      
     const { error } = await AuthService.signInWithGoogle(
       `${window.location.origin}/oauth/google/callback`
     );
-    if (error) logger.error("Error:", error);
+      
+      if (error) {
+        // Only log if error has a meaningful message
+        const errorMessage = error instanceof Error 
+          ? error.message 
+          : (error as any)?.message || String(error);
+        
+        if (errorMessage && errorMessage !== "{}" && errorMessage !== "[object Object]") {
+          logger.error("Google sign-in error:", error);
+          setError(errorMessage || "An error occurred during Google sign-in. Please try again.");
+          setErrorType("general_error");
+        }
+        // Note: OAuth redirects the browser, so if there's no error message,
+        // the redirect likely succeeded and we don't need to show an error
+      }
+    } catch (err) {
+      logger.error("Google sign-in exception:", err);
+      setError("An error occurred during Google sign-in. Please try again.");
+      setErrorType("general_error");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -111,7 +187,8 @@ export default function LoginPage() {
         <button
           type="button"
           onClick={handleGoogleSignIn}
-          className="w-full rounded-xl border cursor-pointer border-[#D8D8D8] hover:bg-gray-50 h-12 px-4 flex items-center justify-center gap-3 mb-8"
+          disabled={isLoading}
+          className="w-full rounded-xl border cursor-pointer border-[#D8D8D8] hover:bg-gray-50 h-12 px-4 flex items-center justify-center gap-3 mb-8 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Image
             src="/icons/google_ic.png"
@@ -120,7 +197,9 @@ export default function LoginPage() {
             alt="Google"
             priority
           />
-          <h2 className="loginInput">Continue with Google</h2>
+          <h2 className="loginInput">
+            {isLoading ? "Signing in..." : "Continue with Google"}
+          </h2>
         </button>
 
         {/* Login Form */}

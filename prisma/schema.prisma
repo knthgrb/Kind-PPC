@@ -1,0 +1,15 @@
+// This schema is for Better Auth only
+// All application data is stored in Convex
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // Change to "sqlite" for local development
+  url      = env("DATABASE_URL")
+}
+
+// Better Auth required tables - these will be auto-created by Better Auth
+// This is a minimal schema - Better Auth will handle the actual table structure
+

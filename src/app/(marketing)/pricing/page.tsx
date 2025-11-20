@@ -58,7 +58,7 @@ export default function Pricing() {
             <div className="relative inline-flex rounded-full border border-gray-300 bg-gray-100 p-1">
               <button
                 onClick={() => setSelectedRole("kindbossing")}
-                className={`relative px-6 py-2.5 text-sm font-medium transition-all duration-300 rounded-full ${
+                className={`relative cursor-pointer px-6 py-2.5 text-sm font-medium transition-all duration-300 rounded-full ${
                   selectedRole === "kindbossing"
                     ? "bg-white text-gray-900 shadow-sm"
                     : "text-gray-600"
@@ -68,7 +68,7 @@ export default function Pricing() {
               </button>
               <button
                 onClick={() => setSelectedRole("kindtao")}
-                className={`relative px-6 py-2.5 text-sm font-medium transition-all duration-300 rounded-full ${
+                className={`relative cursor-pointer px-6 py-2.5 text-sm font-medium transition-all duration-300 rounded-full ${
                   selectedRole === "kindtao"
                     ? "bg-white text-gray-900 shadow-sm"
                     : "text-gray-600"

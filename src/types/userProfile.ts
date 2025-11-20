@@ -25,6 +25,8 @@ export type UserProfile = {
     rating: number | null;
     reviews: string[] | null;
     is_verified: boolean | null;
+    is_boosted?: boolean | null;
+    boost_expires_at?: number | null;
   } | null;
   work_experiences?: WorkExperience[];
 };

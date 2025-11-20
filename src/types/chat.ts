@@ -31,8 +31,9 @@ export interface Match {
   kindtao_user_id: string;
   job_post_id: string;
   matched_at: string;
-  is_active: boolean;
   created_at: string;
+  is_opened_by_kindbossing?: boolean;
+  is_opened_by_kindtao?: boolean;
 }
 
 export interface JobPost {

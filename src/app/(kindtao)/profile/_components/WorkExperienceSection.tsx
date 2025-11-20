@@ -6,8 +6,10 @@ import Card from "@/components/common/Card";
 import Chip from "@/components/common/Chip";
 import { IoAdd, IoCreateOutline, IoTrashOutline } from "react-icons/io5";
 import { capitalizeWords } from "@/utils/capitalize";
-import WorkExperienceModal from "./WorkExperienceModal";
-
+import dynamic from "next/dynamic";
+const WorkExperienceModal = dynamic(() => import("./WorkExperienceModal"), {
+  ssr: false,
+});
 interface WorkExperienceSectionProps {
   workExperiences: WorkExperience[];
   onUpdate: () => void;
@@ -73,7 +75,7 @@ export default function WorkExperienceSection({
           </h2>
           <button
             onClick={handleAdd}
-            className="flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 bg-gray-100 text-gray-900 hover:bg-gray-200 transition-colors text-sm font-medium"
           >
             <IoAdd className="w-4 h-4" />
             Add Experience

@@ -1,85 +1,39 @@
 "use server";
 
-import { createClient } from "@/utils/supabase/server";
-import { revalidatePath } from "next/cache";
+import { getServerActionContext } from "@/utils/server-action-context";
+import { api } from "@/utils/convex/server";
+import { logger } from "@/utils/logger";
+import { Id } from "@/convex/_generated/dataModel";
 
 export async function deleteDocument(
   documentId: string
-): Promise<{ success: boolean; error: string | null }> {
+): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = await createClient();
+    const { convex, user, error } = await getServerActionContext({
+      requireUser: true,
+    });
 
-    // Get the current user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return {
-        success: false,
-        error: "Not authenticated. Please sign in and try again.",
-      };
+    if (error || !user) {
+      return { success: false, error: "Unauthorized" };
     }
 
-    // Get document details to verify ownership and get file path
-    const { data: document, error: fetchError } = await supabase
-      .from("kindbossing_documents")
-      .select("*")
-      .eq("id", documentId)
-      .eq("kindbossing_user_id", user.id)
-      .single();
-
-    if (fetchError || !document) {
-      return {
-        success: false,
-        error: "Document not found or you don't have permission to delete it.",
-      };
+    if (!convex) {
+      return { success: false, error: "Database connection failed" };
     }
 
-    // Extract file path from URL
-    const urlParts = document.file_url.split("/");
-    const filePath = urlParts
-      .slice(urlParts.indexOf("kindbossing-documents") + 1)
-      .join("/");
+    await convex.mutation(api.documents.deleteKindBossingDocument, {
+      documentId: documentId as Id<"kindbossing_documents">,
+    });
 
-    // Delete file from storage
-    const { error: deleteStorageError } = await supabase.storage
-      .from("kindbossing-documents")
-      .remove([filePath]);
+    logger.info("Document deleted successfully:", { documentId });
 
-    if (deleteStorageError) {
-      console.error("❌ Error deleting file from storage:", deleteStorageError);
-      // Continue with database deletion even if storage deletion fails
-    }
-
-    // Delete from database
-    const { error: deleteError } = await supabase
-      .from("kindbossing_documents")
-      .delete()
-      .eq("id", documentId)
-      .eq("kindbossing_user_id", user.id);
-
-    if (deleteError) {
-      console.error("❌ Error deleting document from database:", deleteError);
-      return {
-        success: false,
-        error: deleteError.message,
-      };
-    }
-
-    revalidatePath("/documents");
-    console.log("✅ Document deleted successfully");
-    return {
-      success: true,
-      error: null,
-    };
-  } catch (error) {
-    console.error("❌ Unexpected error deleting document:", error);
+    return { success: true };
+  } catch (err) {
+    logger.error("Failed to delete document:", err);
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Failed to delete document",
+      error: err instanceof Error ? err.message : "Failed to delete document",
     };
   }
 }
+

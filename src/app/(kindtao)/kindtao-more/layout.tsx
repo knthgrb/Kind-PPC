@@ -1,17 +1,18 @@
-import "@/styles/globals.css";
-import KindTaoHeader from "../_components/KindTaoHeader";
-import KindTaoBottomTabs from "../_components/KindTaoBottomTabs";
+import React from "react";
+import KindTaoHeader from "@/app/(kindtao)/_components/KindTaoHeader";
+import KindTaoBottomTabs from "@/app/(kindtao)/_components/KindTaoBottomTabs";
 
-export default function RootLayout({
+export default function KindTaoMoreLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <>
       <KindTaoHeader />
-      <div className="pb-20 md:pb-24">{children}</div>
+      <div className="pb-16">{children}</div>
       <KindTaoBottomTabs />
     </>
   );
 }
+

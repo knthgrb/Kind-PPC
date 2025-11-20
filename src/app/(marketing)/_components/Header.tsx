@@ -1,21 +1,17 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FiMenu, FiX, FiUser, FiLogOut, FiBarChart2 } from "react-icons/fi";
+import { FiMenu, FiX } from "react-icons/fi";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/buttons";
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const { user, loading, signOut, isAuthenticated } = useAuthStore();
-  const userMenuRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
-  const [userDisplayName, setUserDisplayName] = useState("");
+  const { user, isAuthenticated } = useAuthStore();
   const pathname = usePathname();
+  const userRole = user?.role;
 
   // Helper function to check if a path is active
   const isActive = (path: string) => {
@@ -32,58 +28,6 @@ export default function Header() {
   ) => {
     return `${baseClasses} ${isActive(path) ? "text-red-600" : ""}`;
   };
-
-  const handleSignOut = async () => {
-    await signOut();
-    setUserMenuOpen(false);
-    setMenuOpen(false);
-    router.push("/login");
-  };
-
-  useEffect(() => {
-    const getUserDisplayName = () => {
-      // Prioritize full name like on profile page
-      if (user?.user_metadata?.first_name && user?.user_metadata?.last_name) {
-        setUserDisplayName(
-          `${user.user_metadata.first_name} ${user.user_metadata.last_name}`
-        );
-        return;
-      }
-      if (user?.user_metadata?.first_name) {
-        setUserDisplayName(user.user_metadata.first_name);
-        return;
-      }
-
-      // Fallback to user email if metadata is still loading
-      if (user?.email) {
-        setUserDisplayName(user.email.split("@")[0]);
-        return;
-      }
-
-      setUserDisplayName("User");
-    };
-    getUserDisplayName();
-  }, [user]);
-
-  // Close user menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        userMenuRef.current &&
-        !userMenuRef.current.contains(event.target as Node)
-      ) {
-        setUserMenuOpen(false);
-      }
-    };
-
-    if (userMenuOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [userMenuOpen]);
 
   return (
     <header className="bg-white sticky top-0 z-50">
@@ -110,22 +54,35 @@ export default function Header() {
           <Link href="/pricing" className={getLinkClasses("/pricing")}>
             Pricing
           </Link>
-          <Link href="/contact-us" className={getLinkClasses("/contact-us")}>
-            Contact Us
+          <Link href="/support" className={getLinkClasses("/support")}>
+            Support
           </Link>
         </nav>
 
-        <div className="hidden lg:flex space-x-4">
-          <Link href="/signup">
-            <Button variant="secondary" size="md" className="w-30">
-              Sign Up
-            </Button>
-          </Link>
-          <Link href="/login">
-            <Button variant="primary" size="md" className="w-30">
-              Login
-            </Button>
-          </Link>
+        <div className="hidden lg:flex items-center space-x-4">
+          {isAuthenticated && userRole ? (
+            <Link
+              href={userRole === "kindbossing" ? "/my-job-posts" : "/recs"}
+              className="w-40"
+            >
+              <Button variant="primary" size="md" className="w-full">
+                {userRole === "kindbossing" ? "Go to Job Posts" : "Find Jobs"}
+              </Button>
+            </Link>
+          ) : (
+            <>
+              <Link href="/signup" className="inline-block">
+                <Button variant="secondary" size="md" className="w-32">
+                  Sign Up
+                </Button>
+              </Link>
+              <Link href="/login" className="inline-block">
+                <Button variant="primary" size="md" className="w-32">
+                  Login
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -209,24 +166,38 @@ export default function Header() {
           </Link>
         </nav>
         <div className="bg-red-600 mt-auto p-6 border-t border-gray-200 flex flex-col gap-3">
-          <Link
-            href="/signup"
-            onClick={() => setMenuOpen(false)}
-            className="w-full"
-          >
-            <Button variant="secondary" size="lg" fullWidth>
-              Sign Up
-            </Button>
-          </Link>
-          <Link
-            href="/login"
-            onClick={() => setMenuOpen(false)}
-            className="w-full"
-          >
-            <Button variant="primary" size="lg" fullWidth>
-              Login
-            </Button>
-          </Link>
+          {isAuthenticated && userRole ? (
+            <Link
+              href={userRole === "kindbossing" ? "/my-job-posts" : "/recs"}
+              onClick={() => setMenuOpen(false)}
+              className="w-full"
+            >
+              <Button variant="primary" size="lg" fullWidth>
+                {userRole === "kindbossing" ? "Go to Job Posts" : "Find Jobs"}
+              </Button>
+            </Link>
+          ) : (
+            <>
+              <Link
+                href="/signup"
+                onClick={() => setMenuOpen(false)}
+                className="w-full"
+              >
+                <Button variant="secondary" size="lg" fullWidth>
+                  Sign Up
+                </Button>
+              </Link>
+              <Link
+                href="/login"
+                onClick={() => setMenuOpen(false)}
+                className="w-full"
+              >
+                <Button variant="primary" size="lg" fullWidth>
+                  Login
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>

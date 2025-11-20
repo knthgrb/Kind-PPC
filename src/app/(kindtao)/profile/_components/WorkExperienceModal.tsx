@@ -2,9 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import { WorkExperience, WorkExperienceFormData } from "@/types/workExperience";
-import { createClient } from "@/utils/supabase/client";
 import { useToastActions } from "@/stores/useToastStore";
 import { IoClose, IoCloudUploadOutline } from "react-icons/io5";
+import { saveWorkExperience } from "@/actions/work-experience/save-work-experience";
+import { addWorkExperienceAttachment } from "@/actions/work-experience/add-attachment";
+import { convex, api } from "@/utils/convex/client";
+import { extractStorageIdFromResponse } from "@/utils/convex/storage";
 
 interface WorkExperienceModalProps {
   isOpen: boolean;
@@ -106,86 +109,82 @@ export default function WorkExperienceModal({
     }));
   };
 
+  const uploadAttachments = async (experienceId: string) => {
+    if (!formData.attachments || formData.attachments.length === 0) {
+      return;
+    }
+
+    for (const file of formData.attachments) {
+      const uploadUrl = await convex.mutation(api.storage.generateUploadUrl);
+      const uploadResult = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+
+      if (!uploadResult.ok) {
+        throw new Error(`Failed to upload ${file.name}`);
+      }
+
+      const storageId = await extractStorageIdFromResponse(uploadResult);
+      const fileUrl =
+        (await convex.query(api.storage.getFileUrl, {
+          storageId: storageId as any,
+        })) || storageId;
+
+      const attachmentResult = await addWorkExperienceAttachment({
+        kindtao_work_experience_id: experienceId,
+        file_url: fileUrl,
+        title: file.name,
+        size: file.size,
+        content_type: file.type,
+      });
+
+      if (!attachmentResult.success) {
+        throw new Error(attachmentResult.error || "Failed to save attachment");
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const supabase = createClient();
+      const result = await saveWorkExperience({
+        experienceId:
+          (experience as { id?: string })?.id ||
+          (experience as { _id?: string })?._id,
+        employer: formData.employer,
+        job_title: formData.job_title,
+        is_current_job: formData.is_current_job,
+        start_date: formData.start_date,
+        end_date: formData.is_current_job ? undefined : formData.end_date,
+        location: formData.location,
+        skills_used: formData.skills_used,
+        notes: formData.notes,
+        description: formData.description,
+      });
 
-      if (experience) {
-        // Update existing experience
-        const { error } = await supabase
-          .from("kindtao_work_experiences")
-          .update({
-            employer: formData.employer,
-            job_title: formData.job_title,
-            is_current_job: formData.is_current_job,
-            start_date: formData.start_date,
-            end_date: formData.is_current_job ? null : formData.end_date,
-            location: formData.location,
-            skills_used: formData.skills_used,
-            notes: formData.notes,
-            description: formData.description,
-          })
-          .eq("id", experience.id);
-
-        if (error) throw error;
-      } else {
-        // Create new experience
-        const { data: newExperience, error } = await supabase
-          .from("kindtao_work_experiences")
-          .insert({
-            employer: formData.employer,
-            job_title: formData.job_title,
-            is_current_job: formData.is_current_job,
-            start_date: formData.start_date,
-            end_date: formData.is_current_job ? null : formData.end_date,
-            location: formData.location,
-            skills_used: formData.skills_used,
-            notes: formData.notes,
-            description: formData.description,
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-
-        // Handle file uploads
-        if (formData.attachments.length > 0 && newExperience) {
-          for (const file of formData.attachments) {
-            const fileExt = file.name.split(".").pop();
-            const fileName = `${Date.now()}-${Math.random()
-              .toString(36)
-              .substring(2)}.${fileExt}`;
-            const filePath = `work-experience-attachments/${newExperience.id}/${fileName}`;
-
-            const { error: uploadError } = await supabase.storage
-              .from("documents")
-              .upload(filePath, file);
-
-            if (uploadError) throw uploadError;
-
-            const {
-              data: { publicUrl },
-            } = supabase.storage.from("documents").getPublicUrl(filePath);
-
-            await supabase.from("kindtao_work_experience_attachments").insert({
-              kindtao_work_experience_id: newExperience.id,
-              file_url: publicUrl,
-              title: file.name,
-              size: file.size,
-              content_type: file.type,
-            });
-          }
-        }
+      if (!result.success || !result.experienceId) {
+        throw new Error(result.error || "Failed to save work experience");
       }
 
-      showSuccess(experience ? "Work experience updated" : "Work experience added");
+      if (formData.attachments && formData.attachments.length > 0) {
+        await uploadAttachments(result.experienceId);
+      }
+
+      showSuccess(
+        experience ? "Work experience updated" : "Work experience added"
+      );
       onSave();
     } catch (error) {
       console.error("Error saving work experience:", error);
-      showError("Failed to save work experience");
+      showError(
+        error instanceof Error
+          ? error.message
+          : "Failed to save work experience"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -419,8 +418,8 @@ export default function WorkExperienceModal({
               {isLoading
                 ? "Saving..."
                 : experience
-                ? "Update"
-                : "Add Experience"}
+                  ? "Update"
+                  : "Add Experience"}
             </button>
           </div>
         </form>

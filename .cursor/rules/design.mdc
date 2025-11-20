@@ -1,0 +1,160 @@
+---
+alwaysApply: true
+---
+
+# Apple Design Principles
+
+## General Rule
+
+**Always follow Apple's Human Interface Guidelines and design principles.** Create interfaces that are modern, clean, simple, and aesthetically pleasing while prioritizing clarity and usability.
+
+## Core Design Principles
+
+### 1. Clarity
+
+- Use clear, legible text with appropriate font sizes
+- Ensure icons and images are crisp and meaningful
+- Make interactive elements obvious and discoverable
+- Use clear visual hierarchy to guide user attention
+
+### 2. Deference
+
+- UI should defer to content, not compete with it
+- Minimize chrome and unnecessary UI elements
+- Use subtle backgrounds and borders
+- Let content be the hero
+
+### 3. Depth
+
+- Use subtle shadows and layering to create visual hierarchy
+- Implement smooth transitions and animations
+- Create a sense of depth through elevation and z-index
+- Use blur effects (backdrop-filter) sparingly and appropriately
+
+### 4. Simplicity
+
+- Keep interfaces clean and uncluttered
+- Remove unnecessary elements
+- Use whitespace generously
+- One primary action per screen when possible
+
+## Visual Design Guidelines
+
+### Spacing & Layout
+
+- Use generous padding and margins (minimum 16px, prefer 20-24px for major sections)
+- Maintain consistent spacing scale (4px, 8px, 12px, 16px, 20px, 24px, 32px, 48px)
+- Use grid-based layouts with proper alignment
+- Ensure touch targets are at least 44x44px
+
+### Typography
+
+- Prefer system fonts (SF Pro on Apple devices, system-ui fallback)
+- Use clear font hierarchy (headings, body, captions)
+- Maintain readable line heights (1.5-1.6 for body text)
+- Use appropriate font weights (regular, medium, semibold)
+
+### Colors
+
+- Use subtle, refined color palettes
+- Prefer neutral backgrounds (whites, light grays)
+- Use color purposefully and sparingly
+- Ensure sufficient contrast for accessibility (WCAG AA minimum)
+- Use semantic colors (success, warning, error) consistently
+
+### Borders & Shadows
+
+- Use subtle borders (1px, light colors)
+- Prefer rounded corners (8px, 12px, 16px for cards/buttons)
+- Use soft shadows sparingly (subtle elevation)
+- Avoid heavy borders and harsh shadows
+
+### Animations & Transitions
+
+- Keep animations smooth and purposeful (200-300ms typical)
+- Use easing functions (ease-in-out, ease-out)
+- Animate properties that affect layout sparingly
+- Provide reduced motion support when appropriate
+
+## Component Design
+
+### Buttons
+
+- Use rounded corners (8-12px)
+- Generous padding (12-16px vertical, 20-24px horizontal)
+- Clear visual states (default, hover, active, disabled)
+- Primary actions should be prominent but not overwhelming
+
+### Cards & Containers
+
+- Use subtle backgrounds and borders
+- Generous padding (16-24px)
+- Rounded corners (12-16px)
+- Subtle shadows for elevation when needed
+
+### Forms
+
+- Clear labels and placeholders
+- Generous input padding
+- Clear focus states
+- Helpful error messages
+- Logical grouping of related fields
+
+### Navigation
+
+- Clear, consistent navigation patterns
+- Obvious active states
+- Smooth transitions between views
+- Breadcrumbs or clear hierarchy indicators
+
+## Implementation Guidelines
+
+### CSS/Tailwind Classes
+
+- Prefer Tailwind's spacing scale
+- Use `rounded-lg` (8px), `rounded-xl` (12px), `rounded-2xl` (16px)
+- Use subtle shadows: `shadow-sm`, `shadow-md` (avoid heavy shadows)
+- Use `backdrop-blur` sparingly for modern glass effects
+- Prefer `transition-all duration-200 ease-in-out` for smooth animations
+
+### Color Usage
+
+- Use neutral grays for backgrounds: `bg-gray-50`, `bg-white`
+- Use subtle borders: `border-gray-200`, `border-gray-300`
+- Use color purposefully: primary brand color for CTAs, semantic colors for states
+- Avoid overly saturated colors
+
+### Spacing
+
+- Use consistent spacing: `p-4` (16px), `p-5` (20px), `p-6` (24px)
+- Maintain breathing room between elements
+- Group related elements with consistent spacing
+
+## Examples
+
+### Good Design
+
+- Clean, spacious layouts with generous whitespace
+- Subtle shadows and rounded corners
+- Smooth, purposeful animations
+- Clear visual hierarchy
+- Content-first approach
+- Consistent spacing and alignment
+
+### Bad Design
+
+- Cluttered interfaces with too many elements
+- Heavy borders and harsh shadows
+- Jarring or unnecessary animations
+- Unclear visual hierarchy
+- UI competing with content
+- Inconsistent spacing and alignment
+
+## Accessibility
+
+- Ensure sufficient color contrast (WCAG AA minimum)
+- Provide clear focus states
+- Support keyboard navigation
+- Use semantic HTML
+- Provide alternative text for images
+- Support reduced motion preferences

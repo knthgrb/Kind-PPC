@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { getSupabasePublicUrl } from "@/utils/supabaseStorage";
+import { getPublicUrl } from "@/utils/supabaseStorage";
 
 interface SupabaseImageProps {
   filePath: string | null;
@@ -33,7 +33,7 @@ export default function SupabaseImage({
 }: SupabaseImageProps) {
   const [isEnlarged, setIsEnlarged] = useState(false);
   // If no filePath or it's a placeholder path, use fallback
-  if (!filePath || filePath.startsWith('/')) {
+  if (!filePath || filePath.startsWith("/")) {
     return (
       <Image
         src={fallbackSrc}
@@ -47,11 +47,8 @@ export default function SupabaseImage({
     );
   }
 
-  // Generate public URL for Supabase Storage using the recommended method
-  const imageUrl = getSupabasePublicUrl(filePath);
-  
-  // Debug logging - remove this after testing
-  console.log('SupabaseImage - File path:', filePath, 'Generated URL:', imageUrl);
+  // Generate public URL for file storage
+  const imageUrl = getPublicUrl(filePath);
 
   // Temporarily use regular img tag to bypass Next.js Image optimization
   // TODO: Switch back to Next.js Image once the configuration is working
@@ -62,21 +59,19 @@ export default function SupabaseImage({
         alt={alt}
         width={width}
         height={height}
-        className={`${className} ${clickable ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+        className={`${className} ${clickable ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}`}
         onClick={clickable ? () => setIsEnlarged(true) : undefined}
         onError={(e) => {
-          console.error('SupabaseImage - Failed to load:', imageUrl);
           onError?.(e);
         }}
         onLoad={() => {
-          console.log('SupabaseImage - Successfully loaded:', imageUrl);
           onLoad?.();
         }}
       />
-      
+
       {/* Enlarged Image Modal */}
       {isEnlarged && clickable && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
           onClick={() => setIsEnlarged(false)}
         >

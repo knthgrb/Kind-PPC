@@ -10,7 +10,7 @@ const ToastContainer = () => {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-9999 space-y-2 flex flex-col items-center">
+    <div className="fixed top-4 right-4 z-[9999] space-y-2 flex flex-col items-end sm:right-6 sm:top-6">
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} />
       ))}

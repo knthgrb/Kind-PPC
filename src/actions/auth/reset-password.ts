@@ -1,7 +1,7 @@
 "use server";
 
 import { logger } from "@/utils/logger";
-import { AuthService } from "@/services/server/AuthService";
+import { AuthService } from "@/services/AuthService";
 
 export async function resetPassword(email: string) {
   try {

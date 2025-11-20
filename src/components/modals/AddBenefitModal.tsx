@@ -2,12 +2,17 @@
 
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import ContinueModal from "@/components/modals/ContinueModal";
 import Dropdown from "@/components/dropdown/Dropdown";
 import { FaTimes } from "react-icons/fa";
 import PrimaryButton from "../buttons/PrimaryButton";
 import SecondaryButton from "../buttons/SecondaryButton";
-
+import dynamic from "next/dynamic";
+const ContinueModal = dynamic(
+  () => import("@/components/modals/ContinueModal"),
+  {
+    ssr: false,
+  }
+);
 type AddBenefitModalProps = {
   isOpen: boolean;
   onClose: () => void;

@@ -2,13 +2,20 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { FaTimes } from "react-icons/fa";
+import { FaTimes, FaEnvelope, FaTrash } from "react-icons/fa";
 import { Employee } from "@/types/employee";
 import { UserProfile } from "@/types/userProfile";
-import { ProfileService } from "@/services/client/ProfileService";
+import { ProfileService } from "@/services/ProfileService";
+import { convex } from "@/utils/convex/client";
 import Card from "@/components/common/Card";
 import Chip from "@/components/common/Chip";
 import { capitalizeWords } from "@/utils/capitalize";
+import { getOrCreateConversation } from "@/actions/employees/get-or-create-conversation";
+import { removeEmployee } from "@/actions/employees/remove-employee";
+import { useRouter } from "next/navigation";
+import { useToastActions } from "@/stores/useToastStore";
+import { logger } from "@/utils/logger";
+import JobActionModal from "@/components/modals/JobActionModal";
 
 type EmployeeDetailModalProps = {
   isOpen: boolean;
@@ -23,10 +30,14 @@ export default function EmployeeDetailModal({
   employee,
   onEmployeeRemoved,
 }: EmployeeDetailModalProps) {
+  const router = useRouter();
+  const { showSuccess, showError } = useToastActions();
   const [kindtaoProfile, setKindtaoProfile] = useState<UserProfile | null>(
     null
   );
   const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showRemoveModal, setShowRemoveModal] = useState(false);
 
   useEffect(() => {
     if (isOpen && employee?.kindtao_user_id) {
@@ -40,11 +51,12 @@ export default function EmployeeDetailModal({
     setLoading(true);
     try {
       const profile = await ProfileService.getKindTaoProfileByUserId(
-        employee.kindtao_user_id
+        employee.kindtao_user_id,
+        convex
       );
       setKindtaoProfile(profile);
     } catch (error) {
-      console.error("Error loading KindTao profile:", error);
+      logger.error("Error loading KindTao profile:", error);
     } finally {
       setLoading(false);
     }
@@ -126,6 +138,52 @@ export default function EmployeeDetailModal({
     onClose();
   };
 
+  const handleMessage = async () => {
+    if (!employee?.kindtao_user_id) return;
+
+    setIsLoading(true);
+    try {
+      const result = await getOrCreateConversation(employee.kindtao_user_id);
+
+      if (result.success && result.conversationId) {
+        router.push(`/messages/${result.conversationId}`);
+        onClose();
+      } else {
+        showError(result.error || "Failed to start conversation with employee");
+      }
+    } catch (error) {
+      logger.error("Failed to message employee:", error);
+      showError("Failed to start conversation");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRemove = async () => {
+    if (!employee?.id) return;
+
+    setIsLoading(true);
+    try {
+      const result = await removeEmployee(employee.id);
+
+      if (result.success) {
+        showSuccess("Employee removed successfully");
+        setShowRemoveModal(false);
+        onClose();
+        if (onEmployeeRemoved) {
+          onEmployeeRemoved();
+        }
+      } else {
+        showError(result.error || "Failed to remove employee");
+      }
+    } catch (error) {
+      logger.error("Failed to remove employee:", error);
+      showError("Failed to remove employee");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return createPortal(
     <>
       {/* Backdrop */}
@@ -139,12 +197,30 @@ export default function EmployeeDetailModal({
             <h2 className="text-2xl font-bold text-gray-900">
               Employee Details
             </h2>
-            <button
-              onClick={handleClose}
-              className="p-2 cursor-pointer hover:bg-gray-100 rounded-full transition-colors"
-            >
-              <FaTimes className="w-5 h-5 text-gray-500" />
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleMessage}
+                disabled={isLoading}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors disabled:opacity-50"
+              >
+                <FaEnvelope className="w-4 h-4" />
+                Message
+              </button>
+              <button
+                onClick={() => setShowRemoveModal(true)}
+                disabled={isLoading}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-700 bg-red-100 rounded-lg hover:bg-red-200 transition-colors disabled:opacity-50"
+              >
+                <FaTrash className="w-4 h-4" />
+                Remove
+              </button>
+              <button
+                onClick={handleClose}
+                className="p-2 cursor-pointer hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <FaTimes className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
           </div>
 
           {/* Content */}
@@ -305,8 +381,8 @@ export default function EmployeeDetailModal({
                                 }
                               )}`
                             : exp.is_current_job
-                            ? " – Present"
-                            : ""}
+                              ? " – Present"
+                              : ""}
                         </div>
                         {exp.description && (
                           <div className="text-sm text-gray-700 mt-2">
@@ -400,6 +476,21 @@ export default function EmployeeDetailModal({
           </div>
         </div>
       </div>
+
+      {/* Remove Employee Confirmation Modal */}
+      <JobActionModal
+        isOpen={showRemoveModal}
+        onClose={() => setShowRemoveModal(false)}
+        onConfirm={handleRemove}
+        action="delete"
+        jobTitle={
+          employee?.kindtao?.user?.first_name &&
+          employee?.kindtao?.user?.last_name
+            ? `${employee.kindtao.user.first_name} ${employee.kindtao.user.last_name}`
+            : employee?.kindtao?.user?.email || "Employee"
+        }
+        isLoading={isLoading}
+      />
     </>,
     document.body
   );

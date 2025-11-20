@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { HiOutlineBell, HiX } from "react-icons/hi";
-import { NotificationService } from "@/services/client/NotificationService";
+import { NotificationService } from "@/services/NotificationService";
 import { useAuthStore } from "@/stores/useAuthStore";
 
 interface NotificationPromptProps {

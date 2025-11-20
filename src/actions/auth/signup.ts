@@ -1,9 +1,10 @@
 "use server";
 
-import { AuthService } from "@/services/server/AuthService";
+import { AuthService } from "@/services/AuthService";
 import { logger } from "@/utils/logger";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getServerActionContext } from "@/utils/server-action-context";
 
 export async function signup(formData: FormData) {
   const role = formData.get("role")!.toString() as "kindbossing" | "kindtao";
@@ -16,7 +17,17 @@ export async function signup(formData: FormData) {
     role: role,
   };
 
-  const result = await AuthService.signup(data);
+  const { convex, token } = await getServerActionContext();
+
+  if (!convex) {
+    logger.error("Signup attempted without auth context");
+    return {
+      success: false,
+      error: "Unable to sign up right now. Please try again.",
+    };
+  }
+
+  const result = await AuthService.signup(convex, token ?? null, data);
 
   if (result?.error) {
     logger.info("Signup error:", result?.error);
@@ -60,7 +71,7 @@ export async function signup(formData: FormData) {
       };
     }
 
-    // Handle Supabase auth errors
+    // Handle auth validation errors
     if (result?.error?.message?.includes("Password should be at least")) {
       return {
         success: false,
@@ -81,6 +92,17 @@ export async function signup(formData: FormData) {
         result?.error?.message ||
         "An unexpected error occurred. Please try again.",
     };
+  }
+
+  const verificationResult = await AuthService.sendVerificationEmail(
+    convex,
+    token,
+    data.email,
+    `/email-confirmation-callback?role=${data.role}`
+  );
+
+  if (verificationResult.error) {
+    logger.error("Failed to dispatch verification email:", verificationResult.error);
   }
 
   revalidatePath("/", "layout");

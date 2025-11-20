@@ -5,9 +5,11 @@ import "@/styles/globals.css";
 import InstallPrompt from "@/components/pwa/InstallPrompt";
 import NotificationInitializer from "@/components/notification/NotificationInitializer";
 import NotificationPrompt from "@/components/notification/NotificationPrompt";
+import { ConvexClientProvider } from "./ConvexClientProvider";
 import AuthProvider from "@/components/common/AuthProvider";
 import SubscriptionSuccessHandler from "@/components/common/SubscriptionSuccessHandler";
 import ToastContainer from "@/components/toast/ToastContainer";
+import ErrorSuppressor from "@/components/common/ErrorSuppressor";
 
 // Import the required fonts
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -39,16 +41,20 @@ export default function RootLayout({
         suppressHydrationWarning
         className={`font-sans ${plusJakartaSans.variable} ${barlowCondensed.variable} antialiased`}
       >
-        <AuthProvider>
-          <InstallPrompt />
-          <NotificationInitializer />
-          <NotificationPrompt />
-          <Suspense fallback={null}>
-            <SubscriptionSuccessHandler />
-          </Suspense>
-          {children}
-          <ToastContainer />
-        </AuthProvider>
+        <ConvexClientProvider>
+          <ErrorSuppressor>
+            <AuthProvider>
+              <InstallPrompt />
+              <NotificationInitializer />
+              <NotificationPrompt />
+              <Suspense fallback={null}>
+                <SubscriptionSuccessHandler />
+              </Suspense>
+              {children}
+              <ToastContainer />
+            </AuthProvider>
+          </ErrorSuppressor>
+        </ConvexClientProvider>
       </body>
     </html>
   );

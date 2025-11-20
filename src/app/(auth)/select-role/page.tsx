@@ -1,21 +1,39 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { createClient } from "@/utils/supabase/client";
+import { useConvex } from "convex/react";
+import { api } from "@/utils/convex/client";
+import { useSession, authClient } from "@/lib/auth-client";
 import RoleCard from "@/app/(marketing)/_components/RoleCard";
+import { logger } from "@/utils/logger";
 
 export default function SelectRolePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const supabase = createClient();
+  const convex = useConvex();
+  const { data: session, isPending: sessionLoading } = useSession();
+
+  // Wait for session to be available after OAuth redirect
+  useEffect(() => {
+    if (!sessionLoading && !session?.user) {
+      // Session not available - try refreshing after a short delay
+      const timer = setTimeout(() => {
+        logger.warn("Session not available on select-role page, refreshing...");
+        window.location.reload();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [sessionLoading, session]);
 
   const handleRoleSelection = async (role: "kindbossing" | "kindtao") => {
-    if (isLoading) return; // Prevent multiple clicks
+    if (isLoading || sessionLoading || !session?.user) {
+      return; // Prevent clicks while loading or no session
+    }
     await proceedWithRole(role);
   };
 
@@ -24,63 +42,69 @@ export default function SelectRolePage() {
     setError(null);
 
     try {
-      // Prepare user metadata with defaults, non-destructive
-      const { data: userRes } = await supabase.auth.getUser();
-      if (!userRes?.user) throw new Error("No authenticated user");
-      const m = (userRes?.user?.user_metadata || {}) as Record<string, any>;
-      const fullName: string | undefined = m.full_name || m.name || undefined;
-      const given = m.given_name || (fullName ? fullName.split(" ")[0] : "");
-      const family =
-        m.family_name ||
-        (fullName ? fullName.split(" ").slice(1).join(" ") : "");
-      const defaults: Record<string, any> = {
-        role,
-        first_name: given || "",
-        last_name: family || "",
-        full_name: fullName || "",
-        email: userRes?.user?.email || m.email || "",
-        has_completed_onboarding: m.has_completed_onboarding ?? false,
-      };
-      const toUpdate: Record<string, any> = {};
-      for (const [k, v] of Object.entries(defaults)) {
-        if (typeof m[k] === "undefined") {
-          toUpdate[k] = v;
-        }
+      // Use session from hook (already available)
+      if (!session?.user) {
+        // Try to get session one more time
+        const freshSession = await authClient.getSession();
+        if (!freshSession?.data?.session?.user) {
+          throw new Error("No authenticated user. Please try signing in again.");
       }
+        const authUser = freshSession.data.session.user;
+        await updateUserRole(authUser, role);
+      } else {
+        await updateUserRole(session.user, role);
+      }
+    } catch (error) {
+      logger.error("Error updating role:", error);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "An error occurred. Please try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-      // Update user metadata with selected role and defaults
-      const { error } = await supabase.auth.updateUser({
-        data: Object.keys(toUpdate).length ? toUpdate : { role },
+  const updateUserRole = async (
+    authUser: { id: string; email?: string | null; name?: string | null; image?: string | null },
+    role: "kindbossing" | "kindtao"
+  ) => {
+      const nameParts = (authUser.name || "").split(" ");
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(" ") || "";
+
+    // Check if user exists in Convex using authenticated client
+      const existingUser = await convex.query(api.users.getUserById, {
+        userId: authUser.id,
       });
 
-      if (error) throw error;
-
-      // Upsert into users table (first-time Google login or missing row)
-      const upsertPayload = {
-        id: userRes.user.id,
-        role,
-        email: userRes.user.email || m.email || "",
-        phone: m.phone ?? null, // Keep existing phone or null
-        first_name: defaults.first_name,
-        last_name: defaults.last_name,
-        profile_image_url: defaults.profile_image_url,
-      } as Record<string, any>;
-      const { error: upsertError } = await supabase
-        .from("users")
-        .upsert(upsertPayload, { onConflict: "id" });
-      if (upsertError) throw upsertError;
+      // Create or update user in Convex
+      if (!existingUser) {
+        await convex.mutation(api.users.createUser, {
+          id: authUser.id,
+          email: authUser.email || "",
+          role,
+          first_name: firstName,
+          last_name: lastName,
+          profile_image_url: authUser.image || null,
+          has_completed_onboarding: false,
+        });
+      } else {
+        // Update role if different
+        if (existingUser.role !== role) {
+          await convex.mutation(api.users.updateUser, {
+            userId: authUser.id,
+            updates: { role },
+          });
+        }
+      }
 
       // Redirect to onboarding
       if (role === "kindbossing") {
         router.push("/kindbossing-onboarding/business-info");
       } else {
         router.push("/kindtao-onboarding");
-      }
-    } catch (error) {
-      console.error("Error updating role:", error);
-      setError("An error occurred. Please try again.");
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -132,6 +156,22 @@ export default function SelectRolePage() {
             ]}
           />
         </div>
+
+        {sessionLoading && (
+          <div className="flex justify-center mt-6">
+            <p className="text-gray-600 text-center">
+              Loading your account...
+            </p>
+          </div>
+        )}
+
+        {!sessionLoading && !session?.user && (
+          <div className="flex justify-center mt-6">
+            <p className="text-yellow-600 text-center">
+              Waiting for authentication... Please wait a moment.
+            </p>
+          </div>
+        )}
 
         {error && (
           <div className="flex justify-center mt-6">

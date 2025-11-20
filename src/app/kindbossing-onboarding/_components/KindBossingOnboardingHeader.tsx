@@ -23,12 +23,17 @@ export default function KindBossingOnboardingHeader() {
     router.push("/login");
   };
 
+  const userMetadata = (user as { user_metadata?: any })?.user_metadata;
+
   const getUserDisplayName = () => {
-    if (user?.user_metadata?.first_name && user?.user_metadata?.last_name) {
-      return `${user.user_metadata.first_name} ${user.user_metadata.last_name}`;
+    if (userMetadata?.first_name && userMetadata?.last_name) {
+      return `${userMetadata.first_name} ${userMetadata.last_name}`;
     }
-    if (user?.user_metadata?.first_name) {
-      return user.user_metadata.first_name;
+    if (userMetadata?.first_name) {
+      return userMetadata.first_name;
+    }
+    if ((user as { name?: string })?.name) {
+      return (user as { name?: string }).name as string;
     }
     if (user?.email) {
       return user.email.split("@")[0];
@@ -37,13 +42,31 @@ export default function KindBossingOnboardingHeader() {
   };
 
   const getUserInitials = () => {
-    if (user?.user_metadata?.first_name && user?.user_metadata?.last_name) {
-      return `${user.user_metadata.first_name[0]}${user.user_metadata.last_name[0]}`.toUpperCase();
+    const firstInitial = userMetadata?.first_name?.[0]?.toUpperCase();
+    const lastInitial = userMetadata?.last_name?.[0]?.toUpperCase();
+
+    if (firstInitial || lastInitial) {
+      return `${firstInitial ?? ""}${lastInitial ?? ""}`.trim() || "U";
     }
-    if (user?.user_metadata?.first_name) {
-      return user.user_metadata.first_name[0].toUpperCase();
+
+    if ((user as { name?: string })?.name) {
+      const parts = (user as { name?: string }).name?.trim().split(" ") ?? [];
+      const initials = parts.slice(0, 2).map((part) => part[0]?.toUpperCase());
+      if (initials.filter(Boolean).length) {
+        return initials.join("");
+      }
     }
+
     if (user?.email) {
+      const emailInitials = user.email
+        .split("@")[0]
+        .split(".")
+        .map((part) => part[0]?.toUpperCase())
+        .filter(Boolean)
+        .slice(0, 2);
+      if (emailInitials.length) {
+        return emailInitials.join("");
+      }
       return user.email[0].toUpperCase();
     }
     return "U";
@@ -76,8 +99,8 @@ export default function KindBossingOnboardingHeader() {
           <Image
             src="/kindLogo.png"
             alt="Kind Logo"
-            width={150}
-            height={50}
+            width={100}
+            height={30}
             className="h-8 w-auto"
           />
         </Link>
@@ -144,9 +167,9 @@ export default function KindBossingOnboardingHeader() {
                 <div className="text-[#1a1a3b] font-medium text-[clamp(1rem,3vw,1.125rem)]">
                   {getUserDisplayName()}
                 </div>
-                {user?.user_metadata?.role && (
+                {userMetadata?.role && (
                   <div className="text-xs text-gray-500 capitalize">
-                    {user.user_metadata.role}
+                    {userMetadata.role}
                   </div>
                 )}
               </div>

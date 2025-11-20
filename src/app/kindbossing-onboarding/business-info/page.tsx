@@ -1,6 +1,4 @@
 import BusinessInfoForm from "./_components/BusinessInfoForm";
-import { redirect } from "next/navigation";
-import { createClient } from "@/utils/supabase/server";
 
 export default function BusinessInfoPage() {
   return (

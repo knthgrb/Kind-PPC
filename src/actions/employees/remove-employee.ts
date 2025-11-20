@@ -1,83 +1,61 @@
 "use server";
 
-import { createClient } from "@/utils/supabase/server";
+import { getServerActionContext } from "@/utils/server-action-context";
+import { api } from "@/utils/convex/server";
+import { logger } from "@/utils/logger";
 
 export async function removeEmployee(
   employeeId: string
-): Promise<{
-  success: boolean;
-  error?: string;
-}> {
+): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = await createClient();
+    const { convex, user, error } = await getServerActionContext({
+      requireUser: true,
+    });
 
-    // Get current user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    if (error || !user) {
+      return { success: false, error: "Unauthorized" };
+    }
 
-    if (authError || !user) {
-      return {
-        success: false,
-        error: "Not authenticated",
-      };
+    if (!convex) {
+      return { success: false, error: "Database connection failed" };
+    }
+
+    // Extract user ID
+    const userId =
+      (user as { userId?: string | null })?.userId ??
+      (user as { id?: string | null })?.id ??
+      (user as { _id?: string | null })?._id ??
+      null;
+
+    if (!userId) {
+      return { success: false, error: "User ID not found" };
     }
 
     // Verify the employee belongs to the user
-    const { data: employee, error: employeeError } = await supabase
-      .from("employees")
-      .select("id, kindbossing_user_id, status")
-      .eq("id", employeeId)
-      .single();
+    const employee = await convex.query(api.employees.getEmployeeById, {
+      employeeId: employeeId as any,
+    }) as any;
 
-    if (employeeError || !employee) {
-      return {
-        success: false,
-        error: "Employee not found",
-      };
+    if (!employee) {
+      return { success: false, error: "Employee not found" };
     }
 
-    if (employee.kindbossing_user_id !== user.id) {
-      return {
-        success: false,
-        error: "Unauthorized to remove this employee",
-      };
+    if (employee.kindbossing_user_id !== userId) {
+      return { success: false, error: "Unauthorized to remove this employee" };
     }
 
-    // Check if already inactive
-    if (employee.status === "inactive") {
-      return {
-        success: false,
-        error: "Employee is already inactive",
-      };
-    }
+    await convex.mutation(api.employees.removeEmployee, {
+      employeeId: employee._id,
+    });
 
-    // Update employee status to inactive
-    const { error: updateError } = await supabase
-      .from("employees")
-      .update({
-        status: "inactive",
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", employeeId);
+    logger.info("Employee removed successfully:", { employeeId, userId });
 
-    if (updateError) {
-      console.error("Error removing employee:", updateError);
-      return {
-        success: false,
-        error: "Failed to remove employee",
-      };
-    }
-
-    return {
-      success: true,
-    };
-  } catch (error) {
-    console.error("Error in removeEmployee:", error);
+    return { success: true };
+  } catch (err) {
+    logger.error("Failed to remove employee:", err);
     return {
       success: false,
-      error: "An unexpected error occurred",
+      error: err instanceof Error ? err.message : "Failed to remove employee",
     };
   }
 }

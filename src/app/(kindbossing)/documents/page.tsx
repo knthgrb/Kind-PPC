@@ -1,327 +1,466 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { LuFilter, LuSearch, LuUploadCloud } from "react-icons/lu";
-import { FaFileAlt } from "react-icons/fa";
-import UploadDocumentModal from "@/components/modals/UploadDocumentModal";
-import PrimaryButton from "@/components/buttons/PrimaryButton";
+import { useQuery } from "convex/react";
+import { api } from "@/utils/convex/client";
 import { getDocuments } from "@/actions/documents/get-documents";
+import { useToastActions } from "@/stores/useToastStore";
+import { logger } from "@/utils/logger";
+import dynamic from "next/dynamic";
+const AddDocumentModal = dynamic(
+  () => import("@/components/modals/AddDocumentModal"),
+  {
+    ssr: false,
+  }
+);
+import {
+  FaPlus,
+  FaFile,
+  FaImage,
+  FaFilePdf,
+  FaVideo,
+  FaDownload,
+  FaTrash,
+  FaTimes,
+} from "react-icons/fa";
+import { format } from "date-fns";
 import { deleteDocument } from "@/actions/documents/delete-document";
-import { createClient } from "@/utils/supabase/client";
 
-interface Document {
-  id: string;
-  created_at: string;
-  kindbossing_user_id: string;
-  file_url: string;
-  title: string;
-  size: number;
-  content_type: string | null;
+function getFileIcon(mimeType: string | null | undefined) {
+  if (!mimeType) return <FaFile className="w-5 h-5 text-gray-400" />;
+
+  if (
+    mimeType.includes("pdf") ||
+    mimeType.includes("document") ||
+    mimeType.includes("word") ||
+    mimeType.includes("excel")
+  ) {
+    return <FaFilePdf className="w-5 h-5 text-red-600" />;
+  }
+  if (mimeType.startsWith("image/")) {
+    return <FaImage className="w-5 h-5 text-blue-600" />;
+  }
+  if (mimeType.startsWith("video/")) {
+    return <FaVideo className="w-5 h-5 text-purple-600" />;
+  }
+  return <FaFile className="w-5 h-5 text-gray-400" />;
 }
 
-export default function Documents() {
-  const [filter, setFilter] = useState<"all" | "Contracts" | "PDF">("all");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isUploadDocumentModalOpen, setIsUploadDocumentModalOpen] =
-    useState(false);
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+}
 
-  useEffect(() => {
-    loadDocuments();
-  }, []);
+export default function DocumentsPage() {
+  const { showSuccess, showError } = useToastActions();
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<any | null>(null);
+  const [activeFilter, setActiveFilter] = useState<
+    "all" | "pdf" | "docs" | "excel" | "ppt" | "image" | "video"
+  >("all");
 
-  const loadDocuments = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const result = await getDocuments();
-      if (result.success && result.data) {
-        setDocuments(result.data);
-      } else {
-        setError(result.error || "Failed to load documents");
-      }
-    } catch (err) {
-      setError("An unexpected error occurred");
-      console.error(err);
-    } finally {
-      setIsLoading(false);
+  const FILTERS: {
+    id: typeof activeFilter;
+    label: string;
+  }[] = [
+    { id: "all", label: "All" },
+    { id: "pdf", label: "PDF" },
+    { id: "docs", label: "Docs" },
+    { id: "excel", label: "Excel" },
+    { id: "ppt", label: "PPT" },
+    { id: "image", label: "Images" },
+    { id: "video", label: "Videos" },
+  ];
+
+  const matchesFilter = (doc: any) => {
+    if (activeFilter === "all") return true;
+    const mime = (doc.content_type || "").toLowerCase();
+
+    switch (activeFilter) {
+      case "pdf":
+        return mime.includes("pdf");
+      case "docs":
+        return (
+          mime.includes("word") ||
+          mime.includes("document") ||
+          mime.includes("msword") ||
+          mime.includes("text/rtf")
+        );
+      case "excel":
+        return (
+          mime.includes("excel") ||
+          mime.includes("spreadsheet") ||
+          mime.includes("sheet") ||
+          mime.includes("csv")
+        );
+      case "ppt":
+        return (
+          mime.includes("presentation") ||
+          mime.includes("powerpoint") ||
+          mime.includes("ppt")
+        );
+      case "image":
+        return mime.startsWith("image/");
+      case "video":
+        return mime.startsWith("video/");
+      default:
+        return true;
     }
   };
 
-  const handleDeleteDocument = async (documentId: string) => {
-    if (!confirm("Are you sure you want to delete this document?")) {
-      return;
-    }
+  const filteredDocuments = documents.filter(matchesFilter);
 
+  // Get current user
+  const currentUser = useQuery(api.auth.getCurrentUser);
+
+  // Fetch documents when user is available
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      if (!currentUser) return;
+
+      setLoading(true);
+      try {
+        const result = await getDocuments();
+        if (result.success && result.documents) {
+          setDocuments(result.documents);
+        } else {
+          logger.error("Failed to fetch documents:", result.error);
+          showError("Failed to load documents");
+        }
+      } catch (error) {
+        logger.error("Failed to fetch documents:", error);
+        showError("Failed to load documents");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDocuments();
+  }, [currentUser, showError]);
+
+  const handleDocumentAdded = async () => {
+    // Refresh documents
+    const result = await getDocuments();
+    if (result.success && result.documents) {
+      setDocuments(result.documents);
+    }
+  };
+
+  const handleDelete = async (documentId: string) => {
+    if (!confirm("Are you sure you want to delete this document?")) return;
+
+    setIsDeleting(documentId);
     try {
       const result = await deleteDocument(documentId);
       if (result.success) {
-        await loadDocuments();
+        showSuccess("Document deleted successfully");
+        // Refresh documents
+        const fetchedDocuments = await getDocuments();
+        if (fetchedDocuments.success && fetchedDocuments.documents) {
+          setDocuments(fetchedDocuments.documents);
+        }
       } else {
-        alert(result.error || "Failed to delete document");
+        showError(result.error || "Failed to delete document");
       }
-    } catch (err) {
-      alert("An unexpected error occurred");
-      console.error(err);
+    } catch (error) {
+      logger.error("Failed to delete document:", error);
+      showError("Failed to delete document");
+    } finally {
+      setIsDeleting(null);
     }
   };
 
-  const handleDownload = async (doc: Document) => {
+  const formatDate = (timestamp: number) => {
     try {
-      const supabase = createClient();
-      // Extract file path from URL
-      const urlParts = doc.file_url.split("/");
-      const filePath = urlParts
-        .slice(urlParts.indexOf("kindbossing-documents") + 1)
-        .join("/");
-
-      // Download file from storage
-      const { data: fileData, error } = await supabase.storage
-        .from("kindbossing-documents")
-        .download(filePath);
-
-      if (error) {
-        alert("Failed to download document");
-        return;
-      }
-
-      // Create blob URL and trigger download
-      const url = URL.createObjectURL(fileData);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = doc.title;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      alert("Failed to download document");
-      console.error(err);
+      return format(new Date(timestamp), "MMM d, yyyy");
+    } catch {
+      return "Unknown";
     }
   };
-
-  const handleView = (doc: Document) => {
-    window.open(doc.file_url, "_blank");
-  };
-
-  // Get document type from content_type
-  const getDocumentType = (contentType: string | null) => {
-    if (!contentType) return "PDF";
-    if (contentType.includes("pdf")) return "PDF";
-    if (contentType.includes("word") || contentType.includes("document"))
-      return "Word";
-    if (
-      contentType.includes("presentation") ||
-      contentType.includes("powerpoint")
-    )
-      return "PowerPoint";
-    if (contentType.includes("contract") || contentType.includes("contract"))
-      return "Contracts";
-    return "PDF";
-  };
-
-  const filteredDocuments = documents.filter((document) => {
-    const docType = getDocumentType(document.content_type);
-    const matchesFilter = filter === "all" || docType === filter;
-    const matchesSearch =
-      document.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      docType.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesFilter && matchesSearch;
-  });
-
-  const getDocumentCounts = () => {
-    const allCount = documents.length;
-    const contractsCount = documents.filter(
-      (d) => getDocumentType(d.content_type) === "Contracts"
-    ).length;
-    const pdfCount = documents.filter(
-      (d) => getDocumentType(d.content_type) === "PDF"
-    ).length;
-    return { allCount, contractsCount, pdfCount };
-  };
-
-  const counts = getDocumentCounts();
 
   return (
-    <div className="p-8">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
+    <div className="px-4 py-4">
+      <div className="mx-auto max-w-7xl space-y-8">
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Documents</h1>
-            <p className="text-gray-600">Manage your documents and files</p>
+            <p className="text-sm uppercase tracking-wide text-gray-500">
+              File Management
+            </p>
+            <h1 className="text-3xl font-semibold text-gray-900">Documents</h1>
+            <p className="mt-2 text-sm text-gray-600">
+              Manage your business documents and files.
+            </p>
           </div>
-          <PrimaryButton
-            onClick={() => setIsUploadDocumentModalOpen(true)}
-            className="inline-flex items-center gap-2"
-          >
-            <LuUploadCloud className="w-4 h-4" />
-            <span className="text-sm font-medium">Upload Document</span>
-          </PrimaryButton>
-        </div>
-      </div>
-
-      {/* Filter Tabs */}
-      <div className="mb-6">
-        <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
-          {[
-            { key: "all", label: "All Documents", count: counts.allCount },
-            {
-              key: "Contracts",
-              label: "Contracts",
-              count: counts.contractsCount,
-            },
-            {
-              key: "PDF",
-              label: "PDF",
-              count: counts.pdfCount,
-            },
-          ].map((tab) => (
+          <div className="flex flex-wrap gap-3">
             <button
-              key={tab.key}
-              onClick={() => setFilter(tab.key as any)}
-              className={`cursor-pointer px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-                filter === tab.key
-                  ? "bg-white text-[#CC0000] shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
+              onClick={() => setIsAddModalOpen(true)}
+              className="hidden sm:inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#CB0000] px-4 py-2 text-sm font-semibold text-white hover:bg-[#a10000] transition-colors"
             >
-              {tab.label} ({tab.count})
+              <FaPlus className="w-4 h-4" />
+              Add Document
             </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Search and Filter Controls */}
-      <div className="mb-6 flex flex-col md:flex-row items-stretch md:items-center gap-3 md:gap-4">
-        <button
-          type="button"
-          className="inline-flex cursor-pointer bg-white items-center justify-center gap-2 rounded-lg border border-gray-400 px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 w-full md:w-auto"
-        >
-          <LuFilter className="text-base" />
-          <span>Filter</span>
-        </button>
-
-        <label className="relative w-full md:w-52">
-          <LuSearch className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search documents..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-white rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
-          />
-        </label>
-      </div>
-
-      {/* Documents Content */}
-      {isLoading ? (
-        <div className="text-center py-12">
-          <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#CC0000]"></div>
           </div>
-          <p className="text-gray-600">Loading documents...</p>
-        </div>
-      ) : error ? (
-        <div className="text-center py-12">
-          <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <FaFileAlt className="w-8 h-8 text-red-500" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Error</h3>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <PrimaryButton onClick={loadDocuments}>Retry</PrimaryButton>
-        </div>
-      ) : filteredDocuments.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <FaFileAlt className="w-8 h-8 text-gray-400" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            {filter === "all" ? "No documents yet" : `No ${filter} documents`}
-          </h3>
-          <p className="text-gray-600 mb-6">
-            {filter === "all"
-              ? "You don't have any documents uploaded yet."
-              : `You don't have any ${filter} documents at the moment.`}
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredDocuments.map((doc) => {
-            const docType = getDocumentType(doc.content_type);
-            const formatDate = (dateString: string) => {
-              const date = new Date(dateString);
-              return date.toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              });
-            };
+        </header>
 
-            return (
+        {loading ? (
+          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, index) => (
               <div
-                key={doc.id}
-                className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                key={`doc-skeleton-${index}`}
+                className="animate-pulse rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
               >
-                <div className="relative">
-                  <img
-                    src="/documents/document.png"
-                    alt="Document Preview"
-                    className="w-full h-40 object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/60"></div>
-                  <img
-                    src="/icons/pdf.png"
-                    alt="PDF Icon"
-                    className="absolute top-4 left-4 w-6 h-6"
-                  />
-                  <span className="absolute top-4 right-4 bg-white/90 text-xs px-2 py-1 rounded-full text-gray-700">
-                    {docType}
-                  </span>
-                </div>
-
-                <div className="p-4">
-                  <p className="text-xs text-gray-500 mb-2">
-                    {formatDate(doc.created_at)}
-                  </p>
-                  <h3 className="text-sm font-semibold text-gray-900 mb-2 line-clamp-2">
-                    {doc.title}
-                  </h3>
-                  <p className="text-xs text-gray-600 mb-4">
-                    {(doc.size / 1024).toFixed(2)} KB
-                  </p>
-
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleDownload(doc)}
-                      className="flex-1 bg-[#CC0000] text-white text-xs py-2 rounded-lg hover:bg-red-700 transition-colors"
-                    >
-                      Download
-                    </button>
-                    <button
-                      onClick={() => handleView(doc)}
-                      className="flex-1 bg-[#CC0000] text-white text-xs py-2 rounded-lg hover:bg-red-700 transition-colors"
-                    >
-                      View
-                    </button>
+                <div className="relative mb-4 aspect-video overflow-hidden rounded-xl bg-gray-200" />
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-gray-200" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 w-32 rounded bg-gray-200" />
+                      <div className="h-3 w-24 rounded bg-gray-100" />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between pt-2">
+                    <div className="h-3 w-20 rounded bg-gray-100" />
+                    <div className="flex gap-2">
+                      <div className="h-8 w-16 rounded-lg bg-gray-100" />
+                      <div className="h-8 w-16 rounded-lg bg-gray-100" />
+                    </div>
                   </div>
                 </div>
               </div>
-            );
-          })}
+            ))}
+          </div>
+        ) : documents.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center">
+            <p className="text-xl font-semibold text-gray-900">
+              No documents yet
+            </p>
+            <p className="mt-3 text-sm text-gray-600">
+              Upload your first document to get started.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="flex flex-wrap gap-2 rounded-2xl border border-gray-200 bg-white/60 p-3">
+              {FILTERS.map((filter) => (
+                <button
+                  key={filter.id}
+                  onClick={() => setActiveFilter(filter.id)}
+                  className={`cursor-pointer rounded-full px-4 py-1.5 text-sm font-medium transition ${
+                    activeFilter === filter.id
+                      ? "bg-[#CB0000] text-white shadow-sm"
+                      : "bg-white text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+
+            {filteredDocuments.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center">
+                <p className="text-xl font-semibold text-gray-900">
+                  No{" "}
+                  {FILTERS.find(
+                    (f) => f.id === activeFilter
+                  )?.label.toLowerCase()}{" "}
+                  files
+                </p>
+                <p className="mt-3 text-sm text-gray-600">
+                  Try selecting a different filter or upload a new document.
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                {filteredDocuments.map((doc) => {
+                  const isImage = doc.content_type?.startsWith("image/");
+                  const isVideo = doc.content_type?.startsWith("video/");
+
+                  return (
+                    <div
+                      key={doc._id || doc.id}
+                      onClick={() => setPreviewDoc(doc)}
+                      className="group relative flex cursor-pointer flex-col rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
+                    >
+                      <div className="relative mb-4 aspect-video overflow-hidden rounded-xl bg-gray-50">
+                        {isImage ? (
+                          <img
+                            src={doc.file_url}
+                            alt={doc.title}
+                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : isVideo ? (
+                          <video
+                            src={doc.file_url}
+                            className="h-full w-full object-cover"
+                            muted
+                            playsInline
+                          />
+                        ) : (
+                          <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-gray-500">
+                            {getFileIcon(doc.content_type)}
+                            <span className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                              {doc.content_type || "Unknown"}
+                            </span>
+                          </div>
+                        )}
+
+                        <div className="absolute inset-x-4 top-4 flex items-center justify-between rounded-full bg-white/90 px-3 py-1 text-[11px] font-medium text-gray-600 backdrop-blur">
+                          <span>{formatFileSize(doc.size)}</span>
+                          <span className="text-gray-400">•</span>
+                          <span>{formatDate(doc.created_at)}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-1 flex-col">
+                        <div className="mb-2 flex items-start gap-3">
+                          <div className="hidden rounded-lg bg-gray-100 p-2 text-gray-500 sm:block">
+                            {getFileIcon(doc.content_type)}
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-base font-semibold text-gray-900 line-clamp-2">
+                              {doc.title}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {doc.content_type || "Unknown"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mt-auto flex items-center justify-between pt-4">
+                          <div className="text-xs uppercase tracking-wide text-gray-400">
+                            Tap to preview
+                          </div>
+                          <div className="flex gap-2">
+                            <a
+                              href={doc.file_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex cursor-pointer items-center gap-1 rounded-xl border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50"
+                            >
+                              <FaDownload className="h-3 w-3" />
+                              Download
+                            </a>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(doc._id || doc.id);
+                              }}
+                              disabled={isDeleting === (doc._id || doc.id)}
+                              className="inline-flex cursor-pointer items-center gap-1 rounded-xl border border-transparent px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50"
+                            >
+                              <FaTrash className="h-3 w-3" />
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Add Document Modal */}
+      <AddDocumentModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onDocumentAdded={handleDocumentAdded}
+      />
+
+      {/* Preview Modal */}
+      {previewDoc && (
+        <div className="fixed inset-0 z-100">
+          <div
+            className="absolute inset-0 bg-black/60"
+            onClick={() => setPreviewDoc(null)}
+          />
+          <div className="absolute inset-0 flex items-center justify-center p-4">
+            <div className="relative w-full max-w-4xl rounded-2xl bg-white p-6 shadow-2xl">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-gray-400">
+                    Document preview
+                  </p>
+                  <h3 className="text-2xl font-semibold text-gray-900">
+                    {previewDoc.title}
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    {formatFileSize(previewDoc.size)} •{" "}
+                    {previewDoc.content_type || "Unknown"} •{" "}
+                    {formatDate(previewDoc.created_at)}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setPreviewDoc(null)}
+                  className="rounded-full cursor-pointer p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                  aria-label="Close preview"
+                >
+                  <FaTimes className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="mt-6 max-h-[70vh] overflow-hidden rounded-2xl border border-gray-200 bg-gray-50">
+                {previewDoc.content_type?.startsWith("image/") ? (
+                  <img
+                    src={previewDoc.file_url}
+                    alt={previewDoc.title}
+                    className="mx-auto max-h-[70vh] w-full object-contain"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : previewDoc.content_type?.startsWith("video/") ? (
+                  <video
+                    src={previewDoc.file_url}
+                    controls
+                    className="h-full w-full rounded-2xl bg-black"
+                  />
+                ) : (
+                  <iframe
+                    src={previewDoc.file_url}
+                    className="h-[70vh] w-full rounded-2xl bg-white"
+                    title={previewDoc.title}
+                  />
+                )}
+              </div>
+
+              <div className="mt-6 flex items-center justify-end gap-3">
+                <button
+                  onClick={() => setPreviewDoc(null)}
+                  className="rounded-xl cursor-pointer border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                >
+                  Close
+                </button>
+                <a
+                  href={previewDoc.file_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-[#CB0000] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#a10000]"
+                >
+                  <FaDownload className="h-4 w-4" />
+                  Download
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Upload Document Modal */}
-      <UploadDocumentModal
-        isOpen={isUploadDocumentModalOpen}
-        onClose={() => setIsUploadDocumentModalOpen(false)}
-        onDocumentUploaded={() => {
-          loadDocuments();
-        }}
-      />
+      {/* Mobile FAB */}
+      <button
+        onClick={() => setIsAddModalOpen(true)}
+        className="fixed cursor-pointer bottom-20 right-6 z-90 flex h-14 w-14 items-center justify-center rounded-full bg-[#CB0000] text-white shadow-lg transition hover:bg-[#a10000] sm:hidden"
+        aria-label="Add document"
+      >
+        <FaPlus className="h-5 w-5" />
+      </button>
     </div>
   );
 }

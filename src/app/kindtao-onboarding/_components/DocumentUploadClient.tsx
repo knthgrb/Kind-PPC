@@ -2,15 +2,17 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
+import { useConvex } from "convex/react";
+import { api } from "@/utils/convex/client";
 import StepperFooter from "@/components/common/StepperFooter";
 import {
   useKindTaoOnboardingStore,
   KindTaoDocument,
 } from "@/stores/useKindTaoOnboardingStore";
-import { UserService } from "@/services/client/UserService";
+import { UserService } from "@/services/UserService";
 import { logger } from "@/utils/logger";
 import { finalizeKindTaoOnboarding } from "@/actions/onboarding/finalize-kindtao-onboarding";
+import { authClient } from "@/lib/auth-client";
 
 interface DocumentDisplay extends KindTaoDocument {
   uploadProgress: number;
@@ -53,6 +55,7 @@ type DocumentUploadProps = {
 
 export default function DocumentUploadClient({ onBack }: DocumentUploadProps) {
   const router = useRouter();
+  const convex = useConvex();
   const {
     personalInfo,
     skillsAvailability,
@@ -136,49 +139,60 @@ export default function DocumentUploadClient({ onBack }: DocumentUploadProps) {
   const uploadDocumentsToStorage = async () => {
     if (documents.length === 0) return [];
 
-    const supabase = createClient();
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser();
+    const authHelper = {
+      getCurrentUser: async () => {
+        const session = await authClient.getSession();
+        return session?.data?.session?.userId
+          ? { id: session.data.session.userId }
+          : null;
+      },
+    };
 
-    if (!authUser) {
+    const { data: user, error: userError } = await UserService.getCurrentUser(
+      convex,
+      authHelper
+    );
+    if (userError || !user) {
       throw new Error("User not authenticated");
     }
 
     const uploadPromises = documents.map(async (doc) => {
       try {
-        // Create storage path
-        const fileExt = doc.fileName.split(".").pop();
-        const fileName = `${doc.id}.${fileExt}`;
-        const filePath = `${authUser.id}/${fileName}`;
+        // Generate upload URL from Convex
+        const uploadUrl = await convex.mutation(api.storage.generateUploadUrl);
 
-        // Upload to Supabase Storage
-        const { error } = await supabase.storage
-          .from("documents")
-          .upload(filePath, doc.file, {
-            cacheControl: "3600",
-            upsert: false,
-          });
+        // Upload file to Convex storage
+        const uploadResult = await fetch(uploadUrl, {
+          method: "POST",
+          headers: { "Content-Type": doc.mimeType },
+          body: doc.file,
+        });
 
-        if (error) {
-          throw error;
+        if (!uploadResult.ok) {
+          throw new Error(`Upload failed: ${uploadResult.statusText}`);
         }
 
-        // Get public URL
-        const { data: publicUrl } = supabase.storage
-          .from("documents")
-          .getPublicUrl(filePath);
+        const { storageId } = await uploadResult.json();
+
+        // Get file URL from storage ID
+        const fileUrl = await convex.query(api.storage.getFileUrl, {
+          storageId,
+        });
+
+        if (!fileUrl) {
+          throw new Error("Failed to get file URL");
+        }
 
         return {
           id: doc.id,
           title: doc.documentType,
-          file_url: publicUrl?.publicUrl || "",
+          file_url: fileUrl,
           size: doc.fileSize,
           content_type: doc.mimeType,
-          filePath,
+          storageId,
         };
       } catch (error) {
-        console.error(`Upload error for ${doc.fileName}:`, error);
+        logger.error(`Upload error for ${doc.fileName}:`, error);
         throw error;
       }
     });
@@ -232,8 +246,19 @@ export default function DocumentUploadClient({ onBack }: DocumentUploadProps) {
     setIsSaving(true);
 
     try {
-      const { data: user, error: userError } =
-        await UserService.getCurrentUser();
+      const authHelper = {
+        getCurrentUser: async () => {
+          const session = await authClient.getSession();
+          return session?.data?.session?.userId
+            ? { id: session.data.session.userId }
+            : null;
+        },
+      };
+
+      const { data: user, error: userError } = await UserService.getCurrentUser(
+        convex,
+        authHelper
+      );
 
       if (userError || !user) {
         setSaveError("User not authenticated");
@@ -265,21 +290,24 @@ export default function DocumentUploadClient({ onBack }: DocumentUploadProps) {
 
       // Save document metadata to database
       if (uploadedDocuments.length > 0) {
-        const supabase = createClient();
-        const documentRecords = uploadedDocuments.map((doc) => ({
-          user_id: user.id,
-          title: doc.title,
-          file_url: doc.file_url,
-          size: doc.size,
-          content_type: doc.content_type,
-          document_type: doc.title, // Will use the title as document_type for now
-        }));
-
-        const { error: dbError } = await supabase
-          .from("verification_documents")
-          .insert(documentRecords);
-
-        if (dbError) {
+        try {
+          // Save each document using Convex mutation
+          await Promise.all(
+            uploadedDocuments.map((doc) =>
+              convex.mutation(api.documents.createVerificationDocument, {
+                user_id: user.id,
+                title: doc.title,
+                file_url: doc.file_url,
+                size: doc.size,
+                content_type: doc.content_type,
+                document_type: doc.title, // Will use the title as document_type for now
+              })
+            )
+          );
+          logger.info(
+            `Successfully saved ${uploadedDocuments.length} document records`
+          );
+        } catch (dbError) {
           logger.error("Error saving document metadata:", dbError);
           setSaveError(
             "Failed to save document information. Please try again."

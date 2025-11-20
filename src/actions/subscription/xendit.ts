@@ -1,50 +1,177 @@
 "use server";
 
-import {
-  getUserSubscription as getXenditUserSubscription,
-  createUserSubscription,
-  createCustomer,
-  createSubscriptionPlan,
-  cancelSubscriptionPlan,
-  getSubscriptionPlan,
-  updateSubscriptionStatus,
-} from "@/services/server/XenditService";
-import { createClient } from "@/utils/supabase/server";
+import { getServerActionContext } from "@/utils/server-action-context";
+import { api } from "@/utils/convex/server";
+import { logger } from "@/utils/logger";
 import { UserSubscription } from "@/types/subscription";
-import { SUBSCRIPTION_PLANS } from "@/constants/subscriptionPlans";
 
 export async function getUserSubscription(): Promise<{
   success: boolean;
-  subscription: UserSubscription | null;
+  subscription?: UserSubscription | null;
   error?: string;
 }> {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const { convex, user, error } = await getServerActionContext({
+      requireUser: true,
+    });
 
-    if (authError || !user) {
-      return {
-        success: false,
-        subscription: null,
-        error: "Unauthorized",
-      };
+    if (error || !user) {
+      return { success: false, error: "Unauthorized" };
     }
 
-    const subscription = await getXenditUserSubscription(user.id);
+    if (!convex) {
+      return { success: false, error: "Database connection failed" };
+    }
+
+    // Extract user ID
+    const userId =
+      (user as { userId?: string | null })?.userId ??
+      (user as { id?: string | null })?.id ??
+      (user as { _id?: string | null })?._id ??
+      null;
+
+    if (!userId) {
+      return { success: false, error: "User ID not found" };
+    }
+
+    // Get subscription from Convex
+    const subscription = await convex.query(api.subscriptions.getSubscriptionByUser, {
+      userId,
+    });
+
+    if (!subscription) {
+      return { success: true, subscription: null };
+    }
+
+    // Map Convex subscription to UserSubscription type
+    const userSubscription: UserSubscription = {
+      id: subscription._id,
+      user_id: subscription.user_id,
+      xendit_plan_id: subscription.xendit_plan_id || "",
+      subscription_tier: subscription.subscription_tier,
+      status: (subscription.status as any) || "inactive",
+      current_period_start: subscription.current_period_start
+        ? new Date(subscription.current_period_start).toISOString()
+        : new Date().toISOString(),
+      current_period_end: subscription.current_period_end
+        ? new Date(subscription.current_period_end).toISOString()
+        : new Date().toISOString(),
+      cancel_at_period_end: subscription.cancel_at_period_end || false,
+      xendit_subscription_id: subscription.xendit_subscription_id,
+      xendit_customer_id: subscription.xendit_customer_id,
+      daily_swipe_limit: subscription.daily_swipe_limit,
+      amount_paid: subscription.amount_paid,
+      currency: subscription.currency,
+      cancelled_at: subscription.cancelled_at
+        ? new Date(subscription.cancelled_at).toISOString()
+        : undefined,
+      created_at: new Date(subscription.created_at).toISOString(),
+      updated_at: subscription.updated_at
+        ? new Date(subscription.updated_at).toISOString()
+        : new Date().toISOString(),
+    };
+
+    return { success: true, subscription: userSubscription };
+  } catch (err) {
+    logger.error("Failed to get user subscription:", err);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Failed to get subscription",
+    };
+  }
+}
+
+export async function cancelSubscription(): Promise<{
+  success: boolean;
+  message?: string;
+  error?: string;
+}> {
+  try {
+    const { convex, user, error } = await getServerActionContext({
+      requireUser: true,
+    });
+
+    if (error || !user) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    if (!convex) {
+      return { success: false, error: "Database connection failed" };
+    }
+
+    // Extract user ID
+    const userId =
+      (user as { userId?: string | null })?.userId ??
+      (user as { id?: string | null })?.id ??
+      (user as { _id?: string | null })?._id ??
+      null;
+
+    if (!userId) {
+      return { success: false, error: "User ID not found" };
+    }
+
+    // Get current subscription
+    const subscription = await convex.query(api.subscriptions.getSubscriptionByUser, {
+      userId,
+    });
+
+    if (!subscription) {
+      return { success: false, error: "No active subscription found" };
+    }
+
+    // Get user details for email
+    const userData = await convex.query(api.users.getUserById, { userId });
+
+    // Update subscription to cancel at period end
+    await convex.mutation(api.subscriptions.upsertSubscription, {
+      user_id: userId,
+      subscription_tier: subscription.subscription_tier,
+      cancel_at_period_end: true,
+      cancelled_at: Date.now(),
+      status: "cancelled",
+      xendit_plan_id: subscription.xendit_plan_id,
+      xendit_subscription_id: subscription.xendit_subscription_id,
+      xendit_customer_id: subscription.xendit_customer_id,
+    });
+
+    // Send cancellation email
+    if (userData) {
+      const { EmailService } = await import("@/services/EmailService");
+      const endDate = subscription.current_period_end
+        ? new Date(subscription.current_period_end).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })
+        : new Date().toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          });
+
+      await EmailService.sendSubscriptionCancelledEmail(
+        userData.email,
+        userData.first_name || null,
+        subscription.subscription_tier === "basic"
+          ? "Basic"
+          : subscription.subscription_tier === "premium"
+            ? "Premium"
+            : "Subscription",
+        endDate
+      );
+    }
+
+    logger.info("Subscription cancelled:", { userId, subscriptionId: subscription._id });
 
     return {
       success: true,
-      subscription,
+      message: "Subscription will be cancelled at the end of the billing period",
     };
-  } catch (error) {
-    console.error("Error fetching subscription:", error);
+  } catch (err) {
+    logger.error("Failed to cancel subscription:", err);
     return {
       success: false,
-      subscription: null,
-      error: "Failed to fetch subscription",
+      error: err instanceof Error ? err.message : "Failed to cancel subscription",
     };
   }
 }
@@ -58,303 +185,215 @@ export async function createSubscription(
   error?: string;
 }> {
   try {
-    if (!planId) {
-      return {
-        success: false,
-        error: "Plan ID is required",
-      };
+    const { convex, user, error } = await getServerActionContext({
+      requireUser: true,
+    });
+
+    if (error || !user) {
+      return { success: false, error: "Unauthorized" };
     }
 
-    // Get the subscription plan
-    const subscriptionPlan = SUBSCRIPTION_PLANS.find(
-      (plan) => plan.id === planId
+    if (!convex) {
+      return { success: false, error: "Database connection failed" };
+    }
+
+    // Extract user ID
+    const userId =
+      (user as { userId?: string | null })?.userId ??
+      (user as { id?: string | null })?.id ??
+      (user as { _id?: string | null })?._id ??
+      null;
+
+    if (!userId) {
+      return { success: false, error: "User ID not found" };
+    }
+
+    // Get plan details
+    const { SUBSCRIPTION_PLANS } = await import("@/constants/subscriptionPlans");
+    const plan = SUBSCRIPTION_PLANS.find((p) => p.id === planId);
+
+    if (!plan) {
+      return { success: false, error: "Plan not found" };
+    }
+
+    if (plan.tier === "free") {
+      return { success: false, error: "Cannot subscribe to free plan" };
+    }
+
+    // Check for existing subscription
+    const existingSubscription = await convex.query(
+      api.subscriptions.getSubscriptionByUser,
+      { userId }
     );
 
-    if (!subscriptionPlan) {
-      return {
-        success: false,
-        error: "Invalid plan ID",
-      };
-    }
-
-    // Get current user
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return {
-        success: false,
-        error: "Unauthorized",
-      };
-    }
-
-    // Get user details
-    const userEmail = user.email || "user@example.com";
-    const firstName = user.user_metadata?.first_name || "User";
-    const lastName = user.user_metadata?.last_name || "";
-
-    // Create customer in Xendit
-    const customerResult = await createCustomer(
-      user.id,
-      userEmail,
-      firstName,
-      lastName
-    );
-
-    if (!customerResult.success || !customerResult.customerId) {
-      return {
-        success: false,
-        error: customerResult.error || "Failed to create customer",
-      };
-    }
-
-    // Check if user already has a subscription for this plan
-    const existingSubscription = await getXenditUserSubscription(user.id);
-
-    let subscriptionResult;
-    let xenditSubscriptionId;
-
+    // Handle upgrade/downgrade: If user has active subscription and wants different plan
     if (
       existingSubscription &&
-      existingSubscription.xendit_plan_id === planId
+      existingSubscription.status === "active" &&
+      existingSubscription.xendit_plan_id !== planId
     ) {
-      // User already has a subscription for this plan, use existing Xendit subscription
-      console.log(
-        "Using existing subscription:",
-        existingSubscription.xendit_subscription_id
-      );
-      xenditSubscriptionId = existingSubscription.xendit_subscription_id;
-
-      // Return the existing subscription's action URL if it's in REQUIRES_ACTION status
-      if (
-        existingSubscription.status === "pending" ||
-        existingSubscription.status === "requires_action"
-      ) {
-        // We need to get the current status from Xendit to get the action URL
-        const { getSubscriptionPlan } = await import(
-          "@/services/server/XenditService"
+      // This is an upgrade/downgrade - cancel current subscription and create new one
+      // Cancel the current subscription at period end (Xendit will handle the transition)
+      if (existingSubscription.xendit_subscription_id) {
+        const { updateXenditRecurringPlan } = await import("@/services/XenditService");
+        // Deactivate the old subscription in Xendit
+        await updateXenditRecurringPlan(
+          existingSubscription.xendit_subscription_id,
+          { status: "INACTIVE" }
         );
-        const currentPlan = await getSubscriptionPlan(
-          existingSubscription.xendit_subscription_id!
-        );
-
-        if (
-          currentPlan.success &&
-          currentPlan.subscription?.actions?.[0]?.url
-        ) {
-          return {
-            success: true,
-            subscriptionUrl: currentPlan.subscription.actions[0].url,
-          };
-        }
       }
 
-      // If subscription is already active, return success without creating new plan
-      if (existingSubscription.status === "active") {
-        return {
-          success: true,
-          subscriptionUrl: undefined, // No action needed
-        };
-      }
+      // Mark old subscription as cancelled
+      await convex.mutation(api.subscriptions.updateSubscription, {
+        subscriptionId: existingSubscription._id as any,
+        updates: {
+          status: "cancelled",
+          cancel_at_period_end: true,
+          cancelled_at: Date.now(),
+        },
+      });
+
+      logger.info("Cancelled existing subscription for upgrade/downgrade", {
+        userId,
+        oldPlanId: existingSubscription.xendit_plan_id,
+        newPlanId: planId,
+      });
     }
 
-    // Create new subscription plan in Xendit only if no existing subscription
-    if (!xenditSubscriptionId) {
-      const baseUrl =
-        process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-
-      // Build success URL with next parameter if provided
-      const successUrlParams = new URLSearchParams({ plan: planId });
-      if (nextUrl) {
-        successUrlParams.set("next", nextUrl);
-      }
-      const successUrl = `${baseUrl}/api/subscription/success?${successUrlParams.toString()}`;
-
-      // Build failure URL with error_next parameter if provided
-      const failureUrlParams = new URLSearchParams({ plan: planId });
-      if (nextUrl) {
-        failureUrlParams.set("error_next", nextUrl);
-      }
-      const failureUrl = `${baseUrl}/api/subscription/failure?${failureUrlParams.toString()}`;
-
-      subscriptionResult = await createSubscriptionPlan(
-        user.id,
-        customerResult.customerId,
+    // Check for existing pending subscription with same plan (idempotency)
+    if (
+      existingSubscription &&
+      existingSubscription.xendit_plan_id === planId &&
+      existingSubscription.status === "pending"
+    ) {
+      logger.info("Found existing pending subscription", {
+        userId,
         planId,
-        subscriptionPlan.priceMonthly,
-        subscriptionPlan.currency,
-        subscriptionPlan.description,
-        successUrl,
-        failureUrl
-      );
-
-      if (!subscriptionResult.success || !subscriptionResult.subscription) {
-        return {
-          success: false,
-          error:
-            subscriptionResult.error || "Failed to create subscription plan",
-        };
-      }
-
-      xenditSubscriptionId = subscriptionResult.subscription.id;
-    }
-
-    // Store subscription in database
-    const dbResult = await createUserSubscription(
-      user.id,
-      planId,
-      xenditSubscriptionId,
-      customerResult.customerId,
-      subscriptionPlan.priceMonthly,
-      subscriptionPlan.currency
-    );
-
-    if (!dbResult.success) {
+        subscriptionId: existingSubscription._id,
+      });
       return {
         success: false,
-        error: dbResult.error || "Failed to save subscription",
+        error: "A pending subscription already exists. Please complete the payment or wait for confirmation.",
       };
     }
 
-    // If we created a new subscription, check for action URL
-    if (subscriptionResult) {
-      // Debug: Log the subscription result (can be removed in production)
-      console.log(
-        "Subscription status:",
-        subscriptionResult.subscription?.status
-      );
-      console.log("Actions array:", subscriptionResult.subscription?.actions);
-
-      // Check if subscription requires action and has an action URL
-      if (
-        subscriptionResult.subscription?.status === "REQUIRES_ACTION" &&
-        subscriptionResult.subscription?.actions?.[0]?.url
-      ) {
-        return {
-          success: true,
-          subscriptionUrl: subscriptionResult.subscription.actions[0].url,
-        };
-      }
-
-      // Fallback: Check for actions URL regardless of status
-      if (subscriptionResult.subscription?.actions?.[0]?.url) {
-        return {
-          success: true,
-          subscriptionUrl: subscriptionResult.subscription.actions[0].url,
-        };
-      }
+    // Get user details for Xendit
+    const userData = await convex.query(api.users.getUserById, { userId });
+    if (!userData) {
+      return { success: false, error: "User not found" };
     }
 
-    return {
-      success: false,
-      error: "No payment URL available",
-    };
-  } catch (error: any) {
-    console.error("Error creating subscription:", error);
-    return {
-      success: false,
-      error: "Internal server error",
-    };
-  }
-}
+    // Generate unique reference ID for idempotency
+    const referenceId = `sub_${userId}_${planId}_${Date.now()}`;
 
-export async function cancelSubscription(): Promise<{
-  success: boolean;
-  message?: string;
-  error?: string;
-}> {
-  try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return {
-        success: false,
-        error: "Unauthorized",
-      };
-    }
-
-    // Get current subscription
-    const subscription = await getXenditUserSubscription(user.id);
-    if (!subscription || !subscription.xendit_subscription_id) {
-      return {
-        success: false,
-        error: "No active subscription found",
-      };
-    }
-
-    // Cancel subscription in Xendit
-    const cancelResult = await cancelSubscriptionPlan(
-      subscription.xendit_subscription_id
-    );
-
-    if (!cancelResult.success) {
-      return {
-        success: false,
-        error: cancelResult.error || "Failed to cancel subscription",
-      };
-    }
-
-    // Update subscription status in database
-    const updateResult = await updateSubscriptionStatus(
-      subscription.xendit_subscription_id,
-      "cancelled",
+    // Create pending subscription in database first
+    const subscriptionId = await convex.mutation(
+      api.subscriptions.upsertSubscription,
       {
-        cancelled_at: new Date().toISOString(),
-        cancel_at_period_end: true,
+        user_id: userId,
+        subscription_tier: plan.tier,
+        plan_id: planId,
+        xendit_plan_id: planId,
+        status: "pending",
+        amount_paid: plan.priceMonthly,
+        currency: plan.currency,
+        daily_swipe_limit: plan.metadata?.dailySwipeLimit,
       }
     );
 
-    if (!updateResult.success) {
+    logger.info("Created pending subscription", {
+      subscriptionId,
+      userId,
+      planId,
+    });
+
+    // Prepare return URLs
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const successUrl = nextUrl
+      ? `${baseUrl}${nextUrl}?subscription=success`
+      : `${baseUrl}/settings?tab=subscriptions&subscription=success`;
+    const failureUrl = nextUrl
+      ? `${baseUrl}${nextUrl}?subscription=failed`
+      : `${baseUrl}/settings?tab=subscriptions&subscription=failed`;
+
+    // Create Xendit recurring plan
+    const { createXenditRecurringPlan } = await import("@/services/XenditService");
+    const xenditResult = await createXenditRecurringPlan({
+      reference_id: referenceId,
+      customer_id: userId, // Use user ID as customer ID
+      recurring_action: "PAYMENT",
+      currency: plan.currency,
+      amount: plan.priceMonthly,
+      schedule: {
+        interval: "MONTH",
+        interval_count: 1,
+      },
+      payment_methods: ["CREDIT_CARD", "DEBIT_CARD", "EWALLET", "BANK_TRANSFER"],
+      description: `${plan.name} Plan - ${plan.description}`,
+      metadata: {
+        user_id: userId,
+        plan_id: planId,
+        subscription_id: subscriptionId,
+        tier: plan.tier,
+      },
+      success_return_url: successUrl,
+      failure_return_url: failureUrl,
+    });
+
+    if (!xenditResult.success || !xenditResult.data) {
+      // Update subscription status to failed
+      await convex.mutation(api.subscriptions.updateSubscription, {
+        subscriptionId: subscriptionId as any,
+        updates: { status: "incomplete" },
+      });
+
       return {
         success: false,
-        error: updateResult.error || "Failed to update subscription status",
+        error: xenditResult.error || "Failed to create Xendit subscription",
       };
     }
 
+    const xenditSubscription = xenditResult.data;
+
+    // Update subscription with Xendit IDs
+    await convex.mutation(api.subscriptions.updateSubscription, {
+      subscriptionId: subscriptionId as any,
+      updates: {
+        xendit_subscription_id: xenditSubscription.id,
+        xendit_customer_id: xenditSubscription.customer_id,
+        status: "pending", // Keep as pending until webhook confirms
+      },
+    });
+
+    // Get checkout URL from actions
+    const checkoutUrl =
+      xenditSubscription.actions?.find((a: any) => a.action === "PAY")?.url ||
+      xenditSubscription.actions?.[0]?.url;
+
+    if (!checkoutUrl) {
+      return {
+        success: false,
+        error: "No checkout URL received from Xendit",
+      };
+    }
+
+    logger.info("Subscription created successfully", {
+      subscriptionId,
+      userId,
+      planId,
+      xenditSubscriptionId: xenditSubscription.id,
+    });
+
     return {
       success: true,
-      message: "Subscription cancelled successfully",
+      subscriptionUrl: checkoutUrl,
     };
-  } catch (error: any) {
-    console.error("Error cancelling subscription:", error);
+  } catch (err) {
+    logger.error("Failed to create subscription:", err);
     return {
       success: false,
-      error: "Failed to cancel subscription",
+      error: err instanceof Error ? err.message : "Failed to create subscription",
     };
   }
 }
 
-export async function getSubscriptionStatus(subscriptionId: string): Promise<{
-  success: boolean;
-  status?: string;
-  error?: string;
-}> {
-  try {
-    const subscriptionResult = await getSubscriptionPlan(subscriptionId);
-
-    if (!subscriptionResult.success || !subscriptionResult.subscription) {
-      return {
-        success: false,
-        error: subscriptionResult.error || "Failed to fetch subscription",
-      };
-    }
-
-    return {
-      success: true,
-      status: subscriptionResult.subscription.status,
-    };
-  } catch (error: any) {
-    console.error("Error fetching subscription status:", error);
-    return {
-      success: false,
-      error: "Failed to fetch subscription status",
-    };
-  }
-}

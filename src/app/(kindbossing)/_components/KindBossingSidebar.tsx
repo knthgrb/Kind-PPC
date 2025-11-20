@@ -1,205 +1,204 @@
 "use client";
-import React, { useState, useEffect } from "react";
+
+import React, { useMemo } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
-  FiHome,
   FiBriefcase,
   FiUsers,
   FiFileText,
-  FiShield,
-  FiFolder,
   FiChevronLeft,
   FiChevronRight,
-  FiMessageCircle,
-  FiBell,
 } from "react-icons/fi";
-import Tooltip from "@/components/tooltip/Tooltip";
-import { usePendingApplications } from "@/hooks/usePendingApplications";
-import { useUnreadCounts } from "@/hooks/useUnreadCounts";
-import { useMemo } from "react";
+import { useSidebarStore } from "@/stores/useSidebarStore";
+import { useQuery } from "convex/react";
+import { api } from "@/utils/convex/client";
+
+const navigationItems = [
+  {
+    label: "Job Posts",
+    href: "/my-job-posts",
+    icon: FiBriefcase,
+  },
+  {
+    label: "Employees",
+    href: "/employees",
+    icon: FiUsers,
+  },
+  {
+    label: "Matches",
+    href: "/kindbossing/matches",
+    icon: FiUsers,
+  },
+  {
+    label: "Documents",
+    href: "/documents",
+    icon: FiFileText,
+  },
+];
 
 export default function KindBossingSidebar() {
-  const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
-  const { pendingCount } = usePendingApplications();
-  const { unreadCounts } = useUnreadCounts();
+  const { isCollapsed, toggleSidebar } = useSidebarStore();
+  const currentUser = useQuery(api.auth.getCurrentUser);
 
-  // Auto-collapse sidebar when on kindbossing/messages page
-  useEffect(() => {
-    if (pathname?.includes("/kindbossing/messages")) {
-      setCollapsed(true);
-    } else {
-      setCollapsed(false);
-    }
-  }, [pathname]);
+  const kindbossingUserId = useMemo(() => {
+    if (!currentUser) return null;
+    return (
+      (currentUser as { userId?: string | null })?.userId ??
+      (currentUser as { id?: string | null })?.id ??
+      (currentUser as { _id?: string | null })?._id ??
+      null
+    );
+  }, [currentUser]);
 
-  const navigationItems = useMemo(
-    () => [
-      {
-        label: "My Jobs",
-        href: "/my-jobs",
-        icon: FiBriefcase,
-        badge: pendingCount > 0 ? pendingCount.toString() : undefined,
-      },
-      {
-        label: "Employees",
-        href: "/my-employees",
-        icon: FiUsers,
-      },
-      {
-        label: "Messages",
-        href: "/kindbossing/messages",
-        icon: FiMessageCircle,
-        badge:
-          unreadCounts.unreadMessages > 0
-            ? unreadCounts.unreadMessages.toString()
-            : undefined,
-      },
-      {
-        label: "Notifications",
-        href: "/notifications",
-        icon: FiBell,
-        badge:
-          unreadCounts.unreadNotifications > 0
-            ? unreadCounts.unreadNotifications.toString()
-            : undefined,
-      },
-      // {
-      //   label: "Payslip",
-      //   href: "/payslip",
-      //   icon: FiFileText,
-      // },
-      // {
-      //   label: "Gov't Benefits",
-      //   href: "/government-benefits",
-      //   icon: FiShield,
-      // },
-      {
-        label: "Documents",
-        href: "/documents",
-        icon: FiFolder,
-      },
-    ],
-    [pendingCount, unreadCounts]
+  const pendingApplications = useQuery(
+    api.applications.getPendingApplicationsForKindBossing,
+    kindbossingUserId
+      ? {
+          kindbossingUserId,
+        }
+      : "skip"
   );
 
+  const hasPendingApplications = (pendingApplications?.length ?? 0) > 0;
+  const matchesData = useQuery(
+    api.matches.getMatchesByKindBossing,
+    kindbossingUserId
+      ? { userId: kindbossingUserId, filterOpenedWithConversation: true }
+      : "skip"
+  );
+
+  const hasPendingMatches = useMemo(() => {
+    if (!Array.isArray(matchesData)) return false;
+    return matchesData.some(
+      (match) => match?.is_opened_by_kindbossing !== true
+    );
+  }, [matchesData]);
+
+  const unreadMetaRaw = useQuery(
+    api.messages.getUnreadConversationsCount,
+    kindbossingUserId ? { userId: kindbossingUserId } : "skip"
+  ) as { count?: number } | number | null | undefined;
+
+  const unreadCount = useMemo(() => {
+    if (typeof unreadMetaRaw === "number") {
+      return unreadMetaRaw;
+    }
+    if (
+      unreadMetaRaw &&
+      typeof unreadMetaRaw === "object" &&
+      "count" in unreadMetaRaw
+    ) {
+      return unreadMetaRaw.count ?? 0;
+    }
+    return 0;
+  }, [unreadMetaRaw]);
+
+  const hasUnreadMessages = unreadCount > 0;
+  const showMatchesBadge = hasPendingMatches || hasUnreadMessages;
+
   const isActive = (href: string) => {
-    if (href === "/my-jobs") {
-      return pathname === href || pathname?.startsWith("/my-jobs/");
+    if (href === "/my-job-posts") {
+      return pathname === href || pathname?.startsWith("/my-job-posts/");
     }
-    if (href === "/my-employees") {
-      return pathname === href || pathname?.startsWith("/my-employees/");
+    if (href === "/employees") {
+      return pathname === href || pathname?.startsWith("/employees/");
     }
-    // if (href === "/payslip") {
-    //   return pathname === href || pathname?.startsWith("/payslip/");
-    // }
-    // if (href === "/government-benefits") {
-    //   return pathname === href || pathname?.startsWith("/government-benefits/");
-    // }
+    if (href === "/kindbossing/matches" || href === "/kindbossing/messages") {
+      return (
+        pathname === href ||
+        pathname?.startsWith("/kindbossing/matches/") ||
+        pathname?.startsWith("/kindbossing/messages/")
+      );
+    }
     if (href === "/documents") {
       return pathname === href || pathname?.startsWith("/documents/");
-    }
-    if (href === "/kindbossing/messages") {
-      return (
-        pathname === href || pathname?.startsWith("/kindbossing/messages/")
-      );
     }
     return pathname === href;
   };
 
   return (
-    <div
-      className={`hidden lg:flex flex-col  bg-white border-r border-gray-200 ${
-        collapsed ? "w-16 items-center" : "w-56"
+    <aside
+      className={`hidden lg:flex border-r border-gray-200 bg-white flex-col transition-all duration-300 ease-in-out ${
+        isCollapsed ? "w-16" : "w-64"
       }`}
+      style={{ height: "calc(100vh - 8vh)" }}
     >
-      {/* Logo Section */}
-      <div className="p-4 border-b border-gray-200 h-[8vh] flex items-center">
-        <div className="flex items-center justify-between w-full">
-          {!collapsed && (
-            <Link href="/my-jobs">
-              <Image
-                src="/kindLogo.png"
-                alt="Kind Logo"
-                width={120}
-                height={40}
-                className="h-8 w-auto"
-              />
-            </Link>
-          )}
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="p-2 cursor-pointer rounded-xl hover:bg-gray-100 transition-colors"
-          >
-            {collapsed ? (
-              <FiChevronRight className="w-5 h-5 text-gray-600" />
-            ) : (
-              <FiChevronLeft className="w-5 h-5 text-gray-600" />
-            )}
-          </button>
-        </div>
-      </div>
-      {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-2">
+      <nav
+        className={`flex-1 py-6 space-y-2 min-h-0 overflow-y-auto ${
+          isCollapsed ? "px-2" : "px-4"
+        }`}
+      >
         {navigationItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
-
-          const navItem = (
-            <Link
-              key={item.label}
-              href={item.href}
-              className={`relative flex items-center rounded-lg transition-colors group ${
-                collapsed
-                  ? "justify-center px-2 py-3"
-                  : "justify-between px-3 py-2"
-              } ${
-                active
-                  ? "bg-red-50 text-red-600 "
-                  : "text-gray-700 hover:bg-gray-50 hover:text-red-600"
-              }`}
-            >
-              <div
-                className={`flex items-center ${
-                  collapsed ? "w-full justify-center" : ""
+          return (
+            <div key={item.href} className="relative group">
+              <Link
+                href={item.href}
+                className={`relative flex items-center rounded-xl transition-colors group ${
+                  isCollapsed ? "justify-center px-0 py-3" : "gap-3 px-4 py-3"
+                } ${
+                  active
+                    ? "bg-red-50 text-red-600 font-medium"
+                    : "text-gray-700 hover:bg-gray-50"
                 }`}
+                aria-label={isCollapsed ? item.label : undefined}
               >
-                <Icon
-                  className={`w-5 h-5 shrink-0 ${
-                    active
-                      ? "text-red-600"
-                      : "text-gray-500 group-hover:text-red-600"
-                  }`}
-                />
-                {!collapsed && (
-                  <span className="ml-3 font-medium">{item.label}</span>
+                <Icon className="w-5 h-5 shrink-0" />
+                {!isCollapsed && (
+                  <span className="text-sm whitespace-nowrap">
+                    {item.label}
+                  </span>
                 )}
-              </div>
-              {!collapsed && item.badge && (
-                <span className="bg-red-600 text-white text-xs rounded-full h-5 min-w-[20px] px-2 flex items-center justify-center font-semibold">
-                  {item.badge}
-                </span>
+                {item.label === "Job Posts" && hasPendingApplications && (
+                  <span
+                    className={`absolute rounded-full bg-red-500 ${
+                      isCollapsed
+                        ? "top-2 right-2 h-2 w-2"
+                        : "top-3 right-4 h-2.5 w-2.5"
+                    }`}
+                  />
+                )}
+                {item.label === "Matches" && showMatchesBadge && (
+                  <span
+                    className={`absolute rounded-full bg-red-500 ${
+                      isCollapsed
+                        ? "top-2 right-2 h-2 w-2"
+                        : "top-3 right-4 h-2.5 w-2.5"
+                    }`}
+                  />
+                )}
+              </Link>
+              {isCollapsed && (
+                <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 translate-x-2 whitespace-nowrap rounded-lg bg-gray-900 px-3 py-1 text-xs font-medium text-white opacity-0 shadow-lg transition duration-200 group-hover:opacity-100 group-hover:translate-x-0">
+                  {item.label}
+                </div>
               )}
-              {collapsed && item.badge && (
-                <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center text-[10px] font-semibold">
-                  {item.badge}
-                </span>
-              )}
-            </Link>
-          );
-
-          return collapsed ? (
-            <Tooltip key={item.label} content={item.label} position="right">
-              {navItem}
-            </Tooltip>
-          ) : (
-            navItem
+            </div>
           );
         })}
       </nav>
-    </div>
+
+      {/* Toggle Button - Bottom */}
+      <div
+        className={`flex items-center border-t border-gray-200 mt-auto p-2 ${
+          isCollapsed ? "justify-center" : "justify-end"
+        }`}
+      >
+        <button
+          onClick={toggleSidebar}
+          className="p-2 cursor-pointer rounded-lg hover:bg-gray-100 transition-colors"
+          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {isCollapsed ? (
+            <FiChevronRight className="w-5 h-5 text-gray-600" />
+          ) : (
+            <FiChevronLeft className="w-5 h-5 text-gray-600" />
+          )}
+        </button>
+      </div>
+    </aside>
   );
 }

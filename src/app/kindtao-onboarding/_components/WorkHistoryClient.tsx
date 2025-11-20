@@ -7,7 +7,6 @@ import { WorkEntry } from "@/types/onboarding";
 import { formatDateRange } from "@/utils/dateUtils";
 import Dropdown from "@/components/dropdown/Dropdown";
 import StepperFooter from "@/components/common/StepperFooter";
-import { createClient } from "@/utils/supabase/client";
 import { useKindTaoOnboardingStore } from "@/stores/useKindTaoOnboardingStore";
 import { logger } from "@/utils/logger";
 

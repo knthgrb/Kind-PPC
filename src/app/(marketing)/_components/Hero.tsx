@@ -72,7 +72,7 @@ export default function Hero() {
               </svg>
             </Link>
             <Link
-              href="/my-jobs"
+              href="/my-job-posts"
               className="inline-flex items-center justify-center px-8 py-4 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:border-red-300 hover:text-red-600 bg-white hover:bg-white transition-all duration-300 transform hover:-translate-y-1 w-full sm:w-auto"
             >
               Post a Job

@@ -19,7 +19,7 @@ export default function PrimaryButton({
   };
 
   const baseClasses =
-    "cursor-pointer bg-[#CC0000] text-white rounded-lg hover:bg-red-700 transition-colors";
+    "cursor-pointer bg-[#CC0000] text-white rounded-xl hover:bg-red-700 transition-colors";
   const sizeClass = sizeClasses[size];
   const combinedClassName = className
     ? `${baseClasses} ${sizeClass} ${className}`

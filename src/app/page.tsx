@@ -11,7 +11,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { benefitsList, faqs } from "@/lib/marketing/homeData";
-import { JobService } from "@/services/server/JobService";
+import { JobService } from "@/services/JobService";
 import JobsGrid from "@/components/common/JobsGrid";
 import Header from "@/app/(marketing)/_components/Header";
 import Footer from "@/app/(marketing)/_components/Footer";

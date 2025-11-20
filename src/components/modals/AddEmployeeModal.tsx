@@ -7,9 +7,14 @@ import Dropdown from "@/components/dropdown/Dropdown";
 import { FaTimes } from "react-icons/fa";
 import PrimaryButton from "../buttons/PrimaryButton";
 import SecondaryButton from "../buttons/SecondaryButton";
-import { getJobPostsForEmployeeSelection } from "@/actions/employees/get-job-posts";
-import { getKindTaoUsersForJob, KindTaoUserOption } from "@/actions/employees/get-kindtao-users-for-job";
+import { logger } from "@/utils/logger";
+import {
+  getMatchedUsersForJob,
+  MatchedUserOption,
+} from "@/actions/employees/get-matched-users-for-job";
 import { JobPost } from "@/types/jobPosts";
+import { getJobPostsForEmployeeSelection } from "@/actions/employees/get-job-posts";
+import { addEmployee } from "@/actions/employees/add-employee";
 
 type AddEmployeeModalProps = {
   isOpen: boolean;
@@ -23,69 +28,90 @@ export default function AddEmployeeModal({
   onEmployeeAdded,
 }: AddEmployeeModalProps) {
   const { showSuccess, showError } = useToastActions();
-  
+
   // form state
   const [kindtaoUserId, setKindtaoUserId] = useState("");
-  const [jobPostTitle, setJobPostTitle] = useState(""); // For dropdown display
-  const [status, setStatus] = useState<"active" | "inactive">("active");
+  const [jobPostId, setJobPostId] = useState("");
 
   // Job posts state
   const [jobPosts, setJobPosts] = useState<JobPost[]>([]);
   const [loadingJobPosts, setLoadingJobPosts] = useState(false);
-  
-  // KindTao users state
-  const [kindtaoUsers, setKindtaoUsers] = useState<KindTaoUserOption[]>([]);
-  const [loadingKindtaoUsers, setLoadingKindtaoUsers] = useState(false);
 
-  const statusOptions = ["active", "inactive"];
+  // KindTao users state
+  const [kindtaoUsers, setKindtaoUsers] = useState<MatchedUserOption[]>([]);
+  const [loadingKindtaoUsers, setLoadingKindtaoUsers] = useState(false);
 
   // Fetch job posts when modal opens
   useEffect(() => {
     if (isOpen) {
       loadJobPosts();
       setKindtaoUserId("");
-      setJobPostTitle("");
+      setJobPostId("");
     }
   }, [isOpen]);
 
-  // Fetch KindTao users when job post is selected (by job title)
+  // Fetch KindTao users when job post is selected
   useEffect(() => {
-    if (jobPostTitle) {
-      loadKindTaoUsers(jobPostTitle);
-      setKindtaoUserId(""); // Reset selection when job changes
+    if (jobPostId) {
+      // Find the actual job to get its ID
+      const selectedJob = jobPosts.find((job) => {
+        const option = `${job.job_title} - ${job.location}`;
+        return option === jobPostId;
+      });
+
+      if (selectedJob?.id) {
+        loadKindTaoUsers(selectedJob.id);
+        setKindtaoUserId(""); // Reset selection when job changes
+      } else {
+        setKindtaoUsers([]);
+      }
     } else {
       setKindtaoUsers([]);
     }
-  }, [jobPostTitle]);
+  }, [jobPostId, jobPosts]);
 
   const loadJobPosts = async () => {
     setLoadingJobPosts(true);
     try {
       const result = await getJobPostsForEmployeeSelection();
       if (result.success) {
-        setJobPosts(result.jobPosts);
+        setJobPosts(result.jobPosts || []);
       } else {
-        console.error("Error loading job posts:", result.error);
+        logger.error("Error loading job posts:", result.error);
       }
     } catch (error) {
-      console.error("Error loading job posts:", error);
+      logger.error("Error loading job posts:", error);
     } finally {
       setLoadingJobPosts(false);
     }
   };
 
-  const loadKindTaoUsers = async (jobTitle: string) => {
+  const loadKindTaoUsers = async (jobId: string) => {
     setLoadingKindtaoUsers(true);
     try {
-      const result = await getKindTaoUsersForJob(jobTitle);
+      const result = await getMatchedUsersForJob(jobId);
       if (result.success) {
-        setKindtaoUsers(result.users);
+        // No matches is a valid state, not an error
+        setKindtaoUsers(result.users || []);
       } else {
-        console.error("Error loading KindTao users:", result.error);
+        // Only log actual errors (not "no matches" scenarios)
+        // Check if it's a real error vs just no matches
+        if (
+          result.error &&
+          !result.error.includes("not found") &&
+          !result.error.includes("Invalid ID")
+        ) {
+          logger.warn("Error loading matched users:", result.error);
+        }
         setKindtaoUsers([]);
       }
     } catch (error) {
-      console.error("Error loading KindTao users:", error);
+      // Only log unexpected errors
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      if (!errorMessage.includes("Invalid ID length")) {
+        logger.error("Error loading matched users:", error);
+      }
       setKindtaoUsers([]);
     } finally {
       setLoadingKindtaoUsers(false);
@@ -93,47 +119,59 @@ export default function AddEmployeeModal({
   };
 
   // Create job options from job posts (for dropdown display)
-  const jobOptions = jobPosts.map((job) => job.job_title);
-  
+  // Format: "Job Title - Location"
+  const jobOptions = jobPosts.map(
+    (job) => `${job.job_title} - ${job.location}`
+  );
+
+  // Get selected job post - jobPostId stores the formatted option string
+  const selectedJob = jobPosts.find((job) => {
+    const option = `${job.job_title} - ${job.location}`;
+    return option === jobPostId;
+  });
+
   // Create KindTao user options (for dropdown display)
   const kindtaoUserOptions = kindtaoUsers.map((user) => user.name);
-  
+
   // Get selected KindTao user ID from selected name
-  const selectedKindTaoUser = kindtaoUsers.find((user) => user.name === kindtaoUserId);
+  const selectedKindTaoUser = kindtaoUsers.find(
+    (user) => user.name === kindtaoUserId
+  );
 
   const handleAddEmployee = async () => {
-    if (!kindtaoUserId.trim() || !jobPostTitle.trim() || !selectedKindTaoUser) {
-      showError("Please complete all required fields before adding the employee.");
-      return;
-    }
-
-    // Find the first job post with this title (we'll use any of them since they're grouped by title)
-    const selectedJob = jobPosts.find((job) => job.job_title === jobPostTitle);
-    
-    if (!selectedJob) {
-      showError("Job post not found. Please try again.");
+    if (
+      !kindtaoUserId.trim() ||
+      !jobPostId.trim() ||
+      !selectedKindTaoUser ||
+      !selectedJob
+    ) {
+      showError(
+        "Please complete all required fields before adding the employee."
+      );
       return;
     }
 
     try {
-      const { addEmployee } = await import("@/actions/employees/add-employee");
-      
       const result = await addEmployee({
         kindbossing_user_id: "", // Will be set in server action
         kindtao_user_id: selectedKindTaoUser.id,
         job_post_id: selectedJob.id,
-        status: status,
+        status: "active", // Always set new employees as active
       });
 
       if (result.success) {
-        showSuccess(`${selectedKindTaoUser.name} has been added to your team successfully`);
+        showSuccess(
+          `${selectedKindTaoUser.name} has been added to your team successfully`
+        );
         onClose();
         onEmployeeAdded?.();
       } else {
-        showError(result.error || "Something went wrong while adding the employee.");
+        showError(
+          result.error || "Something went wrong while adding the employee."
+        );
       }
     } catch (err) {
-      console.error("Failed to add employee:", err);
+      logger.error("Failed to add employee:", err);
       showError("Something went wrong while adding the employee.");
     }
   };
@@ -141,8 +179,7 @@ export default function AddEmployeeModal({
   const handleClose = () => {
     // Reset form
     setKindtaoUserId("");
-    setJobPostTitle("");
-    setStatus("active");
+    setJobPostId("");
     setKindtaoUsers([]);
     onClose();
   };
@@ -152,10 +189,10 @@ export default function AddEmployeeModal({
   return createPortal(
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/40 z-50" onClick={handleClose} />
+      <div className="fixed inset-0 bg-black/40 z-100" onClick={handleClose} />
 
       {/* Modal */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl border border-[#DFDFDF] shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -177,39 +214,48 @@ export default function AddEmployeeModal({
               </label>
               {loadingJobPosts ? (
                 <div className="w-full h-12 rounded-xl border border-[#DFDFDF] px-4 flex items-center">
-                  <span className="text-gray-500 text-sm">Loading job posts...</span>
+                  <span className="text-gray-500 text-sm">
+                    Loading job posts...
+                  </span>
                 </div>
               ) : jobOptions.length === 0 ? (
                 <div className="w-full h-12 rounded-xl border border-red-300 bg-red-50 px-4 flex items-center">
                   <span className="text-red-600 text-sm">
-                    No active job posts available. Please create a job post first.
+                    No active job posts available. Please create a job post
+                    first.
                   </span>
                 </div>
               ) : (
-              <Dropdown
-                  value={jobPostTitle}
-                  onChange={setJobPostTitle}
-                options={jobOptions}
-                placeholder="Select job position"
-                className="border border-[#DFDFDF] rounded-xl"
-              />
+                <Dropdown
+                  value={jobPostId}
+                  onChange={(value) => {
+                    // Value is the formatted option string
+                    setJobPostId(value);
+                  }}
+                  options={jobOptions}
+                  placeholder="Select job position"
+                  className="border border-[#DFDFDF] rounded-xl"
+                />
               )}
             </div>
 
             {/* KindTao User Selection */}
-            {jobPostTitle && (
-            <div className="mb-5">
-              <label className="block mb-2 text-sm font-medium text-gray-700">
+            {selectedJob && (
+              <div className="mb-5">
+                <label className="block mb-2 text-sm font-medium text-gray-700">
                   Employee
-              </label>
+                </label>
                 {loadingKindtaoUsers ? (
                   <div className="w-full h-12 rounded-xl border border-[#DFDFDF] px-4 flex items-center">
-                    <span className="text-gray-500 text-sm">Loading employees...</span>
+                    <span className="text-gray-500 text-sm">
+                      Loading employees...
+                    </span>
                   </div>
                 ) : kindtaoUsers.length === 0 ? (
                   <div className="w-full h-12 rounded-xl border border-yellow-300 bg-yellow-50 px-4 flex items-center">
                     <span className="text-yellow-700 text-sm">
-                      No matched users found for this job. Please approve an application to create a match first.
+                      No matched users found for this job. Please approve an
+                      application to create a match first.
                     </span>
                   </div>
                 ) : (
@@ -219,24 +265,10 @@ export default function AddEmployeeModal({
                     options={kindtaoUserOptions}
                     placeholder="Select employee"
                     className="border border-[#DFDFDF] rounded-xl"
-              />
+                  />
                 )}
-            </div>
+              </div>
             )}
-
-            {/* Status */}
-            <div className="mb-8">
-              <label className="block mb-2 text-sm font-medium text-gray-700">
-                Status
-              </label>
-              <Dropdown
-                value={status}
-                onChange={(val) => setStatus(val as "active" | "inactive")}
-                options={statusOptions}
-                placeholder="Select status"
-                className="border border-[#DFDFDF] rounded-xl"
-              />
-            </div>
 
             {/* Footer */}
             <div className="flex justify-end space-x-3">
@@ -248,7 +280,6 @@ export default function AddEmployeeModal({
           </div>
         </div>
       </div>
-
     </>,
     document.body
   );

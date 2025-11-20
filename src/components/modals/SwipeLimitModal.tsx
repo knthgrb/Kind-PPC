@@ -41,7 +41,7 @@ export default function SwipeLimitModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-100 p-4">
       <div className="bg-white rounded-2xl max-w-md w-full p-6 relative">
         {/* Close button */}
         <button

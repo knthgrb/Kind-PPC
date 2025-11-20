@@ -121,7 +121,9 @@ export default function EditProfileModal({
         barangay: formData.barangay,
         municipality: formData.municipality,
         province: formData.province,
-        zip_code: String(formData.zip_code),
+        zip_code: formData.zip_code
+          ? Number.parseInt(String(formData.zip_code), 10)
+          : undefined,
         skills: formData.skills,
         languages: formData.languages,
         expected_salary_range: formData.expected_salary_range,
@@ -158,8 +160,8 @@ export default function EditProfileModal({
   ];
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-100 p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300">
         {/* Fixed Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 shrink-0">
           <h2 className="text-xl font-semibold text-gray-900">Edit Profile</h2>
@@ -375,7 +377,7 @@ export default function EditProfileModal({
                 <button
                   type="button"
                   onClick={handleAddSkill}
-                  className="px-4 py-2 bg-[#CC0000] text-white rounded-lg hover:bg-red-700 transition-colors"
+                  className="px-4 cursor-pointer py-2 bg-[#CC0000] text-white rounded-xl hover:bg-red-700 transition-colors"
                 >
                   Add
                 </button>
@@ -419,7 +421,7 @@ export default function EditProfileModal({
                 <button
                   type="button"
                   onClick={handleAddLanguage}
-                  className="px-4 py-2 bg-[#CC0000] text-white rounded-lg hover:bg-red-700 transition-colors"
+                  className="px-4 py-2 bg-[#CC0000] text-white rounded-xl hover:bg-red-700 transition-colors"
                 >
                   Add
                 </button>
@@ -598,14 +600,14 @@ export default function EditProfileModal({
                 type="button"
                 onClick={onClose}
                 disabled={isSaving}
-                className="flex-1 cursor-pointer py-2 px-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 cursor-pointer py-2 px-4 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSaving}
-                className="flex-1 cursor-pointer py-2 px-4 bg-[#CC0000] text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                className="flex-1 cursor-pointer py-2 px-4 bg-[#CC0000] text-white rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
                 {isSaving ? (
                   <>

@@ -21,11 +21,14 @@ export default function Header() {
   };
 
   const getUserDisplayName = () => {
-    if (user?.user_metadata?.first_name && user?.user_metadata?.last_name) {
-      return `${user.user_metadata.first_name} ${user.user_metadata.last_name}`;
+    if (user?.first_name && user?.last_name) {
+      return `${user.first_name} ${user.last_name}`;
     }
-    if (user?.user_metadata?.first_name) {
-      return user.user_metadata.first_name;
+    if (user?.first_name) {
+      return user.first_name;
+    }
+    if (user?.name) {
+      return user.name;
     }
     if (user?.email) {
       return user.email.split("@")[0];
@@ -34,11 +37,18 @@ export default function Header() {
   };
 
   const getUserInitials = () => {
-    if (user?.user_metadata?.first_name && user?.user_metadata?.last_name) {
-      return `${user.user_metadata.first_name[0]}${user.user_metadata.last_name[0]}`.toUpperCase();
+    if (user?.first_name && user?.last_name) {
+      return `${user.first_name[0]}${user.last_name[0]}`.toUpperCase();
     }
-    if (user?.user_metadata?.first_name) {
-      return user.user_metadata.first_name[0].toUpperCase();
+    if (user?.first_name) {
+      return user.first_name[0].toUpperCase();
+    }
+    if (user?.name) {
+      const nameParts = user.name.split(" ");
+      if (nameParts.length >= 2) {
+        return `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase();
+      }
+      return user.name[0].toUpperCase();
     }
     if (user?.email) {
       return user.email[0].toUpperCase();
@@ -73,8 +83,8 @@ export default function Header() {
           <Image
             src="/kindLogo.png"
             alt="Kind Logo"
-            width={150}
-            height={50}
+            width={100}
+            height={30}
             className="h-8 w-auto"
           />
         </Link>

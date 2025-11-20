@@ -11,13 +11,13 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     currency: "PHP",
     description: "Perfect for trying out the platform",
     features: [
-      "Browse up to 5 kindTao profiles",
+      "1 swipe credit per day",
       "Post 1 job per month",
       "Basic messaging",
       "Community support",
       "Basic profile visibility",
     ],
-    swipeCreditsMonthly: 10,
+    swipeCreditsMonthly: 1, // 1 per day
     boostCreditsMonthly: 0,
     isActive: true,
     metadata: {
@@ -25,6 +25,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       maxProfileViews: 5,
       hasPrioritySupport: false,
       hasAdvancedAnalytics: false,
+      dailySwipeLimit: 1,
     },
   },
   {
@@ -63,16 +64,16 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     currency: "PHP",
     description: "Perfect for regular household hiring needs",
     features: [
-      "10 swipe credits per day",
+      "30 swipe credits per day",
+      "10 boost credits per month",
       "Unlimited access to verified kindTao profiles",
       "Unlimited job postings",
       "Direct messaging with kindTao",
       "Priority customer support",
-      "10 boost credits per month",
       "Advanced search filters",
       "Background check reports",
     ],
-    swipeCreditsMonthly: 10,
+    swipeCreditsMonthly: 30, // 30 per day
     boostCreditsMonthly: 10,
     isActive: true,
     isPopular: true,
@@ -82,6 +83,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       hasPrioritySupport: true,
       hasAdvancedAnalytics: true,
       hasBackgroundChecks: true,
+      dailySwipeLimit: 30,
     },
   },
   {
@@ -126,9 +128,10 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     description: "For families with multiple hiring needs",
     features: [
       "Unlimited swipe credits",
+      "Unlimited boost credits",
       "Everything in Basic",
-      "Unlimited profile boosts",
       "Priority job posting",
+      "Premium support",
       "Advanced HR tools",
       "Payroll management",
       "Compliance tracking",
@@ -147,6 +150,8 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       hasHRTools: true,
       hasPayrollManagement: true,
       hasDedicatedSupport: true,
+      hasPremiumSupport: true,
+      dailySwipeLimit: -1, // unlimited
     },
   },
   {

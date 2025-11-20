@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { NotificationService } from "@/services/client/NotificationService";
+import { NotificationService } from "@/services/NotificationService";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { logger } from "@/utils/logger";
 
 export default function NotificationInitializer() {
   const { user, isAuthenticated } = useAuthStore();
@@ -17,7 +18,7 @@ export default function NotificationInitializer() {
         try {
           await NotificationService.initialize(user.id);
         } catch (error) {
-          console.error("Failed to initialize notification service:", error);
+          logger.error("Failed to initialize notification service:", error);
         }
       }
     };

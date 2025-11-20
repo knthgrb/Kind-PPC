@@ -72,5 +72,5 @@ export interface WorkExperienceFormData {
   skills_used: string[];
   notes?: string;
   description?: string;
-  attachments?: File[];
+  attachments: File[];
 }

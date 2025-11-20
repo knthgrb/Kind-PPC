@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { AuthService } from "@/services/server/AuthService";
-import { UserService } from "@/services/server/UserService";
+import { AuthService } from "@/services/AuthService";
+import { UserService } from "@/services/UserService";
 import { logger } from "@/utils/logger";
 
 export async function login(formData: FormData) {
@@ -45,25 +45,7 @@ export async function login(formData: FormData) {
   }
 
   if (user) {
-    // Check if user is from Google OAuth
-    if (user?.app_metadata?.provider === "google") {
-      // Handle Google OAuth user
-      const role = user.user_metadata?.role;
-
-      if (!role) {
-        // Return redirect info instead of redirecting
-        return {
-          success: true,
-          data: authData,
-          user: user,
-          redirectTo: "/select-role",
-        };
-      }
-
-      // Continue with existing role-based routing...
-    }
-
-    // Get user metadata to check role
+    // Get user role from Convex
     const { role } = await UserService.getCurrentUserRole();
 
     if (!role) {
@@ -81,7 +63,7 @@ export async function login(formData: FormData) {
     if (role === "kindtao") {
       redirectTo = "/recs";
     } else if (role === "kindbossing") {
-      redirectTo = "/my-jobs";
+      redirectTo = "/my-job-posts";
     } else if (role === "admin") {
       redirectTo = "/admin-dashboard";
     }

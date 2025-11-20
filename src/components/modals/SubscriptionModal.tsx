@@ -40,7 +40,7 @@ export default function SubscriptionModal({
 
   const { showSuccess, showError, showWarning, showInfo } = useToastActions();
 
-  // Get monthly subscription plans with swipe credits
+  // Get subscription plans excluding free (only paid plans for upgrade/downgrade)
   const availablePlans = SUBSCRIPTION_PLANS.filter(
     (plan) => plan.userRole === userRole && plan.tier !== "free"
   );
@@ -75,7 +75,7 @@ export default function SubscriptionModal({
       const result = await getUserSubscription();
 
       if (result.success) {
-        setCurrentSubscription(result.subscription);
+        setCurrentSubscription(result.subscription ?? null);
       }
     } catch (error) {
       console.error("Error loading current subscription:", error);
@@ -87,40 +87,43 @@ export default function SubscriptionModal({
   if (!isOpen) return null;
 
   const handlePlanSelect = async (plan: any) => {
-    if (plan.priceMonthly === 0) {
-      // Free plan - no payment needed
-      onClose();
-    } else {
-      // Check if user already has this plan
-      if (
-        currentSubscription &&
-        currentSubscription.xendit_plan_id === plan.id
-      ) {
-        showInfo("You are already subscribed to this plan.");
-        return;
-      }
+    if (plan.priceMonthly === 0 || plan.tier === "free") {
+      // Free plan - no payment needed, just show info
+      showInfo("You're already on the free plan or this is the free plan.");
+      return;
+    }
 
-      setProcessingPlanId(plan.id);
-      setErrorMessage("");
+    // Check if user already has this plan
+    if (
+      currentSubscription &&
+      currentSubscription.xendit_plan_id === plan.id &&
+      currentSubscription.status === "active"
+    ) {
+      showInfo("You are already subscribed to this plan.");
+      return;
+    }
 
-      try {
-        // Create subscription with Xendit, passing current page as next URL
-        const currentUrl = window.location.pathname + window.location.search;
-        const result = await createSubscription(plan.id, currentUrl);
+    setProcessingPlanId(plan.id);
+    setErrorMessage("");
 
-        if (result.success && result.subscriptionUrl) {
-          // Redirect to Xendit payment page
-          window.location.href = result.subscriptionUrl;
-        } else {
-          setProcessingPlanId(null);
-          setErrorMessage(result.error || "Payment processing failed");
-          showError(result.error || "Payment processing failed");
-        }
-      } catch (error: any) {
+    try {
+      // Create subscription with Xendit, passing current page as next URL
+      // This will handle upgrades/downgrades automatically
+      const currentUrl = window.location.pathname + window.location.search;
+      const result = await createSubscription(plan.id, currentUrl);
+
+      if (result.success && result.subscriptionUrl) {
+        // Redirect to Xendit payment page
+        window.location.href = result.subscriptionUrl;
+      } else {
         setProcessingPlanId(null);
-        setErrorMessage(error.message || "An unexpected error occurred");
-        showError(error.message || "An unexpected error occurred");
+        setErrorMessage(result.error || "Payment processing failed");
+        showError(result.error || "Payment processing failed");
       }
+    } catch (error: any) {
+      setProcessingPlanId(null);
+      setErrorMessage(error.message || "An unexpected error occurred");
+      showError(error.message || "An unexpected error occurred");
     }
   };
 
@@ -167,28 +170,13 @@ export default function SubscriptionModal({
     });
   };
 
-  // Get simplified features for each plan
-  const getPlanFeatures = (tier: string) => {
-    if (tier === "basic") {
-      return [
-        "All features",
-        "10 swipes per day",
-        "5 matches per week",
-        "5 boost credits per month",
-      ];
-    } else if (tier === "premium") {
-      return [
-        "All features",
-        "Unlimited swipes per day",
-        "Unlimited matches",
-        "10 boost credits per month",
-      ];
-    }
-    return [];
+  // Get plan features from the plan object
+  const getPlanFeatures = (plan: any) => {
+    return plan.features || [];
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-white">
+    <div className="fixed inset-0 z-100 bg-white">
       <div className="h-full w-full overflow-y-auto">
         {/* Header */}
         <div className="flex justify-between items-center p-6">
@@ -299,8 +287,8 @@ export default function SubscriptionModal({
                       isCurrentPlan
                         ? "border-green-500 bg-green-50"
                         : plan.tier === "premium"
-                        ? "border-[#CC0000] bg-white"
-                        : "border-gray-200 bg-white"
+                          ? "border-[#CC0000] bg-white"
+                          : "border-gray-200 bg-white"
                     }`}
                   >
                     {isCurrentPlan && (
@@ -348,12 +336,20 @@ export default function SubscriptionModal({
                         {plan.name}
                       </h3>
                       <div className="mb-3">
-                        <span className="text-3xl font-bold text-[#CC0000]">
-                          ₱{plan.priceMonthly.toLocaleString()}
-                        </span>
-                        <span className="text-gray-500 text-sm ml-1">
-                          /month
-                        </span>
+                        {plan.priceMonthly === 0 ? (
+                          <span className="text-3xl font-bold text-gray-700">
+                            Free
+                          </span>
+                        ) : (
+                          <>
+                            <span className="text-3xl font-bold text-[#CC0000]">
+                              ₱{plan.priceMonthly.toLocaleString()}
+                            </span>
+                            <span className="text-gray-500 text-sm ml-1">
+                              /month
+                            </span>
+                          </>
+                        )}
                       </div>
                       <p className="text-sm text-gray-600 mb-4">
                         {plan.description}
@@ -361,8 +357,8 @@ export default function SubscriptionModal({
                     </div>
 
                     <div className="space-y-3 mb-6 grow">
-                      {getPlanFeatures(plan.tier).map(
-                        (feature, featureIndex) => (
+                      {getPlanFeatures(plan).map(
+                        (feature: string, featureIndex: number) => (
                           <div
                             key={featureIndex}
                             className="flex items-start gap-3"
@@ -407,7 +403,7 @@ export default function SubscriptionModal({
                       </button>
                       {isCurrentPlan && (
                         <p className="mt-2 text-xs font-medium text-green-700">
-                          You’re already subscribed to this plan.
+                          You're already subscribed to this plan.
                         </p>
                       )}
                     </div>
