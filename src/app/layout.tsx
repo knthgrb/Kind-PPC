@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import "@/styles/globals.css";
 import InstallPrompt from "@/components/pwa/InstallPrompt";
 import NotificationInitializer from "@/components/notification/NotificationInitializer";
-import NotificationPrompt from "@/components/notification/NotificationPrompt";
+// import NotificationPrompt from "@/components/notification/NotificationPrompt";
 import { ConvexClientProvider } from "./ConvexClientProvider";
 import AuthProvider from "@/components/common/AuthProvider";
 import SubscriptionSuccessHandler from "@/components/common/SubscriptionSuccessHandler";
@@ -46,7 +46,7 @@ export default function RootLayout({
             <AuthProvider>
               <InstallPrompt />
               <NotificationInitializer />
-              <NotificationPrompt />
+              {/* <NotificationPrompt /> */}
               <Suspense fallback={null}>
                 <SubscriptionSuccessHandler />
               </Suspense>
