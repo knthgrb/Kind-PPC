@@ -1,4 +1,4 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 
@@ -227,5 +227,36 @@ export const deleteJob = mutation({
   args: { jobId: v.id("job_posts") },
   handler: async (ctx, args) => {
     await ctx.db.delete(args.jobId);
+  },
+});
+
+// Internal function to close expired job posts
+export const closeExpiredJobs = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    let closedCount = 0;
+
+    // Find all active jobs with expires_at that has passed
+    const activeJobs = await ctx.db
+      .query("job_posts")
+      .withIndex("by_status")
+      .filter((q) => q.eq(q.field("status"), "active"))
+      .collect();
+
+    for (const job of activeJobs) {
+      // Only close jobs that have an expires_at and it has passed
+      if (job.expires_at && job.expires_at < now) {
+        await ctx.db.patch(job._id, {
+          status: "closed",
+          updated_at: now,
+        });
+        closedCount++;
+      }
+    }
+
+    console.log(
+      `[cron] Closed ${closedCount} expired job post(s) at ${new Date(now).toISOString()}`
+    );
   },
 });

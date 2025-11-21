@@ -22,4 +22,12 @@ crons.monthly(
   internal.credits.grantMonthlyBoostCredit
 );
 
+crons.hourly(
+  "close-expired-jobs",
+  {
+    minuteUTC: 0, // Run at the top of every hour
+  },
+  internal.jobs.closeExpiredJobs
+);
+
 export default crons;

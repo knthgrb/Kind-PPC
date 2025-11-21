@@ -30,7 +30,6 @@ import type * as payments from "../payments.js";
 import type * as pendingUserRoles from "../pendingUserRoles.js";
 import type * as profiles from "../profiles.js";
 import type * as reports from "../reports.js";
-import type * as seedJobs from "../seedJobs.js";
 import type * as skills from "../skills.js";
 import type * as storage from "../storage.js";
 import type * as subscriptions from "../subscriptions.js";
@@ -69,7 +68,6 @@ declare const fullApi: ApiFromModules<{
   pendingUserRoles: typeof pendingUserRoles;
   profiles: typeof profiles;
   reports: typeof reports;
-  seedJobs: typeof seedJobs;
   skills: typeof skills;
   storage: typeof storage;
   subscriptions: typeof subscriptions;

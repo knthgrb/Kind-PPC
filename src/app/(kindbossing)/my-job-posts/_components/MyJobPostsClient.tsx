@@ -15,7 +15,7 @@ import { JobService } from "@/services/JobService";
 import { convex, api } from "@/utils/convex/client";
 import { logger } from "@/utils/logger";
 import { useQuery } from "convex/react";
-import { FaPlus, FaEye, FaUsers, FaRocket } from "react-icons/fa";
+import { FaPlus, FaEye, FaUsers, FaRocket, FaArchive, FaFolderOpen } from "react-icons/fa";
 import { format } from "date-fns";
 import dynamic from "next/dynamic";
 const PostJobModal = dynamic(() => import("@/components/modals/PostJobModal"), {
@@ -65,6 +65,7 @@ export default function MyJobPostsClient({
   });
   const [isLoading, setIsLoading] = useState(false);
   const [jobs, setJobs] = useState<JobPost[]>(initialJobs);
+  const [activeTab, setActiveTab] = useState<"active" | "archive">("active");
   const pendingApplications = useQuery(
     api.applications.getPendingApplicationsForKindBossing,
     userId
@@ -91,6 +92,15 @@ export default function MyJobPostsClient({
 
   const hasPendingForJob = (jobId: string) =>
     (pendingCountsByJob[jobId] ?? 0) > 0;
+
+  // Separate jobs into active and archived
+  const { activeJobs, archivedJobs } = useMemo(() => {
+    const active = jobs.filter(
+      (job) => job.status === "active" || job.status === "paused"
+    );
+    const archived = jobs.filter((job) => job.status === "closed");
+    return { activeJobs: active, archivedJobs: archived };
+  }, [jobs]);
 
   const refreshJobs = async () => {
     try {
@@ -147,7 +157,7 @@ export default function MyJobPostsClient({
     ) {
       setActionModal({
         isOpen: true,
-        action: action === "reopen" ? "activate" : action,
+        action: action as "pause" | "activate" | "close" | "reopen" | "delete",
         job,
       });
     }
@@ -164,7 +174,14 @@ export default function MyJobPostsClient({
           result = await pauseJob(actionModal.job.id);
           break;
         case "activate":
+        case "reopen":
           result = await activateJob(actionModal.job.id);
+          if (result.success && actionModal.action === "reopen") {
+            // If reopening from archive, switch to active tab
+            if (activeTab === "archive") {
+              setActiveTab("active");
+            }
+          }
           break;
         case "close":
           result = await closeJob(actionModal.job.id);
@@ -177,8 +194,15 @@ export default function MyJobPostsClient({
       }
 
       if (result.success) {
+        const actionMessages: Record<string, string> = {
+          delete: "deleted",
+          pause: "paused",
+          activate: "activated",
+          reopen: "reopened",
+          close: "closed",
+        };
         showSuccess(
-          `Job ${actionModal.action === "delete" ? "deleted" : actionModal.action === "pause" ? "paused" : actionModal.action === "activate" ? "activated" : "closed"} successfully`
+          `Job ${actionMessages[actionModal.action] || actionModal.action} successfully`
         );
         setActionModal({ isOpen: false, action: "pause", job: null });
         await refreshJobs();
@@ -264,19 +288,79 @@ export default function MyJobPostsClient({
           </div>
         </header>
 
-        {jobs.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center">
-            <p className="text-xl font-semibold text-gray-900">
-              You haven&apos;t posted a job yet
-            </p>
-            <p className="mt-3 text-sm text-gray-600">
-              Once you publish a job, it will appear here with status, salary,
-              and location details so you can manage it easily.
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-6">
-            {jobs.map((job) => (
+        {/* Tabs */}
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+            <button
+              onClick={() => setActiveTab("active")}
+              className={`${
+                activeTab === "active"
+                  ? "border-[#CB0000] text-[#CB0000]"
+                  : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+              } whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors cursor-pointer`}
+            >
+              <span className="flex items-center gap-2">
+                <FaFolderOpen className="w-4 h-4" />
+                Active Jobs
+                {activeJobs.length > 0 && (
+                  <span
+                    className={`ml-2 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                      activeTab === "active"
+                        ? "bg-[#CB0000] text-white"
+                        : "bg-gray-100 text-gray-600"
+                    }`}
+                  >
+                    {activeJobs.length}
+                  </span>
+                )}
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab("archive")}
+              className={`${
+                activeTab === "archive"
+                  ? "border-[#CB0000] text-[#CB0000]"
+                  : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+              } whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors cursor-pointer`}
+            >
+              <span className="flex items-center gap-2">
+                <FaArchive className="w-4 h-4" />
+                Archive
+                {archivedJobs.length > 0 && (
+                  <span
+                    className={`ml-2 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                      activeTab === "archive"
+                        ? "bg-[#CB0000] text-white"
+                        : "bg-gray-100 text-gray-600"
+                    }`}
+                  >
+                    {archivedJobs.length}
+                  </span>
+                )}
+              </span>
+            </button>
+          </nav>
+        </div>
+
+        {/* Active Jobs Tab */}
+        {activeTab === "active" && (
+          <>
+            {activeJobs.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center">
+                <p className="text-xl font-semibold text-gray-900">
+                  {jobs.length === 0
+                    ? "You haven't posted a job yet"
+                    : "No active jobs"}
+                </p>
+                <p className="mt-3 text-sm text-gray-600">
+                  {jobs.length === 0
+                    ? "Once you publish a job, it will appear here with status, salary, and location details so you can manage it easily."
+                    : "All your jobs are currently archived. Check the Archive tab to view or reopen them."}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-6">
+                {activeJobs.map((job) => (
               <div
                 key={job.id}
                 className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow"
@@ -360,8 +444,108 @@ export default function MyJobPostsClient({
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Archive Tab */}
+        {activeTab === "archive" && (
+          <>
+            {archivedJobs.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center">
+                <FaArchive className="mx-auto h-12 w-12 text-gray-400" />
+                <p className="mt-4 text-xl font-semibold text-gray-900">
+                  No archived jobs
+                </p>
+                <p className="mt-3 text-sm text-gray-600">
+                  Closed jobs will appear here. You can edit or reopen them at
+                  any time.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-6">
+                {archivedJobs.map((job) => (
+                  <div
+                    key={job.id}
+                    className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-start gap-3 mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="text-lg font-semibold text-gray-900">
+                                {job.job_title}
+                              </h3>
+                              {getStatusBadge(job.status || "closed")}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                              <span>{job.location}</span>
+                              <span>•</span>
+                              <span>{job.salary}</span>
+                              {job.job_type && (
+                                <>
+                                  <span>•</span>
+                                  <span className="capitalize">
+                                    {job.job_type.replace("-", " ")}
+                                  </span>
+                                </>
+                              )}
+                              <span>•</span>
+                              <span>Posted {formatDate(job.created_at)}</span>
+                              {job.expires_at && (
+                                <>
+                                  <span>•</span>
+                                  <span>
+                                    Expired {formatDate(job.expires_at)}
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        {job.job_description && (
+                          <p className="text-sm text-gray-600 line-clamp-2 mb-4">
+                            {job.job_description}
+                          </p>
+                        )}
+                        <div className="flex flex-wrap items-center gap-3">
+                          <button
+                            onClick={() => handleJobAction(job, "view")}
+                            className="inline-flex cursor-pointer items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                          >
+                            <FaEye className="w-3 h-3" />
+                            View Details
+                          </button>
+                          <button
+                            onClick={() => handleJobAction(job, "edit")}
+                            className="inline-flex cursor-pointer items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors"
+                          >
+                            Edit Job
+                          </button>
+                          <button
+                            onClick={() => handleJobAction(job, "reopen")}
+                            disabled={isLoading}
+                            className="inline-flex cursor-pointer items-center gap-2 px-3 py-1.5 text-sm font-medium text-green-700 bg-green-100 rounded-lg hover:bg-green-200 transition-colors disabled:opacity-50"
+                          >
+                            <FaFolderOpen className="w-3 h-3" />
+                            Reopen Job
+                          </button>
+                          <JobActionMenu
+                            job={job}
+                            onAction={handleJobAction}
+                            isLoading={isLoading}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
 
