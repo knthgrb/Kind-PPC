@@ -20,7 +20,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { AuthService } from "@/services/AuthService";
 import { logger } from "@/utils/logger";
 import Link from "next/link";
-import { api } from "@/utils/convex/client };
+import { api } from "@/utils/convex/client";
 import type { JobPreferences } from "@/services/JobPreferencesService";
 import { updateKindTaoJobPreferences } from "@/actions/job-preferences/update-kindtao-preferences";
 import dynamic from "next/dynamic";
