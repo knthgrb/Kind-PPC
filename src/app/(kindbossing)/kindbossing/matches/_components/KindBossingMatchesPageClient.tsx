@@ -1,14 +1,17 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { usePathname } from "next/navigation";
 import { useQuery } from "convex/react";
-import { api } from "@/utils/convex/client";
-import { convex } from "@/utils/convex/client";
 import RecsSidebar from "@/app/(kindtao)/recs/_components/RecsSidebar";
+import RecsConversationOverlay from "@/app/(kindtao)/recs/_components/RecsConversationOverlay";
+import { convex } from "@/utils/convex/client";
+import { api } from "@/utils/convex/client";
 import { MatchService } from "@/services/MatchService";
 import { useToastActions } from "@/stores/useToastStore";
 import { logger } from "@/utils/logger";
+import { conversationCache } from "@/services/ConversationCacheService";
+import { useOptionalCurrentUser } from "@/hooks/useOptionalCurrentUser";
 import { HiOutlineChat } from "react-icons/hi";
 
 const getUserId = (user: unknown): string | null => {
@@ -21,14 +24,70 @@ const getUserId = (user: unknown): string | null => {
   );
 };
 
-export default function KindBossingMatchesPageClient() {
-  const router = useRouter();
+const getConversationIdFromLocation = (): string | null => {
+  if (typeof window === "undefined") return null;
+  return new URL(window.location.href).searchParams.get("conversation");
+};
+
+interface KindBossingMatchesPageClientProps {
+  initialMatches?: any[];
+  initialConversations?: any[];
+  activeConversationId?: string | null;
+}
+
+export default function KindBossingMatchesPageClient({
+  initialMatches = [],
+  initialConversations = [],
+  activeConversationId = null,
+}: KindBossingMatchesPageClientProps) {
   const pathname = usePathname();
   const { showError } = useToastActions();
   const [activeTab, setActiveTab] = useState<"matches" | "messages">("matches");
+  const [conversationId, setConversationId] = useState<string | null>(() => {
+    return getConversationIdFromLocation() || activeConversationId || null;
+  });
 
-  // Get current user
-  const currentUser = useQuery(api.auth.getCurrentUser);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const urlConversationId = getConversationIdFromLocation();
+    setConversationId((current) =>
+      urlConversationId !== null ? urlConversationId : current
+    );
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handlePopState = () => {
+      setConversationId(getConversationIdFromLocation());
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const updateConversationHistory = useCallback(
+    (id: string | null, mode: "push" | "replace" = "replace") => {
+      if (typeof window === "undefined") return;
+      const url = new URL(window.location.href);
+      if (id) {
+        url.searchParams.set("conversation", id);
+      } else {
+        url.searchParams.delete("conversation");
+      }
+      const href = `${url.pathname}${url.search}${url.hash}`;
+      if (mode === "push") {
+        window.history.pushState({}, "", href);
+      } else {
+        window.history.replaceState({}, "", href);
+      }
+      setConversationId(id);
+    },
+    []
+  );
+
+  const sidebarSelectedConversationId = conversationId;
+
+  // Get current user without throwing when logged out
+  const { currentUser } = useOptionalCurrentUser();
   const authUserId = useMemo(() => getUserId(currentUser), [currentUser]);
 
   // Get user record to get the correct user ID format
@@ -50,7 +109,7 @@ export default function KindBossingMatchesPageClient() {
     );
   }, [userRecord, currentUser]);
 
-  // Fetch matches
+  // Fetch matches and conversations to filter properly
   const allMatches = useQuery(
     api.matches.getMatchesByKindBossing,
     kindbossingUserId
@@ -58,18 +117,41 @@ export default function KindBossingMatchesPageClient() {
       : "skip"
   );
 
-  // Fetch conversations to filter out matches that already have conversations
-  const rawConversations = useQuery(
+  // Fetch conversations with pagination
+  const [conversationsOffset, setConversationsOffset] = useState(0);
+  const [allConversations, setAllConversations] = useState<any[]>([]);
+  const conversationsPage = useQuery(
     api.conversations.getConversationsByUser,
-    kindbossingUserId ? { userId: kindbossingUserId } : "skip"
+    kindbossingUserId
+      ? {
+          userId: kindbossingUserId,
+          limit: 20,
+          offset: conversationsOffset,
+        }
+      : "skip"
   );
 
-  // Filter out conversations where the match is unopened by the current user
-  // If a match has a conversation but is unopened, it should stay in matches list, not messages list
-  const conversations = useMemo(() => {
-    if (!rawConversations || !allMatches) return rawConversations;
+  // Accumulate conversations as we load more pages
+  const rawConversations = useMemo(() => {
+    if (conversationsPage === undefined) return allConversations;
+    if (conversationsOffset === 0) {
+      return conversationsPage;
+    }
+    return [...allConversations, ...conversationsPage];
+  }, [conversationsPage, conversationsOffset, allConversations]);
 
-    // Create a map of match IDs to match data for quick lookup
+  // Update accumulated conversations when new page loads
+  useEffect(() => {
+    if (rawConversations !== undefined) {
+      setAllConversations(rawConversations);
+    }
+  }, [rawConversations, conversationsOffset]);
+
+  // Filter conversations: exclude conversations where match is unopened
+  const conversations = useMemo(() => {
+    if (!rawConversations || !allMatches || !userRole)
+      return rawConversations || initialConversations;
+
     const matchMap = new Map<string, any>();
     for (const match of allMatches) {
       const matchId = String(match._id || "");
@@ -77,138 +159,97 @@ export default function KindBossingMatchesPageClient() {
     }
 
     return rawConversations.filter((conv) => {
-      if (!conv.match_id) {
-        // Conversation without match_id should still be shown
-        return true;
-      }
+      if (!conv.match_id) return true;
 
       const matchId = String(conv.match_id);
       const match = matchMap.get(matchId);
+      if (!match) return true;
 
-      if (!match) {
-        // Match not found, show conversation anyway
-        return true;
-      }
-
-      // Check if match is opened by current user
-      // Use === true to handle undefined/null/false as unopened
       const isOpened =
         userRole === "kindtao"
           ? match.is_opened_by_kindtao === true
           : match.is_opened_by_kindbossing === true;
 
-      // Only include conversation if match is opened by current user
       return isOpened === true;
     });
-  }, [rawConversations, allMatches, userRole]);
+  }, [rawConversations, allMatches, userRole, initialConversations]);
 
+  // Filter matches:
+  // 1. Always show unopened matches (even if they have a conversation) - with red dot
+  // 2. Hide opened matches that have a conversation between the users
+  // 3. Show opened matches that don't have a conversation yet
   const matches = useMemo(() => {
     if (Array.isArray(allMatches)) return allMatches;
-    return [];
-  }, [allMatches]);
+    return initialMatches || [];
+  }, [allMatches, initialMatches]);
 
-  // Extract conversationId from URL if present
-  const conversationId = useMemo(() => {
-    if (!pathname) return null;
-    // Check if URL contains /kindbossing/messages/[conversationId]
-    const messagesMatch = pathname.match(/\/kindbossing\/messages\/([^\/]+)/);
-    if (messagesMatch && messagesMatch[1]) {
-      return messagesMatch[1];
-    }
-    return null;
-  }, [pathname]);
+  // Get kindtao user data for temporary conversation
+  const tempMatchId = conversationId?.startsWith("new-")
+    ? conversationId.replace("new-", "")
+    : null;
+  const tempMatch = useMemo(() => {
+    if (!tempMatchId) return null;
+    return matches.find((m) => String(m._id || "") === tempMatchId);
+  }, [tempMatchId, matches]);
+
+  const kindtaoUserForTemp = useQuery(
+    api.users.getUserById,
+    tempMatch?.kindtao_user_id ? { userId: tempMatch.kindtao_user_id } : "skip"
+  );
 
   // Create temporary conversations from matches for the messages list
-  // Only include temporary conversations that are currently active (selected)
   const conversationsWithTemporary = useMemo(() => {
     const realConversations = conversations || [];
 
-    // Only add temporary conversation if it's currently selected
     const tempConversations = [];
-    if (conversationId && conversationId.startsWith("new-")) {
-      const matchId = conversationId.replace("new-", "");
-      const match = matches.find((m) => String(m._id || "") === matchId);
-      if (match) {
-        const kindtaoUser = match.kindtao || match.kindtao_user;
-        tempConversations.push({
-          _id: `new-${matchId}`,
-          id: `new-${matchId}`,
-          match_id: matchId,
-          kindbossing_user_id: kindbossingUserId || "",
-          kindtao_user_id: match.kindtao_user_id,
-          otherUser: kindtaoUser,
-          lastMessage: null,
-          last_message_at: match.matched_at,
-          status: "active" as const,
-          created_at: match.matched_at,
-          updated_at: match.matched_at,
-        });
-      }
-    }
+    if (conversationId && conversationId.startsWith("new-") && tempMatch) {
+      // Use fetched user data if available, otherwise fallback to match data
+      const otherUser =
+        kindtaoUserForTemp ||
+        tempMatch.kindtao ||
+        tempMatch.kindtao_user;
 
-    return [...realConversations, ...tempConversations];
-  }, [conversations, matches, kindbossingUserId, conversationId]);
-
-  const handleConversationSelect = (id: string) => {
-    // Update URL without page reload using router.push
-    router.push(`/kindbossing/messages/${id}`, { scroll: false });
-    setActiveTab("messages");
-  };
-
-  // Handle match click - create conversation if needed, then navigate
-  const handleMatchClick = async (match: any) => {
-    const matchId = String(match._id || match.id || "");
-    if (!matchId || !kindbossingUserId) {
-      showError("Missing information to start conversation");
-      return;
-    }
-
-    try {
-      // Mark match as opened
-      await MatchService.markMatchAsOpened(convex, matchId, "kindbossing");
-
-      // Get user IDs from match
-      const kindtaoUserId = match.kindtao_user_id;
-
-      // First, check if conversation already exists between these users (reuse existing)
-      const existingConversationByUsers = await convex.query(
-        api.conversations.getConversationByUserIds,
-        {
-          kindbossingUserId,
-          kindtaoUserId,
-        }
-      );
-
-      let conversationIdToUse: string;
-
-      if (existingConversationByUsers?._id) {
-        // Reuse existing conversation between these users
-        conversationIdToUse = String(existingConversationByUsers._id);
-      } else {
-        // Check if conversation exists for this specific match
-        const existingConversationByMatch = await convex.query(
-          api.conversations.getConversationByMatchId,
-          { matchId }
-        );
-
-        if (existingConversationByMatch?._id) {
-          conversationIdToUse = String(existingConversationByMatch._id);
-        } else {
-          // No conversation exists yet - create temporary conversation ID
-          conversationIdToUse = `new-${matchId}`;
-        }
-      }
-
-      // Navigate to conversation
-      router.push(`/kindbossing/messages/${conversationIdToUse}`, {
-        scroll: false,
+      tempConversations.push({
+        _id: `new-${tempMatchId}`,
+        id: `new-${tempMatchId}`,
+        match_id: tempMatchId,
+        kindbossing_user_id: kindbossingUserId || "",
+        kindtao_user_id: tempMatch.kindtao_user_id,
+        otherUser: otherUser,
+        lastMessage: null,
+        last_message_at: tempMatch.matched_at,
+        status: "active" as const,
+        created_at: tempMatch.matched_at,
+        updated_at: tempMatch.matched_at,
       });
-      setActiveTab("messages");
-    } catch (error) {
-      logger.error("Error handling match click:", error);
-      showError("Failed to start conversation");
     }
-  };
+
+    // Sort conversations: temporary first, then by last_message_at/updated_at descending
+    const allConvs = [...realConversations, ...tempConversations];
+    allConvs.sort((a, b) => {
+      const aIsTemp = String(a._id || a.id || "").startsWith("new-");
+      const bIsTemp = String(b._id || b.id || "").startsWith("new-");
+
+      // Temporary conversations always come first
+      if (aIsTemp && !bIsTemp) return -1;
+      if (!aIsTemp && bIsTemp) return 1;
+
+      // For same type, sort by date (most recent first)
+      const aTime = a.last_message_at || a.updated_at || a.created_at || 0;
+      const bTime = b.last_message_at || b.updated_at || b.created_at || 0;
+      return bTime - aTime;
+    });
+
+    return allConvs;
+  }, [
+    conversations,
+    matches,
+    kindbossingUserId,
+    conversationId,
+    tempMatch,
+    tempMatchId,
+    kindtaoUserForTemp,
+  ]);
 
   // Update activeTab based on URL
   useEffect(() => {
@@ -217,56 +258,213 @@ export default function KindBossingMatchesPageClient() {
     }
   }, [conversationId]);
 
-  return (
-    <div className="h-[calc(100vh-8vh)] w-full flex relative">
-      {/* Left Sidebar - Desktop only */}
-      <div className="hidden lg:flex w-80 border-r border-gray-200 bg-white shrink-0">
-        <RecsSidebar
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          selectedConversationId={conversationId}
-          onConversationSelect={handleConversationSelect}
-          messagesBasePath="/kindbossing/messages"
-          initialMatches={matches || []}
-          initialConversations={conversationsWithTemporary || []}
-          onMatchClick={handleMatchClick}
-        />
-      </div>
+  // Check if there are more conversations to load
+  const hasMoreConversations =
+    conversationsPage && conversationsPage.length === 20;
 
-      {/* Right Side - Content */}
-      <div className="flex-1 flex flex-col overflow-hidden bg-gray-50 relative">
-        {/* Mobile: Show sidebar content (matches/messages list) */}
-        <div className="lg:hidden h-full overflow-hidden">
+  /**
+   * Handle conversation selection with instant navigation
+   * Uses cache for instant UI updates
+   */
+  const handleConversationSelect = (id: string) => {
+    const cached = conversationCache.getConversation(id);
+    if (cached) {
+      logger.debug("Using cached conversation for instant display:", { id });
+    }
+    setActiveTab("messages");
+    updateConversationHistory(id, "push");
+  };
+
+  // Load more conversations for pagination
+  const handleLoadMoreConversations = () => {
+    if (hasMoreConversations && conversationsPage !== undefined) {
+      setConversationsOffset((prev) => prev + 20);
+    }
+  };
+
+  /**
+   * Handle match click with caching and progressive loading
+   * Implements Tinder-like instant navigation with background data fetching
+   */
+  const handleMatchClick = async (match: any) => {
+    const matchId = String(match._id || match.id || "");
+    if (!matchId || !kindbossingUserId) {
+      showError("Missing information to start conversation");
+      return;
+    }
+
+    try {
+      // Mark match as opened (non-blocking)
+      MatchService.markMatchAsOpened(convex, matchId, "kindbossing").catch(
+        (error) => {
+          logger.warn("Failed to mark match as opened:", error);
+        }
+      );
+
+      // Get user IDs from match
+      const kindtaoUserId = match.kindtao_user_id;
+
+      // Check cache first for instant UI
+      let conversationIdToUse: string | null = null;
+
+      // Check if we have a cached conversation for this match
+      const tempConversationId = `new-${matchId}`;
+      const cached = conversationCache.getConversation(tempConversationId);
+      if (cached?.conversation?.id) {
+        conversationIdToUse = cached.conversation.id;
+      }
+
+      // Navigate immediately with temporary ID for instant UI
+      // This allows the UI to show immediately while we fetch in background
+      const tempId = `new-${matchId}`;
+      const initialConversationId = conversationIdToUse || tempId;
+
+      // Cache match data for instant display
+      if (!cached?.conversation?.id) {
+        conversationCache.setConversation(tempId, {
+          match,
+          isTemporary: true,
+        });
+      }
+
+      setActiveTab("messages");
+      updateConversationHistory(initialConversationId, "push");
+
+      // Background: Check for existing conversation
+      // This happens after navigation for instant UI
+      Promise.all([
+        convex.query(api.conversations.getConversationByUserIds, {
+          kindbossingUserId,
+          kindtaoUserId,
+        }),
+        convex.query(api.conversations.getConversationByMatchId, { matchId }),
+      ])
+        .then(([conversationByUsers, conversationByMatch]) => {
+          const conversationIdFromServer = conversationByUsers?._id
+            ? String(conversationByUsers._id)
+            : conversationByMatch?._id
+              ? String(conversationByMatch._id)
+              : null;
+
+          if (
+            conversationIdFromServer &&
+            conversationIdFromServer !== initialConversationId
+          ) {
+            // Update cache with real conversation
+            conversationCache.setConversation(conversationIdFromServer, {
+              conversation: conversationByUsers || conversationByMatch,
+              match,
+            });
+
+            // Update URL to real conversation ID
+            updateConversationHistory(conversationIdFromServer, "replace");
+          }
+        })
+        .catch((error) => {
+          logger.error("Error fetching conversation in background:", error);
+        });
+    } catch (error) {
+      logger.error("Error handling match click:", error);
+      showError("Failed to start conversation");
+    }
+  };
+
+  const handleOverlayClose = useCallback(() => {
+    // Overlay already waits for animation to complete (350ms) + buffer (100ms) = 450ms
+    // before calling onClose, so we can update URL immediately
+    // The URL update will trigger layout to show header/tabs, which will appear
+    // smoothly after the overlay is fully removed
+    updateConversationHistory(null, "replace");
+  }, [updateConversationHistory]);
+
+  const MOBILE_HEADER_HEIGHT = 64;
+  const MOBILE_TAB_HEIGHT = 64;
+  const LAYOUT_BOTTOM_PADDING = 64;
+  const mobileMinHeight = `calc(100vh - ${
+    MOBILE_HEADER_HEIGHT + MOBILE_TAB_HEIGHT + LAYOUT_BOTTOM_PADDING
+  }px)`;
+  
+  // Calculate sidebar height on mobile - account for visible header and tabs
+  // This ensures sidebar doesn't expand to full screen when conversation overlay is open
+  const sidebarMobileHeight = `calc(100vh - ${MOBILE_HEADER_HEIGHT + MOBILE_TAB_HEIGHT}px)`;
+
+  return (
+    <div className="relative w-full h-full flex-1 flex flex-col min-h-0">
+      {/* Style tag to apply mobile-only height to sidebar */}
+      <style>{`
+        @media (max-width: 1023px) {
+          .kindbossing-matches-sidebar-container {
+            height: ${sidebarMobileHeight} !important;
+            max-height: ${sidebarMobileHeight} !important;
+          }
+          .kindbossing-matches-page-container {
+            height: ${sidebarMobileHeight} !important;
+            max-height: ${sidebarMobileHeight} !important;
+          }
+        }
+        @media (min-width: 1024px) {
+          .kindbossing-matches-sidebar-container {
+            height: 100% !important;
+            max-height: none !important;
+          }
+          .kindbossing-matches-page-container {
+            height: 100% !important;
+            max-height: none !important;
+          }
+        }
+      `}</style>
+      <div
+        className="kindbossing-matches-page-container w-full h-full flex flex-col lg:flex-row bg-gray-50 flex-1 overflow-x-hidden relative min-h-0"
+        style={{ minHeight: mobileMinHeight }}
+      >
+        {/* Sidebar: Show on mobile for matches/messages view, always show on desktop */}
+        {/* Ensure sidebar has solid background and fixed height on mobile */}
+        {/* Sidebar accounts for visible header/tabs height on mobile, full height on desktop */}
+        <div 
+          className="kindbossing-matches-sidebar-container flex w-full lg:w-80 bg-white lg:border-r border-gray-200 flex-col shrink-0 min-h-0 relative z-0 lg:h-full"
+        >
           <RecsSidebar
             activeTab={activeTab}
             onTabChange={setActiveTab}
-            selectedConversationId={conversationId}
+            selectedConversationId={sidebarSelectedConversationId}
             onConversationSelect={handleConversationSelect}
-            messagesBasePath="/kindbossing/messages"
-            initialMatches={matches || []}
-            initialConversations={conversations || []}
+            messagesBasePath={pathname || "/kindbossing/matches"}
+            initialMatches={matches}
+            initialConversations={conversationsWithTemporary}
             onMatchClick={handleMatchClick}
+            onLoadMoreConversations={handleLoadMoreConversations}
+            hasMoreConversations={hasMoreConversations}
+            isLoadingMoreConversations={
+              conversationsPage === undefined && conversationsOffset > 0
+            }
           />
         </div>
 
         {/* Desktop: Show "select a conversation" empty state */}
-        <div className="hidden lg:flex flex-1 relative overflow-hidden">
+        <div className="hidden lg:flex flex-1 items-center justify-center px-4 py-6 min-w-0 h-full min-h-0 relative">
           {!conversationId && (
-            <div className="absolute inset-0 flex items-center justify-center p-4">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-500">
-                  <HiOutlineChat className="w-7 h-7" aria-hidden="true" />
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Select a match or conversation
-                </h3>
-                <p className="text-gray-500">
-                  Choose a match from the sidebar to start chatting
-                </p>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-500">
+                <HiOutlineChat className="w-7 h-7" aria-hidden="true" />
               </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Select a match or conversation
+              </h3>
+              <p className="text-gray-500">
+                Choose a match from the sidebar to start chatting
+              </p>
             </div>
           )}
         </div>
+
+        {conversationId && (
+          <RecsConversationOverlay
+            conversationId={conversationId}
+            closeRedirect={pathname}
+            onClose={handleOverlayClose}
+            fullScreen={false}
+          />
+        )}
       </div>
     </div>
   );

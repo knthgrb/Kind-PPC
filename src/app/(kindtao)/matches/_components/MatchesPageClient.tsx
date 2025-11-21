@@ -12,6 +12,7 @@ import { api } from "@/utils/convex/client";
 import { MatchService } from "@/services/MatchService";
 import { useToastActions } from "@/stores/useToastStore";
 import { logger } from "@/utils/logger";
+import { useOptionalCurrentUser } from "@/hooks/useOptionalCurrentUser";
 
 const getUserId = (user: unknown): string | null => {
   if (!user) return null;
@@ -54,8 +55,8 @@ export default function MatchesPageClient({
   const conversationId =
     pathname?.match(/\/kindtao\/messages\/([^\/]+)/)?.[1] || null;
 
-  // Get current user
-  const currentUser = useQuery(api.auth.getCurrentUser);
+  // Get current user safely
+  const { currentUser } = useOptionalCurrentUser();
   const authUserId = useMemo(() => getUserId(currentUser), [currentUser]);
 
   // Get user record to get the correct user ID format

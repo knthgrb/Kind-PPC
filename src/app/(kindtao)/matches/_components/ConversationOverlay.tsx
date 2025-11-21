@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import ConversationWindow from "@/app/(kindtao)/recs/_components/ConversationWindow";
+import KindTaoConversationWindow from "@/app/(kindtao)/_components/KindTaoConversationWindow";
 
 interface ConversationOverlayProps {
   conversationId: string;
@@ -42,7 +42,7 @@ export default function ConversationOverlay({
           isVisible ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        <ConversationWindow
+        <KindTaoConversationWindow
           conversationId={conversationId}
           onClose={closeConversation}
         />

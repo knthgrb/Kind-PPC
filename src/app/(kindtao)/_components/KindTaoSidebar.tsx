@@ -67,7 +67,7 @@ export default function KindTaoSidebar() {
 
   return (
     <div
-      className={`hidden lg:flex flex-col bg-white border-r border-gray-200 ${
+      className={`hidden lg:flex flex-col bg-white border-r border-gray-200 overflow-x-hidden ${
         collapsed ? "w-16 items-center" : "w-64"
       }`}
     >

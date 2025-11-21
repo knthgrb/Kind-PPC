@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -28,6 +28,19 @@ export default function Header() {
   ) => {
     return `${baseClasses} ${isActive(path) ? "text-red-600" : ""}`;
   };
+
+  // Prevent body scroll when menu is open
+  useEffect(() => {
+    if (menuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [menuOpen]);
 
   return (
     <header className="bg-white sticky top-0 z-50">
@@ -87,8 +100,9 @@ export default function Header() {
 
         {/* Mobile Menu Button */}
         <button
-          className="lg:hidden text-2xl"
+          className="lg:hidden text-2xl text-gray-700 hover:text-gray-900 transition-colors p-2 -mr-2 cursor-pointer"
           onClick={() => setMenuOpen(!menuOpen)}
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
         >
           {menuOpen ? <FiX /> : <FiMenu />}
         </button>
@@ -97,7 +111,7 @@ export default function Header() {
       {/* Mobile Slide-over Menu */}
       {/* Overlay */}
       <div
-        className={`lg:hidden fixed inset-0 z-40 bg-black/40 transition-opacity duration-300 ${
+        className={`lg:hidden fixed inset-0 z-40 bg-black/50 transition-opacity duration-300 ${
           menuOpen
             ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"
@@ -106,98 +120,120 @@ export default function Header() {
       />
       {/* Drawer */}
       <div
-        className={`lg:hidden fixed inset-y-0 right-0 z-50 w-full sm:w-96 bg-white shadow-xl transform transition-transform duration-300 ${
+        className={`lg:hidden fixed inset-0 z-50 w-full h-full bg-white shadow-xl transform transition-transform duration-300 ease-in-out ${
           menuOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <Link
-            href="/"
-            className="flex items-center"
-            onClick={() => setMenuOpen(false)}
-          >
-            <Image
-              src="/kindLogo.png"
-              alt="Kind Logo"
-              width={120}
-              height={40}
-              className="h-8 w-auto"
-            />
-          </Link>
-          <button className="text-2xl" onClick={() => setMenuOpen(false)}>
-            <FiX />
-          </button>
-        </div>
-        <nav className="flex flex-col gap-4 p-6 text-lg">
-          <Link
-            href="/"
-            className={getLinkClasses("/")}
-            onClick={() => setMenuOpen(false)}
-          >
-            Home
-          </Link>
-          <Link
-            href="/recs"
-            className={getLinkClasses("/recs")}
-            onClick={() => setMenuOpen(false)}
-          >
-            Find Work
-          </Link>
-          <Link
-            href="/about"
-            className={getLinkClasses("/about")}
-            onClick={() => setMenuOpen(false)}
-          >
-            About
-          </Link>
-          <Link
-            href="/pricing"
-            className={getLinkClasses("/pricing")}
-            onClick={() => setMenuOpen(false)}
-          >
-            Pricing
-          </Link>
-          <Link
-            href="/contact-us"
-            className={getLinkClasses("/contact-us")}
-            onClick={() => setMenuOpen(false)}
-          >
-            Contact Us
-          </Link>
-        </nav>
-        <div className="bg-red-600 mt-auto p-6 border-t border-gray-200 flex flex-col gap-3">
-          {isAuthenticated && userRole ? (
+        <div className="flex flex-col h-full">
+          {/* Header */}
+          <div className="flex items-center justify-between p-5 border-b border-gray-200 shrink-0">
             <Link
-              href={userRole === "kindbossing" ? "/my-job-posts" : "/recs"}
+              href="/"
+              className="flex items-center"
               onClick={() => setMenuOpen(false)}
-              className="w-full"
             >
-              <Button variant="primary" size="lg" fullWidth>
-                {userRole === "kindbossing" ? "Go to Job Posts" : "Find Jobs"}
-              </Button>
+              <Image
+                src="/kindLogo.png"
+                alt="Kind Logo"
+                width={120}
+                height={40}
+                className="h-8 w-auto"
+              />
             </Link>
-          ) : (
-            <>
+            <button
+              className="text-2xl text-gray-700 hover:text-gray-900 transition-colors cursor-pointer"
+              onClick={() => setMenuOpen(false)}
+            >
+              <FiX />
+            </button>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto">
+            <nav className="flex flex-col gap-1 p-5">
               <Link
-                href="/signup"
+                href="/"
+                className={`px-4 py-3 rounded-xl text-lg font-medium transition-colors ${getLinkClasses(
+                  "/",
+                  "text-gray-700 hover:bg-gray-50"
+                )}`}
                 onClick={() => setMenuOpen(false)}
-                className="w-full"
               >
-                <Button variant="secondary" size="lg" fullWidth>
-                  Sign Up
-                </Button>
+                Home
               </Link>
               <Link
-                href="/login"
+                href="/about"
+                className={`px-4 py-3 rounded-xl text-lg font-medium transition-colors ${getLinkClasses(
+                  "/about",
+                  "text-gray-700 hover:bg-gray-50"
+                )}`}
                 onClick={() => setMenuOpen(false)}
-                className="w-full"
+              >
+                About
+              </Link>
+              <Link
+                href="/pricing"
+                className={`px-4 py-3 rounded-xl text-lg font-medium transition-colors ${getLinkClasses(
+                  "/pricing",
+                  "text-gray-700 hover:bg-gray-50"
+                )}`}
+                onClick={() => setMenuOpen(false)}
+              >
+                Pricing
+              </Link>
+              <Link
+                href="/support"
+                className={`px-4 py-3 rounded-xl text-lg font-medium transition-colors ${getLinkClasses(
+                  "/support",
+                  "text-gray-700 hover:bg-gray-50"
+                )}`}
+                onClick={() => setMenuOpen(false)}
+              >
+                Support
+              </Link>
+            </nav>
+          </div>
+
+          {/* Footer with Buttons */}
+          <div className="p-5 border-t border-gray-200 bg-gray-50 shrink-0">
+            {isAuthenticated && userRole ? (
+              <Link
+                href={userRole === "kindbossing" ? "/my-job-posts" : "/recs"}
+                onClick={() => setMenuOpen(false)}
+                className="block"
               >
                 <Button variant="primary" size="lg" fullWidth>
-                  Login
+                  {userRole === "kindbossing" ? "Go to Job Posts" : "Find Jobs"}
                 </Button>
               </Link>
-            </>
-          )}
+            ) : (
+              <div className="flex flex-col gap-3">
+                <Link
+                  href="/signup"
+                  onClick={() => setMenuOpen(false)}
+                  className="block"
+                >
+                  <Button
+                    variant="secondary"
+                    size="lg"
+                    fullWidth
+                    className="border-2 border-gray-300 hover:border-gray-400"
+                  >
+                    Sign Up
+                  </Button>
+                </Link>
+                <Link
+                  href="/login"
+                  onClick={() => setMenuOpen(false)}
+                  className="block"
+                >
+                  <Button variant="primary" size="lg" fullWidth>
+                    Login
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>

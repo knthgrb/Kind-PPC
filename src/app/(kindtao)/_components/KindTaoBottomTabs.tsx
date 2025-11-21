@@ -59,7 +59,7 @@ export default function KindTaoBottomTabs() {
               isActive("/kindtao/matches") ? "text-red-600" : "text-gray-600"
             }`}
           >
-            Messages
+            Matches
           </span>
         </Link>
       </li>

@@ -22,6 +22,7 @@ import { deleteAccount } from "@/actions/account/delete-account";
 import { useRouter } from "next/navigation";
 import { AuthService } from "@/services/AuthService";
 import { logger } from "@/utils/logger";
+import { useOptionalCurrentUser } from "@/hooks/useOptionalCurrentUser";
 
 const VerificationTab = dynamic(() => import("./VerificationTab"), {
   ssr: false,
@@ -53,7 +54,7 @@ export default function KindBossingSettingsClient() {
   const router = useRouter();
 
   // Get current user data for credits
-  const currentUser = useQuery(api.auth.getCurrentUser);
+  const { currentUser } = useOptionalCurrentUser();
   const userData = useQuery(
     api.users.getUserById,
     currentUser?.userId ? { userId: currentUser.userId } : "skip"

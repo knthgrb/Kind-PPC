@@ -9,6 +9,7 @@ import { useToastActions } from "@/stores/useToastStore";
 import { FaArrowLeft } from "react-icons/fa";
 import ApplicationSwipeDeck from "./_components/ApplicationSwipeDeck";
 import type { PendingApplication } from "./_components/applicationTypes";
+import { useOptionalCurrentUser } from "@/hooks/useOptionalCurrentUser";
 
 const getUserId = (user: unknown): string | null => {
   if (!user) return null;
@@ -26,7 +27,7 @@ export default function JobApplicationsPage() {
   const { showError } = useToastActions();
   const jobId = params?.jobId;
 
-  const currentUser = useQuery(api.auth.getCurrentUser);
+  const { currentUser } = useOptionalCurrentUser();
   const job = useQuery(
     api.jobs.getJobById,
     jobId

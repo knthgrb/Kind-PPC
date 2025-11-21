@@ -18,6 +18,7 @@ import {
 } from "react-icons/fa";
 import { format } from "date-fns";
 import InfoSkeleton from "./_components/InfoSkeleton";
+import { useOptionalCurrentUser } from "@/hooks/useOptionalCurrentUser";
 import dynamic from "next/dynamic";
 const EditKindBossingProfileModal = dynamic(
   () => import("@/components/modals/EditKindBossingProfileModal"),
@@ -33,7 +34,7 @@ export default function InfoPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Get current user
-  const currentUser = useQuery(api.auth.getCurrentUser);
+  const { currentUser } = useOptionalCurrentUser();
 
   // Fetch user info when user is available
   useEffect(() => {

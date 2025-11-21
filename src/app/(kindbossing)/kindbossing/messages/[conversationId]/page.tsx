@@ -3,11 +3,11 @@
 import { use } from "react";
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "convex/react";
+import { useQuery, useConvexAuth } from "convex/react";
 import { api } from "@/utils/convex/client";
 import { convex } from "@/utils/convex/client";
 import RecsSidebar from "@/app/(kindtao)/recs/_components/RecsSidebar";
-import ConversationWindow from "@/app/(kindtao)/recs/_components/ConversationWindow";
+import KindBossingConversationWindow from "@/app/(kindbossing)/_components/KindBossingConversationWindow";
 import { MatchService } from "@/services/MatchService";
 import { useToastActions } from "@/stores/useToastStore";
 import { logger } from "@/utils/logger";
@@ -35,7 +35,11 @@ export default function ConversationPage({
   );
 
   // Get current user
-  const currentUser = useQuery(api.auth.getCurrentUser);
+  const { isAuthenticated } = useConvexAuth();
+  const currentUser = useQuery(
+    api.auth.getCurrentUser,
+    isAuthenticated ? undefined : "skip"
+  );
   const authUserId = useMemo(() => getUserId(currentUser), [currentUser]);
 
   // Get user record to get the correct user ID format
@@ -307,7 +311,7 @@ export default function ConversationPage({
         >
           {hasConversationSelected && (
             <div className="absolute inset-0 w-full h-full">
-              <ConversationWindow
+              <KindBossingConversationWindow
                 conversationId={conversationId}
                 onClose={handleCloseConversation}
               />

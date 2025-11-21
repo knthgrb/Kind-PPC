@@ -1,16 +1,13 @@
+"use client";
+
 import React from "react";
 
 export default function MatchesLayout({
   children,
-  conversation,
 }: {
   children: React.ReactNode;
-  conversation: React.ReactNode;
 }) {
-  return (
-    <div className="flex-1 flex flex-col bg-gray-50 relative overflow-hidden">
-      {children}
-      {conversation}
-    </div>
-  );
+  // Parent layout (/kindtao/layout.tsx) already provides header and bottom tabs
+  // This layout just needs to pass through children
+  return <>{children}</>;
 }

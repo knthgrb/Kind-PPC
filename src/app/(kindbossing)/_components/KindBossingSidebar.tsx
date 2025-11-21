@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useRef, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -9,10 +9,12 @@ import {
   FiFileText,
   FiChevronLeft,
   FiChevronRight,
+  FiMessageCircle,
 } from "react-icons/fi";
 import { useSidebarStore } from "@/stores/useSidebarStore";
 import { useQuery } from "convex/react";
 import { api } from "@/utils/convex/client";
+import { useOptionalCurrentUser } from "@/hooks/useOptionalCurrentUser";
 
 const navigationItems = [
   {
@@ -28,7 +30,7 @@ const navigationItems = [
   {
     label: "Matches",
     href: "/kindbossing/matches",
-    icon: FiUsers,
+    icon: FiMessageCircle,
   },
   {
     label: "Documents",
@@ -37,10 +39,120 @@ const navigationItems = [
   },
 ];
 
+interface NavItemWithTooltipProps {
+  item: (typeof navigationItems)[0];
+  Icon: React.ComponentType<{ className?: string }>;
+  active: boolean;
+  isCollapsed: boolean;
+  hasPendingApplications: boolean;
+  showMatchesBadge: boolean;
+}
+
+function NavItemWithTooltip({
+  item,
+  Icon,
+  active,
+  isCollapsed,
+  hasPendingApplications,
+  showMatchesBadge,
+}: NavItemWithTooltipProps) {
+  const [isHovered, setIsHovered] = useState(false);
+  const triggerRef = useRef<HTMLAnchorElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+
+  // Position tooltip using fixed positioning to prevent overflow
+  useEffect(() => {
+    if (isHovered && isCollapsed && tooltipRef.current && triggerRef.current) {
+      const trigger = triggerRef.current;
+      const tooltip = tooltipRef.current;
+      const triggerRect = trigger.getBoundingClientRect();
+      const tooltipRect = tooltip.getBoundingClientRect();
+
+      // Calculate position to the right of the trigger
+      const padding = 12;
+      let left = triggerRect.right + padding;
+      let top =
+        triggerRect.top + triggerRect.height / 2 - tooltipRect.height / 2;
+
+      // Constrain to viewport
+      const viewportPadding = 8;
+      left = Math.max(
+        viewportPadding,
+        Math.min(left, window.innerWidth - tooltipRect.width - viewportPadding)
+      );
+      top = Math.max(
+        viewportPadding,
+        Math.min(top, window.innerHeight - tooltipRect.height - viewportPadding)
+      );
+
+      // Apply fixed positioning
+      tooltip.style.position = "fixed";
+      tooltip.style.left = `${left}px`;
+      tooltip.style.top = `${top}px`;
+      tooltip.style.transform = "none";
+      tooltip.style.margin = "0";
+      tooltip.style.zIndex = "50";
+    }
+  }, [isHovered, isCollapsed]);
+
+  return (
+    <div className="relative group">
+      <Link
+        ref={triggerRef}
+        href={item.href}
+        className={`relative flex items-center rounded-xl transition-colors group ${
+          isCollapsed ? "justify-center px-0 py-3" : "gap-3 px-4 py-3"
+        } ${
+          active
+            ? "bg-red-50 text-red-600 font-medium"
+            : "text-gray-700 hover:bg-gray-50"
+        }`}
+        aria-label={isCollapsed ? item.label : undefined}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <Icon className="w-5 h-5 shrink-0" />
+        {!isCollapsed && (
+          <span className="text-sm whitespace-nowrap">{item.label}</span>
+        )}
+        {hasPendingApplications && (
+          <span
+            className={`absolute rounded-full bg-red-500 ${
+              isCollapsed
+                ? "top-2 right-2 h-2 w-2"
+                : "top-3 right-4 h-2.5 w-2.5"
+            }`}
+          />
+        )}
+        {showMatchesBadge && (
+          <span
+            className={`absolute rounded-full bg-red-500 ${
+              isCollapsed
+                ? "top-2 right-2 h-2 w-2"
+                : "top-3 right-4 h-2.5 w-2.5"
+            }`}
+          />
+        )}
+      </Link>
+      {isCollapsed && (
+        <div
+          ref={tooltipRef}
+          className={`pointer-events-none whitespace-nowrap rounded-lg bg-gray-900 px-3 py-1 text-xs font-medium text-white shadow-lg transition-opacity duration-200 ${
+            isHovered ? "opacity-100" : "opacity-0"
+          }`}
+          style={{ position: "fixed", pointerEvents: "none" }}
+        >
+          {item.label}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function KindBossingSidebar() {
   const pathname = usePathname();
   const { isCollapsed, toggleSidebar } = useSidebarStore();
-  const currentUser = useQuery(api.auth.getCurrentUser);
+  const { currentUser } = useOptionalCurrentUser();
 
   const kindbossingUserId = useMemo(() => {
     if (!currentUser) return null;
@@ -120,13 +232,13 @@ export default function KindBossingSidebar() {
 
   return (
     <aside
-      className={`hidden lg:flex border-r border-gray-200 bg-white flex-col transition-all duration-300 ease-in-out ${
+      className={`hidden lg:flex border-r border-gray-200 bg-white flex-col transition-all duration-300 ease-in-out overflow-x-hidden ${
         isCollapsed ? "w-16" : "w-64"
       }`}
       style={{ height: "calc(100vh - 8vh)" }}
     >
       <nav
-        className={`flex-1 py-6 space-y-2 min-h-0 overflow-y-auto ${
+        className={`flex-1 py-6 space-y-2 min-h-0 overflow-y-auto overflow-x-hidden ${
           isCollapsed ? "px-2" : "px-4"
         }`}
       >
@@ -134,49 +246,19 @@ export default function KindBossingSidebar() {
           const Icon = item.icon;
           const active = isActive(item.href);
           return (
-            <div key={item.href} className="relative group">
-              <Link
-                href={item.href}
-                className={`relative flex items-center rounded-xl transition-colors group ${
-                  isCollapsed ? "justify-center px-0 py-3" : "gap-3 px-4 py-3"
-                } ${
-                  active
-                    ? "bg-red-50 text-red-600 font-medium"
-                    : "text-gray-700 hover:bg-gray-50"
-                }`}
-                aria-label={isCollapsed ? item.label : undefined}
-              >
-                <Icon className="w-5 h-5 shrink-0" />
-                {!isCollapsed && (
-                  <span className="text-sm whitespace-nowrap">
-                    {item.label}
-                  </span>
-                )}
-                {item.label === "Job Posts" && hasPendingApplications && (
-                  <span
-                    className={`absolute rounded-full bg-red-500 ${
-                      isCollapsed
-                        ? "top-2 right-2 h-2 w-2"
-                        : "top-3 right-4 h-2.5 w-2.5"
-                    }`}
-                  />
-                )}
-                {item.label === "Matches" && showMatchesBadge && (
-                  <span
-                    className={`absolute rounded-full bg-red-500 ${
-                      isCollapsed
-                        ? "top-2 right-2 h-2 w-2"
-                        : "top-3 right-4 h-2.5 w-2.5"
-                    }`}
-                  />
-                )}
-              </Link>
-              {isCollapsed && (
-                <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 translate-x-2 whitespace-nowrap rounded-lg bg-gray-900 px-3 py-1 text-xs font-medium text-white opacity-0 shadow-lg transition duration-200 group-hover:opacity-100 group-hover:translate-x-0">
-                  {item.label}
-                </div>
-              )}
-            </div>
+            <NavItemWithTooltip
+              key={item.href}
+              item={item}
+              Icon={Icon}
+              active={active}
+              isCollapsed={isCollapsed}
+              hasPendingApplications={
+                item.label === "Job Posts" ? hasPendingApplications : false
+              }
+              showMatchesBadge={
+                item.label === "Matches" ? showMatchesBadge : false
+              }
+            />
           );
         })}
       </nav>

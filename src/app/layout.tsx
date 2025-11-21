@@ -39,7 +39,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={`font-sans ${plusJakartaSans.variable} ${barlowCondensed.variable} antialiased`}
+        className={`font-sans ${plusJakartaSans.variable} ${barlowCondensed.variable} antialiased overflow-x-hidden`}
       >
         <ConvexClientProvider>
           <ErrorSuppressor>

@@ -4,12 +4,13 @@ import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
 import RecsSidebar from "@/app/(kindtao)/recs/_components/RecsSidebar";
-import ConversationWindow from "@/app/(kindtao)/recs/_components/ConversationWindow";
+import KindTaoConversationWindow from "@/app/(kindtao)/_components/KindTaoConversationWindow";
 import { MatchService } from "@/services/MatchService";
 import { useToastActions } from "@/stores/useToastStore";
 import { logger } from "@/utils/logger";
 import { convex } from "@/utils/convex/client";
 import { api } from "@/utils/convex/client";
+import { useOptionalCurrentUser } from "@/hooks/useOptionalCurrentUser";
 
 const getUserId = (user: unknown): string | null => {
   if (!user) return null;
@@ -40,8 +41,8 @@ export default function ConversationPageClient({
     "messages"
   );
 
-  // Get current user
-  const currentUser = useQuery(api.auth.getCurrentUser);
+  // Get current user safely
+  const { currentUser } = useOptionalCurrentUser();
   const authUserId = useMemo(() => getUserId(currentUser), [currentUser]);
 
   // Get user record to get the correct user ID format
@@ -327,7 +328,7 @@ export default function ConversationPageClient({
         {/* Mobile: Show conversation window if conversationId exists, otherwise show sidebar */}
         {conversationId ? (
           <div className="lg:hidden h-full overflow-hidden">
-            <ConversationWindow
+            <KindTaoConversationWindow
               conversationId={conversationId}
               onClose={handleCloseConversation}
             />
@@ -355,7 +356,7 @@ export default function ConversationPageClient({
         {/* Desktop: Show conversation window full screen */}
         <div className="hidden lg:flex flex-1 relative overflow-hidden">
           <div className="absolute inset-0 w-full h-full">
-            <ConversationWindow
+            <KindTaoConversationWindow
               conversationId={conversationId}
               onClose={handleCloseConversation}
             />

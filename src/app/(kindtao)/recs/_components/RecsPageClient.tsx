@@ -1,11 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import {
-  useRouter,
-  usePathname,
-  useSelectedLayoutSegments,
-} from "next/navigation";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { usePathname } from "next/navigation";
 import { useQuery } from "convex/react";
 import RecsSidebar from "./RecsSidebar";
 import JobsCarousel from "./JobsCarousel";
@@ -16,6 +12,8 @@ import { api } from "@/utils/convex/client";
 import { MatchService } from "@/services/MatchService";
 import { useToastActions } from "@/stores/useToastStore";
 import { logger } from "@/utils/logger";
+import { conversationCache } from "@/services/ConversationCacheService";
+import { useOptionalCurrentUser } from "@/hooks/useOptionalCurrentUser";
 
 const getUserId = (user: unknown): string | null => {
   if (!user) return null;
@@ -25,6 +23,11 @@ const getUserId = (user: unknown): string | null => {
     (user as { _id?: string | null })?._id ??
     null
   );
+};
+
+const getConversationIdFromLocation = (): string | null => {
+  if (typeof window === "undefined") return null;
+  return new URL(window.location.href).searchParams.get("conversation");
 };
 
 interface RecsPageClientProps {
@@ -46,28 +49,54 @@ export default function RecsPageClient({
   initialSwipeLimit,
   activeConversationId = null,
 }: RecsPageClientProps) {
-  const router = useRouter();
   const pathname = usePathname();
   const { showError } = useToastActions();
   const [activeTab, setActiveTab] = useState<"matches" | "messages">("matches");
+  const [conversationId, setConversationId] = useState<string | null>(() => {
+    return getConversationIdFromLocation() || activeConversationId || null;
+  });
 
-  // Extract conversationId from URL - this is the single source of truth
-  const conversationIdFromUrl =
-    pathname?.match(/\/kindtao\/messages\/([^\/]+)/)?.[1] || null;
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const urlConversationId = getConversationIdFromLocation();
+    setConversationId((current) =>
+      urlConversationId !== null ? urlConversationId : current
+    );
+  }, []);
 
-  // Use URL as single source of truth, fallback to prop for initial load
-  const conversationId = conversationIdFromUrl || activeConversationId || null;
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handlePopState = () => {
+      setConversationId(getConversationIdFromLocation());
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
-  const conversationSegments = useSelectedLayoutSegments("conversation");
-  const selectedConversationIdFromSegments =
-    conversationSegments && conversationSegments.length > 0
-      ? conversationSegments[0]
-      : null;
-  const sidebarSelectedConversationId =
-    selectedConversationIdFromSegments || conversationId;
+  const updateConversationHistory = useCallback(
+    (id: string | null, mode: "push" | "replace" = "replace") => {
+      if (typeof window === "undefined") return;
+      const url = new URL(window.location.href);
+      if (id) {
+        url.searchParams.set("conversation", id);
+      } else {
+        url.searchParams.delete("conversation");
+      }
+      const href = `${url.pathname}${url.search}${url.hash}`;
+      if (mode === "push") {
+        window.history.pushState({}, "", href);
+      } else {
+        window.history.replaceState({}, "", href);
+      }
+      setConversationId(id);
+    },
+    []
+  );
 
-  // Get current user
-  const currentUser = useQuery(api.auth.getCurrentUser);
+  const sidebarSelectedConversationId = conversationId;
+
+  // Get current user without throwing when logged out
+  const { currentUser } = useOptionalCurrentUser();
   const authUserId = useMemo(() => getUserId(currentUser), [currentUser]);
 
   // Get user record to get the correct user ID format
@@ -242,10 +271,17 @@ export default function RecsPageClient({
   const hasMoreConversations =
     conversationsPage && conversationsPage.length === 20;
 
+  /**
+   * Handle conversation selection with instant navigation
+   * Uses cache for instant UI updates
+   */
   const handleConversationSelect = (id: string) => {
-    // Update URL immediately - this will trigger the parallel route to render
-    router.push(`/kindtao/messages/${id}`, { scroll: false });
+    const cached = conversationCache.getConversation(id);
+    if (cached) {
+      logger.debug("Using cached conversation for instant display:", { id });
+    }
     setActiveTab("messages");
+    updateConversationHistory(id, "push");
   };
 
   // Load more conversations for pagination
@@ -255,7 +291,18 @@ export default function RecsPageClient({
     }
   };
 
-  // Handle match click - create conversation if needed, then navigate
+  const handleOverlayClose = useCallback(() => {
+    // Overlay already waits for animation to complete (350ms) + buffer (100ms) = 450ms
+    // before calling onClose, so we can update URL immediately
+    // The URL update will trigger layout to show header/tabs, which will appear
+    // smoothly after the overlay is fully removed
+    updateConversationHistory(null, "replace");
+  }, [updateConversationHistory]);
+
+  /**
+   * Handle match click with caching and progressive loading
+   * Implements Tinder-like instant navigation with background data fetching
+   */
   const handleMatchClick = async (match: any) => {
     const matchId = String(match._id || match.id || "");
     if (!matchId || !kindtaoUserId) {
@@ -264,46 +311,60 @@ export default function RecsPageClient({
     }
 
     try {
-      // Mark match as opened
-      await MatchService.markMatchAsOpened(convex, matchId, "kindtao");
+      // Mark match as opened (non-blocking)
+      MatchService.markMatchAsOpened(convex, matchId, "kindtao").catch(
+        (error) => {
+          logger.warn("Failed to mark match as opened:", error);
+        }
+      );
 
       // Get user IDs from match
       const kindbossingUserId = match.kindbossing_user_id;
 
-      // First, check if conversation already exists between these users (reuse existing)
-      const existingConversationByUsers = await convex.query(
-        api.conversations.getConversationByUserIds,
-        {
-          kindbossingUserId,
-          kindtaoUserId,
-        }
-      );
+      const tempId = `new-${matchId}`;
+      const cached = conversationCache.getConversation(tempId);
+      const initialConversationId = cached?.conversation?.id || tempId;
 
-      let conversationIdToUse: string;
-
-      if (existingConversationByUsers?._id) {
-        // Reuse existing conversation between these users
-        conversationIdToUse = String(existingConversationByUsers._id);
-      } else {
-        // Check if conversation exists for this specific match
-        const existingConversationByMatch = await convex.query(
-          api.conversations.getConversationByMatchId,
-          { matchId }
-        );
-
-        if (existingConversationByMatch?._id) {
-          conversationIdToUse = String(existingConversationByMatch._id);
-        } else {
-          // No conversation exists yet - create temporary conversation ID
-          conversationIdToUse = `new-${matchId}`;
-        }
+      if (!cached?.conversation?.id) {
+        conversationCache.setConversation(tempId, {
+          match,
+          isTemporary: true,
+        });
       }
 
-      // Update URL immediately - this will trigger the parallel route to render
-      router.push(`/kindtao/messages/${conversationIdToUse}`, {
-        scroll: false,
-      });
       setActiveTab("messages");
+      updateConversationHistory(initialConversationId, "push");
+
+      // Background: Check for existing conversation
+      // This happens after navigation for instant UI
+      Promise.all([
+        convex.query(api.conversations.getConversationByUserIds, {
+          kindbossingUserId,
+          kindtaoUserId,
+        }),
+        convex.query(api.conversations.getConversationByMatchId, { matchId }),
+      ])
+        .then(([conversationByUsers, conversationByMatch]) => {
+          const conversationIdFromServer = conversationByUsers?._id
+            ? String(conversationByUsers._id)
+            : conversationByMatch?._id
+              ? String(conversationByMatch._id)
+              : null;
+
+          if (
+            conversationIdFromServer &&
+            conversationIdFromServer !== initialConversationId
+          ) {
+            conversationCache.setConversation(conversationIdFromServer, {
+              conversation: conversationByUsers || conversationByMatch,
+              match,
+            });
+            updateConversationHistory(conversationIdFromServer, "replace");
+          }
+        })
+        .catch((error) => {
+          logger.error("Error fetching conversation in background:", error);
+        });
     } catch (error) {
       logger.error("Error handling match click:", error);
       showError("Failed to start conversation");
@@ -316,20 +377,52 @@ export default function RecsPageClient({
   const mobileMinHeight = `calc(100vh - ${
     MOBILE_HEADER_HEIGHT + MOBILE_TAB_HEIGHT + LAYOUT_BOTTOM_PADDING
   }px)`;
+  
+  // Calculate sidebar height on mobile - account for visible header and tabs
+  // This ensures sidebar doesn't expand to full screen when conversation overlay is open
+  const sidebarMobileHeight = `calc(100vh - ${MOBILE_HEADER_HEIGHT + MOBILE_TAB_HEIGHT}px)`;
 
   return (
-    <>
+    <div className="relative w-full h-full flex-1 flex flex-col min-h-0">
+      {/* Style tag to apply mobile-only height to sidebar */}
+      <style>{`
+        @media (max-width: 1023px) {
+          .recs-sidebar-container {
+            height: ${sidebarMobileHeight} !important;
+            max-height: ${sidebarMobileHeight} !important;
+          }
+          .recs-page-container {
+            height: ${sidebarMobileHeight} !important;
+            max-height: ${sidebarMobileHeight} !important;
+          }
+        }
+        @media (min-width: 1024px) {
+          .recs-sidebar-container {
+            height: 100% !important;
+            max-height: none !important;
+          }
+          .recs-page-container {
+            height: 100% !important;
+            max-height: none !important;
+          }
+        }
+      `}</style>
       <div
-        className="w-full flex flex-col lg:flex-row bg-gray-50 flex-1 lg:min-h-[calc(100vh-8vh)]"
+        className="recs-page-container w-full h-full flex flex-col lg:flex-row bg-gray-50 flex-1 overflow-x-hidden relative min-h-0"
         style={{ minHeight: mobileMinHeight }}
       >
-        <div className="hidden lg:flex lg:w-80 bg-white lg:border-r border-gray-200 flex-col shrink-0">
+        {/* Sidebar: Show on mobile for matches/messages view, always show on desktop */}
+        {/* Ensure sidebar has solid background and fixed height on mobile */}
+        {/* Sidebar accounts for visible header/tabs height on mobile, full height on desktop */}
+        <div 
+          className="recs-sidebar-container flex w-full lg:w-80 bg-white lg:border-r border-gray-200 flex-col shrink-0 min-h-0 relative z-0 lg:h-full"
+        >
           <RecsSidebar
             activeTab={activeTab}
             onTabChange={setActiveTab}
             selectedConversationId={sidebarSelectedConversationId}
             onConversationSelect={handleConversationSelect}
-            messagesBasePath="/kindtao/messages"
+            messagesBasePath={pathname || "/kindtao/recs"}
             initialMatches={matches}
             initialConversations={conversationsWithTemporary}
             onMatchClick={handleMatchClick}
@@ -341,23 +434,23 @@ export default function RecsPageClient({
           />
         </div>
 
-        <div className="flex flex-1 items-center justify-center px-4 py-6 min-w-0">
+        {/* JobsCarousel: Hide on mobile, show on desktop */}
+        <div className="hidden lg:flex flex-1 items-center justify-center px-4 py-6 min-w-0 h-full min-h-0 relative">
           <JobsCarousel
             jobs={initialJobs}
             initialSwipeLimit={initialSwipeLimit}
           />
         </div>
-      </div>
 
-      {conversationId && (
-        <RecsConversationOverlay
-          conversationId={conversationId}
-          closeRedirect="/kindtao/matches"
-          onClose={() => {
-            router.replace("/kindtao/matches", { scroll: false });
-          }}
-        />
-      )}
-    </>
+        {conversationId && (
+          <RecsConversationOverlay
+            conversationId={conversationId}
+            closeRedirect={pathname}
+            onClose={handleOverlayClose}
+            fullScreen={false}
+          />
+        )}
+      </div>
+    </div>
   );
 }

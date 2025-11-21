@@ -4,12 +4,12 @@ import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { FiArrowLeft, FiSend, FiUser } from "react-icons/fi";
-import { useQuery } from "convex/react";
 import { useToastActions } from "@/stores/useToastStore";
 import { convex } from "@/utils/convex/client";
 import { api } from "@/utils/convex/client";
 import { ChatService } from "@/services/ChatService";
 import { logger } from "@/utils/logger";
+import { useOptionalCurrentUser } from "@/hooks/useOptionalCurrentUser";
 
 const getUserId = (user: unknown): string | null => {
   if (!user) return null;
@@ -24,7 +24,7 @@ const getUserId = (user: unknown): string | null => {
 export default function KindBossingMessagesClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const currentUser = useQuery(api.auth.getCurrentUser);
+  const { currentUser } = useOptionalCurrentUser();
   const { showError, showSuccess } = useToastActions();
 
   const kindtaoUserId = searchParams.get("kindtaoUserId");

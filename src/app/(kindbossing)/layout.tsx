@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import KindBossingHeader from "./_components/KindBossingHeader";
 import KindBossingSidebar from "./_components/KindBossingSidebar";
 import KindBossingBottomNav from "./_components/KindBossingBottomNav";
@@ -13,12 +13,17 @@ export default function KindBossingLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { isCollapsed, setCollapsed } = useSidebarStore();
   const isMatchesPage = pathname?.startsWith("/kindbossing/matches");
   const isMessagesPage = pathname?.startsWith("/kindbossing/messages");
-  const isConversationView =
+  // Check for conversation in URL path or query parameter
+  const isConversationPath =
     typeof pathname === "string" &&
     /^\/kindbossing\/messages\/[^/]+/.test(pathname);
+  const hasConversationQuery = searchParams?.get("conversation");
+  const isConversationView =
+    isConversationPath || Boolean(isMatchesPage && hasConversationQuery);
   const autoCollapsePrevState = useRef<boolean | null>(null);
   const hasAutoCollapsedRef = useRef(false);
   const wasOnMatchesMessagesRef = useRef(false);
@@ -58,25 +63,20 @@ export default function KindBossingLayout({
   }, [pathname, shouldAutoCollapse, setCollapsed]);
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
-      <div className={isConversationView ? "hidden lg:block" : ""}>
+    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden overflow-x-hidden">
+      {/* Header always visible - do not hide on mobile when conversation is open */}
       <KindBossingHeader />
-      </div>
-      <div className="flex flex-1 min-h-0">
-        <div className={isConversationView ? "hidden lg:flex" : ""}>
+      <div className="flex flex-1 min-h-0 overflow-x-hidden">
+        {/* Sidebar always visible - do not hide on mobile when conversation is open */}
         <KindBossingSidebar />
-        </div>
         <main
-          className={
-            isConversationView
-              ? "flex-1 overflow-hidden"
-              : "flex-1 overflow-y-auto pb-16 lg:pb-0"
-          }
+          className="flex-1 overflow-y-auto overflow-x-hidden pb-16 lg:pb-0"
         >
           {children}
         </main>
       </div>
-      {!isConversationView && <KindBossingBottomNav />}
+      {/* Bottom nav always visible - do not hide on mobile when conversation is open */}
+      <KindBossingBottomNav />
     </div>
   );
 }

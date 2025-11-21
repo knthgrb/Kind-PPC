@@ -7,6 +7,7 @@ import { getDocuments } from "@/actions/documents/get-documents";
 import { useToastActions } from "@/stores/useToastStore";
 import { logger } from "@/utils/logger";
 import dynamic from "next/dynamic";
+import { useOptionalCurrentUser } from "@/hooks/useOptionalCurrentUser";
 const AddDocumentModal = dynamic(
   () => import("@/components/modals/AddDocumentModal"),
   {
@@ -115,7 +116,7 @@ export default function DocumentsPage() {
   const filteredDocuments = documents.filter(matchesFilter);
 
   // Get current user
-  const currentUser = useQuery(api.auth.getCurrentUser);
+  const { currentUser } = useOptionalCurrentUser();
 
   // Fetch documents when user is available
   useEffect(() => {

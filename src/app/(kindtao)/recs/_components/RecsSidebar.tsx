@@ -439,9 +439,12 @@ export default function RecsSidebar({
         );
 
         // For KindTao and KindBossing, check for existing conversation and use new- prefix if needed
+        // Only use path-based navigation if onMatchClick is not provided (fallback for path-based routing)
+        // When onMatchClick is provided, it handles all navigation via History API
         if (
           (userRole === "kindtao" || userRole === "kindbossing") &&
-          !disableNavigation
+          !disableNavigation &&
+          !onMatchClick
         ) {
           try {
             const existingConversation = await convex.query(
@@ -469,7 +472,8 @@ export default function RecsSidebar({
       }
     }
 
-    if (!disableNavigation) {
+    // Only use router navigation if onMatchClick is not provided (fallback for path-based routing)
+    if (!disableNavigation && !onMatchClick) {
       router.replace(`${messagesBasePath}/${matchId}`, {
         scroll: false,
       });
@@ -477,8 +481,11 @@ export default function RecsSidebar({
   };
 
   const handleConversationClick = (conversationId: string) => {
+    // Always call onConversationSelect - it handles navigation for SPA pages (query params)
     onConversationSelect(conversationId);
-    if (!disableNavigation) {
+    // Only use router.push if onConversationSelect is not provided (fallback for path-based routing)
+    // When onConversationSelect is provided, it handles all navigation via History API
+    if (!disableNavigation && !onConversationSelect) {
       router.push(`${messagesBasePath}/${conversationId}`);
     }
   };
@@ -614,9 +621,11 @@ export default function RecsSidebar({
                           <span className="text-sm font-semibold text-[#212529] truncate">
                             {jobTitle}
                           </span>
-                          <span className="text-xs text-gray-500 ml-auto shrink-0">
-                            ({jobMatches.length})
-                          </span>
+                          {userRole === "kindbossing" && (
+                            <span className="text-xs text-gray-500 ml-auto shrink-0">
+                              ({jobMatches.length})
+                            </span>
+                          )}
                           {hasUnopenedMatch && (
                             <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white shrink-0"></div>
                           )}
@@ -721,6 +730,20 @@ export default function RecsSidebar({
               );
               const isTemporary = conversationId.startsWith("new-");
 
+              // Check if user data is still loading (for temporary conversations)
+              // Show skeleton if we don't have name or email yet
+              const isUserDataLoading = (() => {
+                if (!isTemporary) return false;
+                if (!otherUser) return true;
+                // Check if we have complete user data
+                const hasName = Boolean(
+                  (otherUser.first_name || otherUser.last_name)?.trim()
+                );
+                const hasEmail = Boolean(otherUser.email?.trim());
+                // If we have neither name nor email, data is still loading
+                return !hasName && !hasEmail;
+              })();
+
               // Extract display name from user data
               const displayName = (() => {
                 // For temporary conversations, always try to get the name from otherUser
@@ -791,6 +814,22 @@ export default function RecsSidebar({
                     ? `You: ${lastMessageContent}`
                     : lastMessageContent
                   : null;
+              // Show skeleton while user data is loading
+              if (isUserDataLoading) {
+                return (
+                  <div
+                    key={conversationId}
+                    className="w-full flex items-center px-4 py-4 border-b border-gray-100"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse shrink-0" />
+                    <div className="ml-2 flex-1 min-w-0">
+                      <div className="h-4 bg-gray-200 rounded animate-pulse w-24 mb-2" />
+                      <div className="h-3 bg-gray-200 rounded animate-pulse w-32" />
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <div
                   key={conversationId}

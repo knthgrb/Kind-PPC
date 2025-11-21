@@ -20,6 +20,7 @@ import { removeEmployee } from "@/actions/employees/remove-employee";
 import { getOrCreateConversation } from "@/actions/employees/get-or-create-conversation";
 import { useRouter } from "next/navigation";
 import EmployeeSkeleton from "@/app/(kindbossing)/employees/_components/EmployeeSkeleton";
+import { useOptionalCurrentUser } from "@/hooks/useOptionalCurrentUser";
 import dynamic from "next/dynamic";
 const AddEmployeeModal = dynamic(
   () => import("@/components/modals/AddEmployeeModal"),
@@ -59,7 +60,7 @@ export default function EmployeesPage() {
   const itemsPerPage = 10;
 
   // Get current user
-  const currentUser = useQuery(api.auth.getCurrentUser);
+  const { currentUser } = useOptionalCurrentUser();
 
   // Fetch employees when user is available
   useEffect(() => {

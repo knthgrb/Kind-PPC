@@ -1,5 +1,7 @@
-import ConversationOverlay from "@/app/(kindtao)/kindtao/matches/_components/ConversationOverlay";
+"use client";
+
 import { use } from "react";
+import RecsConversationOverlay from "@/app/(kindtao)/recs/_components/RecsConversationOverlay";
 
 interface ConversationInterceptPageProps {
   params: Promise<{
@@ -11,5 +13,10 @@ export default function ConversationInterceptPage({
   params,
 }: ConversationInterceptPageProps) {
   const { conversationId } = use(params);
-  return <ConversationOverlay conversationId={conversationId} />;
+  return (
+    <RecsConversationOverlay
+      conversationId={conversationId}
+      closeRedirect="/kindtao/recs"
+    />
+  );
 }

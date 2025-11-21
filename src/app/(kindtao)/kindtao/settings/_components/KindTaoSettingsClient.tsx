@@ -20,10 +20,11 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { AuthService } from "@/services/AuthService";
 import { logger } from "@/utils/logger";
 import Link from "next/link";
-import { api } from "@/utils/convex/client";
+import { api } from "@/utils/convex/client };
 import type { JobPreferences } from "@/services/JobPreferencesService";
 import { updateKindTaoJobPreferences } from "@/actions/job-preferences/update-kindtao-preferences";
 import dynamic from "next/dynamic";
+import { useOptionalCurrentUser } from "@/hooks/useOptionalCurrentUser";
 const SubscriptionModal = dynamic(
   () => import("@/components/modals/SubscriptionModal"),
   {
@@ -120,7 +121,7 @@ export default function KindTaoSettingsClient() {
       ? requestedTab
       : settingsTabs[0]?.id || "general";
 
-  const currentUser = useQuery(api.auth.getCurrentUser);
+  const { currentUser } = useOptionalCurrentUser();
   const kindTaoUserId = currentUser?.userId ?? user?.id ?? null;
   const userIdArg = kindTaoUserId ? { userId: kindTaoUserId } : "skip";
   const userData = useQuery(api.users.getUserById, userIdArg);

@@ -13,8 +13,6 @@ import { logger } from "@/utils/logger";
 import { ConversationActionsService } from "@/services/ConversationActionsService";
 import { useToastActions } from "@/stores/useToastStore";
 import { FaStar } from "react-icons/fa";
-import { ProfileService } from "@/services/ProfileService";
-import { UserProfile } from "@/types/userProfile";
 import { conversationCache } from "@/services/ConversationCacheService";
 
 const getUserId = (user: unknown): string | null => {
@@ -25,15 +23,6 @@ const getUserId = (user: unknown): string | null => {
     (user as { _id?: string | null })?._id ??
     null
   );
-};
-
-// Normalize skill names: convert snake_case to Title Case
-// Example: "elderly_care" -> "Elderly Care"
-const normalizeSkillName = (skill: string): string => {
-  return skill
-    .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(" ");
 };
 
 const MESSAGE_GROUP_THRESHOLD_MS = 3 * 60 * 1000;
@@ -52,15 +41,15 @@ const getInitials = (text?: string | null): string => {
   );
 };
 
-interface ConversationWindowProps {
+interface KindTaoConversationWindowProps {
   conversationId: string;
   onClose?: () => void;
 }
 
-export default function ConversationWindow({
+export default function KindTaoConversationWindow({
   conversationId,
   onClose,
-}: ConversationWindowProps) {
+}: KindTaoConversationWindowProps) {
   const router = useRouter();
   const { isAuthenticated } = useConvexAuth();
   const currentUser = useQuery(
@@ -78,10 +67,6 @@ export default function ConversationWindow({
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [showMobilePanel, setShowMobilePanel] = useState(false);
-  const [kindtaoProfile, setKindtaoProfile] = useState<UserProfile | null>(
-    null
-  );
-  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -90,48 +75,12 @@ export default function ConversationWindow({
   const previousMessagesLengthRef = useRef(0);
   const { showSuccess, showError } = useToastActions();
 
-  // Get current user's role
-  const userRecord = useQuery(
-    api.users.getUserById,
-    userId ? { userId } : "skip"
-  );
-  const currentUserRole = useMemo(() => {
-    return (userRecord as any)?.role || (currentUser as any)?.role || "kindtao";
-  }, [userRecord, currentUser]);
-
   // Set user ID in cache service for encryption
   useEffect(() => {
     if (userId) {
       conversationCache.setUserId(userId);
     }
   }, [userId]);
-
-  // Determine messages base path based on user role
-  const messagesBasePath = useMemo(() => {
-    return currentUserRole === "kindbossing"
-      ? "/kindbossing/messages"
-      : "/kindtao/messages";
-  }, [currentUserRole]);
-
-  const currentUserProfileImage = useMemo(() => {
-    return (
-      (userRecord as any)?.profile_image_url ||
-      (currentUser as any)?.profile_image_url ||
-      null
-    );
-  }, [userRecord, currentUser]);
-
-  const currentUserInitials = useMemo(() => {
-    const firstName =
-      (userRecord as any)?.first_name || (currentUser as any)?.first_name || "";
-    const lastName =
-      (userRecord as any)?.last_name || (currentUser as any)?.last_name || "";
-    const email =
-      (userRecord as any)?.email || (currentUser as any)?.email || "";
-    const fallback =
-      `${firstName} ${lastName}`.trim() || email?.split("@")[0] || "You";
-    return getInitials(fallback);
-  }, [userRecord, currentUser]);
 
   // Check if this is a temporary conversation
   const isTempConversation = conversationId.startsWith("new-");
@@ -155,7 +104,7 @@ export default function ConversationWindow({
         setMatch(matchData);
         setIsTemporary(true);
         setIsLoading(false);
-        setMessages([]); // No messages for temporary conversations
+        setMessages([]);
       } else if (matchData === null) {
         setIsLoading(false);
       }
@@ -171,22 +120,17 @@ export default function ConversationWindow({
   useEffect(() => {
     const loadConversation = async () => {
       if (!userId || !conversationId) return;
-      if (isTempConversation) return; // Handled by match query above
+      if (isTempConversation) return;
 
-      // Check if we're transitioning from a temporary conversation
       const isTransitioning =
         transitioningConversationIdRef.current === conversationId;
 
       try {
-        // Check memory cache first for instant UI (synchronous)
         let cached = conversationCache.getConversation(conversationId);
-
-        // If not in memory, try IndexedDB (async fallback)
         if (!cached) {
-          cached =
-            await conversationCache.getConversationFromIndexedDB(
-              conversationId
-            );
+          cached = await conversationCache.getConversationFromIndexedDB(
+            conversationId
+          );
         }
 
         if (cached?.conversation) {
@@ -197,16 +141,7 @@ export default function ConversationWindow({
           }
           setIsLoading(false);
           setIsTemporary(false);
-
-          // Background refresh if cache is stale
-          if (Date.now() - cached.lastFetched > 60000) {
-            // Cache older than 1 minute, refresh in background
-            logger.debug("Refreshing stale conversation cache:", {
-              conversationId,
-            });
-          }
         } else {
-          // No cache, show loading state
           if (!isTransitioning) {
             setIsLoading(true);
           }
@@ -214,7 +149,6 @@ export default function ConversationWindow({
 
         setIsTemporary(false);
 
-        // Fetch conversation (will update cache)
         if (userId) {
           const conv = await ChatService.getConversation(
             convex,
@@ -222,14 +156,11 @@ export default function ConversationWindow({
             userId
           );
           setConversation(conv);
-
-          // Update cache (memory + IndexedDB)
           conversationCache.setConversation(conversationId, {
             conversation: conv,
           });
         }
 
-        // Clear the transition flag after loading
         if (isTransitioning) {
           transitioningConversationIdRef.current = null;
         }
@@ -244,16 +175,14 @@ export default function ConversationWindow({
     loadConversation();
   }, [conversationId, userId, isTempConversation]);
 
-  // Update messages from real-time query with caching
+  // Update messages from real-time query
   useEffect(() => {
     if (isTempConversation) {
       setMessages([]);
       return;
     }
 
-    // realtimeMessages will be undefined while loading, null if no messages, or an array if messages exist
     if (realtimeMessages !== undefined) {
-      // Convert Convex messages to expected format
       const formattedMessages = (realtimeMessages || []).map((msg: any) => ({
         id: String(msg._id),
         conversation_id: msg.conversation_id,
@@ -268,18 +197,11 @@ export default function ConversationWindow({
       }));
 
       setMessages(formattedMessages);
-
-      // Update cache with latest messages
-      conversationCache.updateMessages(
-        conversationId,
-        formattedMessages,
-        false
-      );
+      conversationCache.updateMessages(conversationId, formattedMessages, false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [realtimeMessages, isTempConversation, conversationId]);
 
-  // Scroll to bottom when messages load or update
+  // Scroll to bottom when messages load
   useEffect(() => {
     if (messages.length === 0) {
       hasScrolledToBottomRef.current = false;
@@ -289,19 +211,13 @@ export default function ConversationWindow({
     const container = messagesContainerRef.current;
     if (!container) return;
 
-    // Check if user is near the bottom (within 100px) or if this is initial load
     const isNearBottom =
       container.scrollHeight - container.scrollTop - container.clientHeight <
       100;
     const isInitialLoad = !hasScrolledToBottomRef.current;
     const isNewMessage = messages.length > previousMessagesLengthRef.current;
 
-    // Scroll to bottom if:
-    // 1. Initial load (first time messages are loaded)
-    // 2. New message added and user is already near bottom
     if (isInitialLoad || (isNewMessage && isNearBottom)) {
-      // Use requestAnimationFrame with a small delay to ensure DOM is fully rendered
-      // This is especially important when loading many messages
       requestAnimationFrame(() => {
         setTimeout(
           () => {
@@ -311,20 +227,19 @@ export default function ConversationWindow({
               });
               hasScrolledToBottomRef.current = true;
             } else if (container) {
-              // Fallback: scroll container directly
               container.scrollTop = container.scrollHeight;
               hasScrolledToBottomRef.current = true;
             }
           },
           isInitialLoad ? 100 : 0
-        ); // Small delay for initial load to ensure rendering
+        );
       });
     }
 
     previousMessagesLengthRef.current = messages.length;
   }, [messages]);
 
-  // Mark messages as read when viewing a non-temporary conversation
+  // Mark messages as read
   useEffect(() => {
     if (isTempConversation || !conversationId || !userId) return;
     if (messages.length === 0) return;
@@ -346,22 +261,22 @@ export default function ConversationWindow({
     markAsRead();
   }, [messages, isTempConversation, conversationId, userId]);
 
-  // Reset scroll tracking when conversation changes
+  // Reset scroll tracking
   useEffect(() => {
     hasScrolledToBottomRef.current = false;
     previousMessagesLengthRef.current = 0;
   }, [conversationId]);
 
-  // For temporary conversations, use match data
+  // Get other user (kindbossing) with ID fallback for temporary conversations
   const otherUser =
     isTemporary && match
-      ? match.kindtao ||
-        match.kindtao_user ||
-        match.kindbossing ||
-        match.kindbossing_user
+      ? match.kindbossing ||
+        match.kindbossing_user ||
+        (match.kindbossing_user_id
+          ? { id: match.kindbossing_user_id }
+          : null)
       : conversation?.otherUser;
 
-  // Get other user's ID
   const otherUserId = useMemo(() => {
     if (!otherUser) return null;
     return otherUser.id || otherUser._id || null;
@@ -373,12 +288,8 @@ export default function ConversationWindow({
     otherUserId ? { userId: otherUserId } : "skip"
   );
 
-  // Use full user data if available, otherwise use otherUser from conversation
   const otherUserWithProfile = useMemo(() => {
     if (fullOtherUserData) {
-      // Merge full user data with conversation's otherUser data
-      // Prefer fullOtherUserData for profile_image_url and other fields
-      // Filter out empty strings for profile_image_url
       const profileImageUrl =
         (fullOtherUserData.profile_image_url &&
           typeof fullOtherUserData.profile_image_url === "string" &&
@@ -396,7 +307,6 @@ export default function ConversationWindow({
         email: fullOtherUserData.email || otherUser?.email,
       };
     }
-    // Even if we don't have fullOtherUserData, filter out empty strings
     if (
       otherUser?.profile_image_url &&
       typeof otherUser.profile_image_url === "string" &&
@@ -410,41 +320,28 @@ export default function ConversationWindow({
     return otherUser;
   }, [otherUser, fullOtherUserData]);
 
-  // Determine kindbossing and kindtao user IDs for fetching matches
-  // Get IDs from conversation object first (most reliable), then fallback to other methods
+  // Get kindbossing and kindtao user IDs
   const kindbossingUserId = useMemo(() => {
-    // If we have conversation data, use it directly
     if (conversation?.kindbossing_user_id) {
       return conversation.kindbossing_user_id;
     }
-    // If we have match data, use it
     if (match?.kindbossing_user_id) {
       return match.kindbossing_user_id;
     }
-    // Fallback to role-based logic
-    if (currentUserRole === "kindbossing") {
-      return userId;
-    }
     return otherUserId;
-  }, [conversation, match, currentUserRole, userId, otherUserId]);
+  }, [conversation, match, otherUserId]);
 
   const kindtaoUserId = useMemo(() => {
-    // If we have conversation data, use it directly
     if (conversation?.kindtao_user_id) {
       return conversation.kindtao_user_id;
     }
-    // If we have match data, use it
     if (match?.kindtao_user_id) {
       return match.kindtao_user_id;
     }
-    // Fallback to role-based logic
-    if (currentUserRole === "kindtao") {
-      return userId;
-    }
-    return otherUserId;
-  }, [conversation, match, currentUserRole, userId, otherUserId]);
+    return userId;
+  }, [conversation, match, userId]);
 
-  // Fetch all matches between the two users to show matched job titles
+  // Fetch all matches to show matched job titles
   const allMatches = useQuery(
     api.matches.getMatchesByUserIds,
     kindbossingUserId && kindtaoUserId
@@ -455,24 +352,19 @@ export default function ConversationWindow({
       : "skip"
   );
 
-  // Extract unique job titles from matches
   const matchedJobTitles = useMemo(() => {
     const titles = new Set<string>();
 
-    // First, try to get titles from the query results
     if (allMatches && allMatches.length > 0) {
       allMatches.forEach((matchItem: any) => {
-        // Job title is stored as job_title in the job_posts table
         if (matchItem.job?.job_title) {
           titles.add(matchItem.job.job_title);
         } else if (matchItem.job?.title) {
-          // Fallback to title if job_title doesn't exist
           titles.add(matchItem.job.title);
         }
       });
     }
 
-    // Fallback: If no titles from query, try to get from current match/conversation
     if (titles.size === 0) {
       if (match?.job?.job_title) {
         titles.add(match.job.job_title);
@@ -486,70 +378,15 @@ export default function ConversationWindow({
       }
     }
 
-    const result = Array.from(titles);
-    logger.debug("Matched job titles:", {
-      titles: result,
-      matchCount: allMatches?.length || 0,
-      hasMatch: !!match,
-      hasConversation: !!conversation,
-      kindbossingUserId,
-      kindtaoUserId,
-      allMatchesSample: allMatches?.slice(0, 2).map((m: any) => ({
-        hasJob: !!m.job,
-        jobTitle: m.job?.job_title,
-        jobTitleAlt: m.job?.title,
-      })),
-    });
-    return result;
-  }, [allMatches, match, conversation, kindbossingUserId, kindtaoUserId]);
+    return Array.from(titles);
+  }, [allMatches, match, conversation]);
 
-  // Get kindbossing profile data (when current user is kindtao)
+  // Get kindbossing profile data
   const kindbossingProfile = useQuery(
     api.kindbossings.getKindBossingByUserId,
-    currentUserRole === "kindtao" && otherUserId
-      ? { userId: otherUserId }
-      : "skip"
+    otherUserId ? { userId: otherUserId } : "skip"
   );
 
-  // Fetch kindtao profile data (when current user is kindbossing) with caching
-  useEffect(() => {
-    const loadKindTaoProfile = async () => {
-      if (currentUserRole !== "kindbossing" || !otherUserId) {
-        setKindtaoProfile(null);
-        return;
-      }
-
-      // Check cache first
-      const cachedProfile = conversationCache.getProfile(otherUserId);
-      if (cachedProfile) {
-        logger.debug("Using cached profile:", { userId: otherUserId });
-        setKindtaoProfile(cachedProfile);
-        setIsLoadingProfile(false);
-      } else {
-        setIsLoadingProfile(true);
-      }
-
-      try {
-        const profile = await ProfileService.getKindTaoProfileByUserId(
-          otherUserId,
-          convex
-        );
-        setKindtaoProfile(profile);
-
-        // Update cache
-        conversationCache.setProfile(otherUserId, profile);
-      } catch (error) {
-        logger.error("Error loading KindTao profile:", error);
-        setKindtaoProfile(null);
-      } finally {
-        setIsLoadingProfile(false);
-      }
-    };
-
-    loadKindTaoProfile();
-  }, [currentUserRole, otherUserId]);
-
-  // Get match ID from conversation
   const matchId = useMemo(() => {
     if (isTemporary && match) {
       return String(match._id || match.id || "");
@@ -563,24 +400,18 @@ export default function ConversationWindow({
     return null;
   }, [isTemporary, match, conversation, isTempConversation, tempMatchId]);
 
-  // Extract display name from user data (must be before any early returns)
   const displayName = useMemo(() => {
     const user = otherUserWithProfile || otherUser;
     if (!user) return "User";
 
-    // Try to get name from first_name and last_name
     const firstName = user.first_name || "";
     const lastName = user.last_name || "";
     const fullName = `${firstName} ${lastName}`.trim();
 
     if (fullName) return fullName;
-
-    // Fallback to email username
     if (user.email) {
       return user.email.split("@")[0];
     }
-
-    // Last resort
     return "User";
   }, [otherUserWithProfile, otherUser]);
 
@@ -598,52 +429,46 @@ export default function ConversationWindow({
       let actualConversationId = conversationId;
       const messageContent = newMessage.trim();
 
-      // If this is a temporary conversation, create the conversation record first
       if (isTemporary && matchId && match) {
-        const kindtaoUserId =
-          match.kindtao_user_id || match.kindtao?.id || match.kindtao?._id;
-        if (!kindtaoUserId) {
-          logger.error("Unable to find kindtao user ID in match");
+        const kindbossingUserId =
+          match.kindbossing_user_id || match.kindbossing?.id || match.kindbossing?._id;
+        if (!kindbossingUserId) {
+          logger.error("Unable to find kindbossing user ID in match");
           return;
         }
 
-        const kindtaoUserIdString =
-          typeof kindtaoUserId === "string"
-            ? kindtaoUserId
-            : String(kindtaoUserId);
+        const kindbossingUserIdString =
+          typeof kindbossingUserId === "string"
+            ? kindbossingUserId
+            : String(kindbossingUserId);
 
-        // Create conversation record
         actualConversationId = await ChatService.createConversation(
           convex,
           matchId,
-          userId,
-          kindtaoUserIdString
+          kindbossingUserIdString,
+          userId
         );
 
-        // Update state BEFORE URL change to prevent loading state
         setIsTemporary(false);
         const newConversation = {
           _id: actualConversationId,
           id: actualConversationId,
           match_id: matchId,
-          kindbossing_user_id: userId,
-          kindtao_user_id: kindtaoUserIdString,
-          otherUser: match.kindtao || match.kindtao_user,
+          kindbossing_user_id: kindbossingUserIdString,
+          kindtao_user_id: userId,
+          otherUser: match.kindbossing || match.kindbossing_user,
         };
         setConversation(newConversation);
 
-        // Update cache with new conversation
         conversationCache.setConversation(actualConversationId, {
           conversation: newConversation,
           match,
           isTemporary: false,
         });
 
-        // Mark that we're transitioning to this conversation ID
         transitioningConversationIdRef.current = actualConversationId;
       }
 
-      // Send the message
       await ChatService.sendMessage(
         convex,
         actualConversationId,
@@ -652,19 +477,14 @@ export default function ConversationWindow({
         "text"
       );
       setNewMessage("");
-      // Reset textarea height
       if (textareaRef.current) {
         textareaRef.current.style.height = "44px";
       }
 
-      // Messages will be updated automatically via useQuery
-      // No need to manually fetch here since real-time query will update
-      // Force scroll to bottom after sending
       hasScrolledToBottomRef.current = false;
 
-      // Update URL AFTER everything is loaded to prevent loading state
       if (isTemporary && actualConversationId !== conversationId) {
-        router.replace(`${messagesBasePath}/${actualConversationId}`, {
+        router.replace(`/kindtao/messages/${actualConversationId}`, {
           scroll: false,
         });
       }
@@ -679,7 +499,7 @@ export default function ConversationWindow({
     if (onClose) {
       onClose();
     } else {
-      router.back();
+      router.push("/kindtao/matches");
     }
   };
 
@@ -698,10 +518,8 @@ export default function ConversationWindow({
     }
 
     try {
-      // Get the actual match _id if we have a string matchId
       let actualMatchId = matchId;
       if (isTemporary || !conversation?.match_id) {
-        // For temporary conversations, we need to get the match first
         try {
           const matchData = await convex.query(api.matches.getMatchById, {
             matchId: matchId,
@@ -801,14 +619,13 @@ export default function ConversationWindow({
   };
 
   return (
-    <div className="h-full flex bg-white overflow-hidden">
+    <div className="h-full w-full flex bg-white overflow-hidden max-w-full">
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden max-w-full">
         {/* Header */}
         <div className="flex items-center justify-between p-4.5 shrink-0 bg-white border-b border-gray-200">
           <div className="flex items-center">
             {!otherUser ? (
-              // Skeleton when user is not loaded yet
               <>
                 <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse mr-3" />
                 <div>
@@ -954,7 +771,6 @@ export default function ConversationWindow({
                 value={newMessage}
                 onChange={(e) => {
                   setNewMessage(e.target.value);
-                  // Auto-resize textarea
                   if (textareaRef.current) {
                     textareaRef.current.style.height = "auto";
                     textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
@@ -971,11 +787,7 @@ export default function ConversationWindow({
                     handleSendMessage();
                   }
                 }}
-                style={{
-                  minHeight: "44px",
-                  maxHeight: "120px",
-                  overflow: "hidden",
-                }}
+                style={{ minHeight: "44px", maxHeight: "120px", overflow: "hidden" }}
               />
             </div>
             <button
@@ -1021,80 +833,107 @@ export default function ConversationWindow({
         </div>
       </div>
 
-      {/* Right Sidebar - Desktop only - Profile Panel */}
-      {otherUser && (
+      {/* Right Sidebar - Desktop only - KindBossing Profile Panel */}
+      {/* Show skeleton when loading, show content when otherUser is available */}
+      {(isLoading || otherUser) && (
         <>
           {/* Desktop Sidebar */}
           <div
-            className="hidden lg:flex w-90 border-l border-gray-200 bg-white flex-col overflow-y-auto [&::-webkit-scrollbar]:hidden"
+            className="hidden lg:flex w-96 border-l border-gray-200 bg-white flex-col overflow-y-auto shrink-0 [&::-webkit-scrollbar]:hidden"
             style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
           >
             <div className="p-4">
               {/* Profile Header */}
               <div className="flex flex-col items-center mb-6">
-                {(otherUserWithProfile || otherUser)?.profile_image_url ? (
-                  <img
-                    src={(otherUserWithProfile || otherUser)?.profile_image_url}
-                    alt={displayName}
-                    className="w-24 h-24 rounded-full object-cover mb-4"
-                  />
+                {isLoading && !otherUser ? (
+                  <>
+                    <div className="w-24 h-24 rounded-full bg-gray-200 animate-pulse mb-4" />
+                    <div className="h-5 bg-gray-200 rounded animate-pulse w-32 mb-2" />
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-24" />
+                  </>
                 ) : (
-                  <div className="w-24 h-24 rounded-full bg-[#CC0000] text-white flex items-center justify-center mb-4 text-2xl font-semibold">
-                    {otherUserInitials}
-                  </div>
+                  <>
+                    {(otherUserWithProfile || otherUser)?.profile_image_url ? (
+                      <img
+                        src={(otherUserWithProfile || otherUser)?.profile_image_url}
+                        alt={displayName}
+                        className="w-24 h-24 rounded-full object-cover mb-4"
+                      />
+                    ) : (
+                      <div className="w-24 h-24 rounded-full bg-[#CC0000] text-white flex items-center justify-center mb-4 text-2xl font-semibold">
+                        {otherUserInitials}
+                      </div>
+                    )}
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                      {displayName}
+                    </h3>
+                    {kindbossingProfile?.business_name && (
+                      <p className="text-sm text-gray-500 mb-4">
+                        {kindbossingProfile.business_name}
+                      </p>
+                    )}
+                  </>
                 )}
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                  {displayName}
-                </h3>
-                {currentUserRole === "kindtao" &&
-                  kindbossingProfile?.business_name && (
-                    <p className="text-sm text-gray-500 mb-4">
-                      {kindbossingProfile.business_name}
-                    </p>
-                  )}
               </div>
 
-              {/* Matched Job Titles */}
-              {matchedJobTitles.length > 0 && (
-                <div className="mb-6 pb-6 border-b border-gray-200">
-                  <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                    Matched
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {matchedJobTitles.map((title, index) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-full border border-blue-200"
-                      >
-                        {title}
-                      </span>
-                    ))}
+              {/* Loading Skeleton for Right Panel */}
+              {isLoading && !otherUser ? (
+                <>
+                  {/* Matched Job Titles Skeleton */}
+                  <div className="mb-6 pb-6 border-b border-gray-200">
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-20 mb-3" />
+                    <div className="flex flex-wrap gap-2">
+                      <div className="h-6 bg-gray-200 rounded-full animate-pulse w-24" />
+                      <div className="h-6 bg-gray-200 rounded-full animate-pulse w-20" />
+                    </div>
                   </div>
-                </div>
-              )}
 
-              {/* Loading State */}
-              {isLoadingProfile && (
-                <div className="flex items-center justify-center py-8">
-                  <LoadingSpinner size="sm" variant="minimal" />
-                </div>
-              )}
+                  {/* Rating Skeleton */}
+                  <div className="mb-6 pb-6 border-b border-gray-200">
+                    <div className="h-8 bg-gray-200 rounded animate-pulse w-16 mx-auto mb-2" />
+                    <div className="h-3 bg-gray-200 rounded animate-pulse w-24 mx-auto" />
+                  </div>
 
-              {/* KindTao Profile (when current user is kindbossing) */}
-              {currentUserRole === "kindbossing" &&
-                kindtaoProfile &&
-                !isLoadingProfile && (
-                  <>
-                    {/* Rating */}
-                    {kindtaoProfile.kindtao_profile?.rating !== undefined &&
-                      kindtaoProfile.kindtao_profile.rating !== null && (
+                  {/* Reviews Skeleton */}
+                  <div className="mb-6 pb-6 border-b border-gray-200">
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-20 mb-3" />
+                    <div className="space-y-3">
+                      <div className="h-16 bg-gray-200 rounded-lg animate-pulse" />
+                      <div className="h-16 bg-gray-200 rounded-lg animate-pulse" />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Matched Job Titles */}
+                  {matchedJobTitles.length > 0 && (
+                    <div className="mb-6 pb-6 border-b border-gray-200">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-3">
+                        Matched
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {matchedJobTitles.map((title, index) => (
+                          <span
+                            key={index}
+                            className="px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-full border border-blue-200"
+                          >
+                            {title}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* KindBossing Profile Details */}
+                  {kindbossingProfile && (
+                    <>
+                      {/* Rating */}
+                      {kindbossingProfile.rating !== undefined && (
                         <div className="mb-6 pb-6 border-b border-gray-200">
                           <div className="flex items-center justify-center gap-2 mb-2">
                             <FaStar className="w-5 h-5 text-yellow-400" />
                             <span className="text-2xl font-semibold text-gray-900">
-                              {kindtaoProfile.kindtao_profile.rating?.toFixed(
-                                1
-                              ) || "0.0"}
+                              {kindbossingProfile.rating.toFixed(1)}
                             </span>
                           </div>
                           <p className="text-xs text-center text-gray-500">
@@ -1103,214 +942,66 @@ export default function ConversationWindow({
                         </div>
                       )}
 
-                    {/* Skills */}
-                    {kindtaoProfile.kindtao_profile?.skills &&
-                      kindtaoProfile.kindtao_profile.skills.length > 0 && (
-                        <div className="mb-6 pb-6 border-b border-gray-200">
-                          <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                            Skills
-                          </h4>
-                          <div className="flex flex-wrap gap-2">
-                            {kindtaoProfile.kindtao_profile.skills.map(
-                              (skill, index) => (
-                                <span
-                                  key={index}
-                                  className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-full"
-                                >
-                                  {normalizeSkillName(skill)}
-                                </span>
-                              )
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                    {/* Languages */}
-                    {kindtaoProfile.kindtao_profile?.languages &&
-                      kindtaoProfile.kindtao_profile.languages.length > 0 && (
-                        <div className="mb-6 pb-6 border-b border-gray-200">
-                          <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                            Languages
-                          </h4>
-                          <div className="flex flex-wrap gap-2">
-                            {kindtaoProfile.kindtao_profile.languages.map(
-                              (lang, index) => (
-                                <span
-                                  key={index}
-                                  className="px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-full"
-                                >
-                                  {lang}
-                                </span>
-                              )
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                    {/* Education */}
-                    {kindtaoProfile.kindtao_profile
-                      ?.highest_educational_attainment && (
-                      <div className="mb-6 pb-6 border-b border-gray-200">
-                        <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                          Education
-                        </h4>
-                        <p className="text-sm text-gray-700">
-                          {
-                            kindtaoProfile.kindtao_profile
-                              .highest_educational_attainment
-                          }
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Work Experience */}
-                    {kindtaoProfile.work_experiences &&
-                      kindtaoProfile.work_experiences.length > 0 && (
-                        <div className="mb-6 pb-6 border-b border-gray-200">
-                          <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                            Work Experience
-                          </h4>
-                          <div className="space-y-4">
-                            {kindtaoProfile.work_experiences
-                              .slice(0, 3)
-                              .map((exp: any, index: number) => (
-                                <div
-                                  key={index}
-                                  className="bg-gray-50 p-3 rounded-lg"
-                                >
-                                  <p className="text-sm font-medium text-gray-900 mb-1">
-                                    {exp.job_title || "N/A"}
-                                  </p>
-                                  <p className="text-xs text-gray-600 mb-1">
-                                    {exp.company_name || "N/A"}
-                                  </p>
-                                  {exp.start_date && (
-                                    <p className="text-xs text-gray-500">
-                                      {new Date(
-                                        exp.start_date
-                                      ).toLocaleDateString()}
-                                      {exp.end_date
-                                        ? ` - ${new Date(exp.end_date).toLocaleDateString()}`
-                                        : " - Present"}
+                      {/* Reviews */}
+                      {kindbossingProfile.reviews &&
+                        kindbossingProfile.reviews.length > 0 && (
+                          <div className="mb-6 pb-6 border-b border-gray-200">
+                            <h4 className="text-sm font-semibold text-gray-900 mb-3">
+                              Reviews
+                            </h4>
+                            <div className="space-y-3">
+                              {kindbossingProfile.reviews
+                                .slice(0, 3)
+                                .map((review: string, index: number) => (
+                                  <div
+                                    key={index}
+                                    className="bg-gray-50 p-3 rounded-lg"
+                                  >
+                                    <p className="text-sm text-gray-700">
+                                      "{review}"
                                     </p>
-                                  )}
-                                  {exp.description && (
-                                    <p className="text-xs text-gray-600 mt-2 line-clamp-2">
-                                      {exp.description}
-                                    </p>
-                                  )}
-                                </div>
-                              ))}
+                                  </div>
+                                ))}
+                            </div>
                           </div>
-                        </div>
-                      )}
-
-                    {/* Reviews */}
-                    {kindtaoProfile.kindtao_profile?.reviews &&
-                      kindtaoProfile.kindtao_profile.reviews.length > 0 && (
-                        <div className="mb-6 pb-6 border-b border-gray-200">
-                          <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                            Reviews
-                          </h4>
-                          <div className="space-y-3">
-                            {kindtaoProfile.kindtao_profile.reviews
-                              .slice(0, 3)
-                              .map((review: string, index: number) => (
-                                <div
-                                  key={index}
-                                  className="bg-gray-50 p-3 rounded-lg"
-                                >
-                                  <p className="text-sm text-gray-700">
-                                    "{review}"
-                                  </p>
-                                </div>
-                              ))}
-                          </div>
-                        </div>
-                      )}
-
-                    {/* Expected Salary */}
-                    {kindtaoProfile.kindtao_profile?.expected_salary_range && (
-                      <div className="mb-6 pb-6 border-b border-gray-200">
-                        <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                          Expected Salary
-                        </h4>
-                        <p className="text-sm text-gray-700">
-                          {kindtaoProfile.kindtao_profile.expected_salary_range}
-                        </p>
-                      </div>
-                    )}
-                  </>
-                )}
-
-              {/* KindBossing Profile (when current user is kindtao) */}
-              {currentUserRole === "kindtao" && kindbossingProfile && (
-                <>
-                  {/* Rating */}
-                  {kindbossingProfile.rating !== undefined && (
-                    <div className="mb-6 pb-6 border-b border-gray-200">
-                      <div className="flex items-center justify-center gap-2 mb-2">
-                        <FaStar className="w-5 h-5 text-yellow-400" />
-                        <span className="text-2xl font-semibold text-gray-900">
-                          {kindbossingProfile.rating.toFixed(1)}
-                        </span>
-                      </div>
-                      <p className="text-xs text-center text-gray-500">
-                        Average Rating
-                      </p>
-                    </div>
+                        )}
+                    </>
                   )}
-
-                  {/* Reviews */}
-                  {kindbossingProfile.reviews &&
-                    kindbossingProfile.reviews.length > 0 && (
-                      <div className="mb-6 pb-6 border-b border-gray-200">
-                        <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                          Reviews
-                        </h4>
-                        <div className="space-y-3">
-                          {kindbossingProfile.reviews
-                            .slice(0, 3)
-                            .map((review: string, index: number) => (
-                              <div
-                                key={index}
-                                className="bg-gray-50 p-3 rounded-lg"
-                              >
-                                <p className="text-sm text-gray-700">
-                                  "{review}"
-                                </p>
-                              </div>
-                            ))}
-                        </div>
-                      </div>
-                    )}
                 </>
               )}
 
               {/* Action Buttons */}
-              <div className="space-y-3">
-                <button
-                  onClick={handleUnmatch}
-                  className="w-full cursor-pointer px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
-                >
-                  Unmatch
-                </button>
-                <button
-                  onClick={handleBlock}
-                  className="w-full cursor-pointer px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
-                >
-                  Block
-                </button>
-                <button
-                  onClick={() => {
-                    setShowMobilePanel(false);
-                    setShowReportModal(true);
-                  }}
-                  className="w-full cursor-pointer px-4 py-2.5 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-xl hover:bg-red-50 transition-colors"
-                >
-                  Report
-                </button>
-              </div>
+              {isLoading && !otherUser ? (
+                <div className="space-y-3">
+                  <div className="h-10 bg-gray-200 rounded-xl animate-pulse" />
+                  <div className="h-10 bg-gray-200 rounded-xl animate-pulse" />
+                  <div className="h-10 bg-gray-200 rounded-xl animate-pulse" />
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <button
+                    onClick={handleUnmatch}
+                    className="w-full cursor-pointer px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
+                  >
+                    Unmatch
+                  </button>
+                  <button
+                    onClick={handleBlock}
+                    className="w-full cursor-pointer px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
+                  >
+                    Block
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowMobilePanel(false);
+                      setShowReportModal(true);
+                    }}
+                    className="w-full cursor-pointer px-4 py-2.5 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-xl hover:bg-red-50 transition-colors"
+                  >
+                    Report
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1351,12 +1042,11 @@ export default function ConversationWindow({
                   <h3 className="text-lg font-semibold text-gray-900 mb-1">
                     {displayName}
                   </h3>
-                  {currentUserRole === "kindtao" &&
-                    kindbossingProfile?.business_name && (
-                      <p className="text-sm text-gray-500 mb-4">
-                        {kindbossingProfile.business_name}
-                      </p>
-                    )}
+                  {kindbossingProfile?.business_name && (
+                    <p className="text-sm text-gray-500 mb-4">
+                      {kindbossingProfile.business_name}
+                    </p>
+                  )}
                 </div>
 
                 {/* Matched Job Titles */}
@@ -1378,182 +1068,8 @@ export default function ConversationWindow({
                   </div>
                 )}
 
-                {/* Loading State */}
-                {isLoadingProfile && (
-                  <div className="flex items-center justify-center py-8">
-                    <LoadingSpinner size="sm" variant="minimal" />
-                  </div>
-                )}
-
-                {/* KindTao Profile (when current user is kindbossing) */}
-                {currentUserRole === "kindbossing" &&
-                  kindtaoProfile &&
-                  !isLoadingProfile && (
-                    <>
-                      {/* Rating */}
-                      {kindtaoProfile.kindtao_profile?.rating !== undefined &&
-                        kindtaoProfile.kindtao_profile.rating !== null && (
-                          <div className="mb-6 pb-6 border-b border-gray-200">
-                            <div className="flex items-center justify-center gap-2 mb-2">
-                              <FaStar className="w-5 h-5 text-yellow-400" />
-                              <span className="text-2xl font-semibold text-gray-900">
-                                {kindtaoProfile.kindtao_profile.rating?.toFixed(
-                                  1
-                                ) || "0.0"}
-                              </span>
-                            </div>
-                            <p className="text-xs text-center text-gray-500">
-                              Average Rating
-                            </p>
-                          </div>
-                        )}
-
-                      {/* Skills */}
-                      {kindtaoProfile.kindtao_profile?.skills &&
-                        kindtaoProfile.kindtao_profile.skills.length > 0 && (
-                          <div className="mb-6 pb-6 border-b border-gray-200">
-                            <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                              Skills
-                            </h4>
-                            <div className="flex flex-wrap gap-2">
-                              {kindtaoProfile.kindtao_profile.skills.map(
-                                (skill, index) => (
-                                  <span
-                                    key={index}
-                                    className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-full"
-                                  >
-                                    {normalizeSkillName(skill)}
-                                  </span>
-                                )
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                      {/* Languages */}
-                      {kindtaoProfile.kindtao_profile?.languages &&
-                        kindtaoProfile.kindtao_profile.languages.length > 0 && (
-                          <div className="mb-6 pb-6 border-b border-gray-200">
-                            <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                              Languages
-                            </h4>
-                            <div className="flex flex-wrap gap-2">
-                              {kindtaoProfile.kindtao_profile.languages.map(
-                                (lang, index) => (
-                                  <span
-                                    key={index}
-                                    className="px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-full"
-                                  >
-                                    {lang}
-                                  </span>
-                                )
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                      {/* Education */}
-                      {kindtaoProfile.kindtao_profile
-                        ?.highest_educational_attainment && (
-                        <div className="mb-6 pb-6 border-b border-gray-200">
-                          <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                            Education
-                          </h4>
-                          <p className="text-sm text-gray-700">
-                            {
-                              kindtaoProfile.kindtao_profile
-                                .highest_educational_attainment
-                            }
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Work Experience */}
-                      {kindtaoProfile.work_experiences &&
-                        kindtaoProfile.work_experiences.length > 0 && (
-                          <div className="mb-6 pb-6 border-b border-gray-200">
-                            <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                              Work Experience
-                            </h4>
-                            <div className="space-y-4">
-                              {kindtaoProfile.work_experiences
-                                .slice(0, 3)
-                                .map((exp: any, index: number) => (
-                                  <div
-                                    key={index}
-                                    className="bg-gray-50 p-3 rounded-lg"
-                                  >
-                                    <p className="text-sm font-medium text-gray-900 mb-1">
-                                      {exp.job_title || "N/A"}
-                                    </p>
-                                    <p className="text-xs text-gray-600 mb-1">
-                                      {exp.company_name || "N/A"}
-                                    </p>
-                                    {exp.start_date && (
-                                      <p className="text-xs text-gray-500">
-                                        {new Date(
-                                          exp.start_date
-                                        ).toLocaleDateString()}
-                                        {exp.end_date
-                                          ? ` - ${new Date(exp.end_date).toLocaleDateString()}`
-                                          : " - Present"}
-                                      </p>
-                                    )}
-                                    {exp.description && (
-                                      <p className="text-xs text-gray-600 mt-2 line-clamp-2">
-                                        {exp.description}
-                                      </p>
-                                    )}
-                                  </div>
-                                ))}
-                            </div>
-                          </div>
-                        )}
-
-                      {/* Reviews */}
-                      {kindtaoProfile.kindtao_profile?.reviews &&
-                        kindtaoProfile.kindtao_profile.reviews.length > 0 && (
-                          <div className="mb-6 pb-6 border-b border-gray-200">
-                            <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                              Reviews
-                            </h4>
-                            <div className="space-y-3">
-                              {kindtaoProfile.kindtao_profile.reviews
-                                .slice(0, 3)
-                                .map((review: string, index: number) => (
-                                  <div
-                                    key={index}
-                                    className="bg-gray-50 p-3 rounded-lg"
-                                  >
-                                    <p className="text-sm text-gray-700">
-                                      "{review}"
-                                    </p>
-                                  </div>
-                                ))}
-                            </div>
-                          </div>
-                        )}
-
-                      {/* Expected Salary */}
-                      {kindtaoProfile.kindtao_profile
-                        ?.expected_salary_range && (
-                        <div className="mb-6 pb-6 border-b border-gray-200">
-                          <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                            Expected Salary
-                          </h4>
-                          <p className="text-sm text-gray-700">
-                            {
-                              kindtaoProfile.kindtao_profile
-                                .expected_salary_range
-                            }
-                          </p>
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                {/* KindBossing Profile (when current user is kindtao) */}
-                {currentUserRole === "kindtao" && kindbossingProfile && (
+                {/* KindBossing Profile Details */}
+                {kindbossingProfile && (
                   <>
                     {/* Rating */}
                     {kindbossingProfile.rating !== undefined && (
@@ -1664,3 +1180,4 @@ export default function ConversationWindow({
     </div>
   );
 }
+
