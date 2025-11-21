@@ -94,6 +94,13 @@ export default function ConversationWindow({
     return (userRecord as any)?.role || (currentUser as any)?.role || "kindtao";
   }, [userRecord, currentUser]);
 
+  // Determine messages base path based on user role
+  const messagesBasePath = useMemo(() => {
+    return currentUserRole === "kindbossing"
+      ? "/kindbossing/messages"
+      : "/kindtao/messages";
+  }, [currentUserRole]);
+
   const currentUserProfileImage = useMemo(() => {
     return (
       (userRecord as any)?.profile_image_url ||
@@ -534,7 +541,7 @@ export default function ConversationWindow({
 
       // Update URL AFTER everything is loaded to prevent loading state
       if (isTemporary && actualConversationId !== conversationId) {
-        router.replace(`/kindbossing/messages/${actualConversationId}`, {
+        router.replace(`${messagesBasePath}/${actualConversationId}`, {
           scroll: false,
         });
       }

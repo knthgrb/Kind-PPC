@@ -302,17 +302,6 @@ export default function MyJobPostsClient({
               <span className="flex items-center gap-2">
                 <FaFolderOpen className="w-4 h-4" />
                 Active Jobs
-                {activeJobs.length > 0 && (
-                  <span
-                    className={`ml-2 rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      activeTab === "active"
-                        ? "bg-[#CB0000] text-white"
-                        : "bg-gray-100 text-gray-600"
-                    }`}
-                  >
-                    {activeJobs.length}
-                  </span>
-                )}
               </span>
             </button>
             <button
