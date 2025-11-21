@@ -114,7 +114,7 @@ export default function Header() {
 
             {/* User Dropdown Menu */}
             {userMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 z-[250]">
                 <div className="py-1">
                   <button
                     onClick={handleSignOut}

@@ -10,7 +10,7 @@ export default function KindTaoMoreClient() {
 
   const handleLogout = async () => {
     await signOut();
-    router.push("/login");
+    router.replace("/login");
   };
 
   return (
@@ -72,9 +72,7 @@ export default function KindTaoMoreClient() {
                   <p className="text-sm font-medium text-gray-900">
                     Contact Support
                   </p>
-                  <p className="text-xs text-gray-500">
-                    support@kind.com
-                  </p>
+                  <p className="text-xs text-gray-500">support@kind.com</p>
                 </div>
                 <span className="text-gray-400 text-lg">›</span>
               </Link>
@@ -90,7 +88,9 @@ export default function KindTaoMoreClient() {
                 href="/profile"
                 className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition"
               >
-                <span className="text-sm font-medium text-gray-900">Profile</span>
+                <span className="text-sm font-medium text-gray-900">
+                  Profile
+                </span>
                 <span className="text-gray-400 text-lg">›</span>
               </Link>
               <Link
@@ -113,9 +113,6 @@ export default function KindTaoMoreClient() {
           </div>
         </div>
       </div>
-
     </div>
   );
 }
-
-

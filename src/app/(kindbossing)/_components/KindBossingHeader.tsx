@@ -5,16 +5,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { FiUser, FiLogOut, FiSettings } from "react-icons/fi";
 import { FaChevronDown } from "react-icons/fa";
-import { useSession, authClient } from "@/lib/auth-client";
+import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
-import { logger } from "@/utils/logger";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export default function KindBossingHeader() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { data: session, isPending: loading } = useSession();
   const userMenuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-
+  const { signOut } = useAuthStore();
   const getUserInitials = () => {
     if (session?.user?.name) {
       const nameParts = session.user.name.split(" ");
@@ -40,13 +40,9 @@ export default function KindBossingHeader() {
   };
 
   const handleSignOut = async () => {
-    try {
-      await authClient.signOut();
-      setUserMenuOpen(false);
-      router.push("/login");
-    } catch (error) {
-      logger.error("Error signing out:", error);
-    }
+    await signOut();
+    setUserMenuOpen(false);
+    router.replace("/login");
   };
 
   // Close user menu when clicking outside
@@ -77,7 +73,7 @@ export default function KindBossingHeader() {
   }, [userMenuOpen]);
 
   return (
-    <header className="bg-white sticky top-0 z-[100] h-[8vh] border-b border-gray-200 flex items-center">
+    <header className="bg-white sticky top-0 z-50 lg:z-160 h-[8vh] border-b border-gray-200 flex items-center">
       <div className="w-full flex justify-between items-center px-4">
         {/* Logo - Left */}
         <Link href="/my-job-posts" className="flex items-center">
@@ -129,7 +125,7 @@ export default function KindBossingHeader() {
 
             {/* User Dropdown Menu */}
             {userMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 z-[110]">
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 z-250">
                 <div className="py-1">
                   <Link
                     href="/my-info"

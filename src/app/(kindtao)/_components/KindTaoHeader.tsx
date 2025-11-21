@@ -6,8 +6,6 @@ import { FiUser, FiLogOut, FiSettings } from "react-icons/fi";
 import { FaChevronDown } from "react-icons/fa";
 import { useAuthStore, useAuthSync } from "@/stores/useAuthStore";
 import { useRouter, usePathname } from "next/navigation";
-import { FaRegEnvelope } from "react-icons/fa";
-import { LuBell } from "react-icons/lu";
 
 type UserMetadata = {
   first_name?: string | null;
@@ -56,10 +54,9 @@ export default function Header() {
   };
 
   const handleSignOut = async () => {
-    signOut();
+    await signOut();
     setUserMenuOpen(false);
-    setUserMenuOpen(false);
-    router.push("/login");
+    router.replace("/login");
   };
 
   useEffect(() => {
@@ -115,7 +112,7 @@ export default function Header() {
   }, [userMenuOpen]);
 
   return (
-    <header className="bg-white sticky top-0 z-100 h-[8vh] border-b border-gray-200 flex items-center">
+    <header className="bg-white sticky top-0 z-50 lg:z-160 h-[8vh] border-b border-gray-200 flex items-center">
       <div className="w-full flex justify-between items-center p-4">
         {/* Logo */}
         <Link href="/recs" className="flex items-center">
@@ -165,7 +162,7 @@ export default function Header() {
 
               {/* User Dropdown Menu */}
               {userMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 z-110">
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 z-250">
                   <div className="py-1">
                     <Link
                       href="/profile"
@@ -242,7 +239,7 @@ export default function Header() {
 
               {/* Mobile User Dropdown Menu */}
               {userMenuOpen && (
-                <div className="absolute right-0 mt-2 w-44 bg-white rounded-xl shadow-lg border border-gray-200 z-110">
+                <div className="absolute right-0 mt-2 w-44 bg-white rounded-xl shadow-lg border border-gray-200 z-250">
                   <div className="py-1">
                     <Link
                       href="/profile"

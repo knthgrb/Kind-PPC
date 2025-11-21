@@ -69,13 +69,13 @@ export default function RecsConversationOverlay({
     // This prevents layout shifts that cause shaking
     let raf1: number;
     let raf2: number;
-    
+
     raf1 = requestAnimationFrame(() => {
       raf2 = requestAnimationFrame(() => {
-      setIsVisible(true);
+        setIsVisible(true);
+      });
     });
-    });
-    
+
     return () => {
       cancelAnimationFrame(raf1);
       if (raf2) cancelAnimationFrame(raf2);
@@ -91,12 +91,12 @@ export default function RecsConversationOverlay({
     setTimeout(() => {
       setIsClosing(true);
       // onClose will be called after component is removed from DOM
-    setTimeout(() => {
-      if (onClose) {
-        onClose();
-      } else {
-        router.replace(closeRedirect, { scroll: false });
-      }
+      setTimeout(() => {
+        if (onClose) {
+          onClose();
+        } else {
+          router.replace(closeRedirect, { scroll: false });
+        }
       }, 50);
     }, 350); // Match animation duration (300ms) + small buffer
   };
@@ -107,16 +107,16 @@ export default function RecsConversationOverlay({
     hidden: {
       x: "100%",
       transition: {
-        type: "tween",
-        ease: [0.4, 0, 0.2, 1], // easeOut cubic bezier
+        type: "tween" as const,
+        ease: [0.4, 0, 0.2, 1] as const, // easeOut cubic bezier
         duration: 0.3,
       },
     },
     visible: {
       x: 0,
       transition: {
-        type: "tween",
-        ease: [0.4, 0, 0.2, 1], // easeOut cubic bezier
+        type: "tween" as const,
+        ease: [0.4, 0, 0.2, 1] as const, // easeOut cubic bezier
         duration: 0.3,
       },
     },
@@ -131,8 +131,8 @@ export default function RecsConversationOverlay({
     <div
       className={
         fullScreen
-          ? "pointer-events-none fixed inset-0 z-[130] flex justify-end overflow-x-hidden"
-          : "pointer-events-none fixed inset-0 lg:absolute z-[150] flex justify-end lg:justify-start overflow-hidden lg:left-80 lg:top-0 lg:bottom-0 lg:right-0 lg:w-[calc(100%-20rem)]"
+          ? "pointer-events-none fixed inset-0 z-200 lg:z-130 flex justify-end overflow-x-hidden"
+          : "pointer-events-none fixed inset-0 lg:absolute z-200 lg:z-150 flex justify-end lg:justify-start overflow-hidden lg:left-80 lg:top-0 lg:bottom-0 lg:right-0 lg:w-[calc(100%-20rem)]"
       }
       style={{
         contain: "layout style paint", // Prevent layout shifts from affecting parent

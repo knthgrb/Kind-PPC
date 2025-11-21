@@ -2,10 +2,8 @@
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { LuBell } from "react-icons/lu";
-import { FaRegEnvelope } from "react-icons/fa";
 import { FaChevronDown } from "react-icons/fa6";
-import { FiMenu, FiX, FiUser, FiLogOut } from "react-icons/fi";
+import { FiLogOut } from "react-icons/fi";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useRouter } from "next/navigation";
 
@@ -20,7 +18,7 @@ export default function KindBossingOnboardingHeader() {
     await signOut();
     setUserMenuOpen(false);
     setMenuOpen(false);
-    router.push("/login");
+    router.replace("/login");
   };
 
   const userMetadata = (user as { user_metadata?: any })?.user_metadata;
@@ -130,7 +128,7 @@ export default function KindBossingOnboardingHeader() {
 
             {/* User Dropdown Menu */}
             {userMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 z-250">
                 <div className="py-1">
                   <button
                     onClick={handleSignOut}

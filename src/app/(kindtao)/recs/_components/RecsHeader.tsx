@@ -54,7 +54,7 @@ export default function RecsHeader() {
   const handleSignOut = async () => {
     await signOut();
     setUserMenuOpen(false);
-    router.push("/login");
+    router.replace("/login");
   };
 
   // Close user menu when clicking outside
@@ -85,7 +85,7 @@ export default function RecsHeader() {
   }, [userMenuOpen]);
 
   return (
-    <header className="flex bg-white sticky top-0 z-100 h-16 sm:h-[8vh] border-b border-gray-200 items-center">
+    <header className="flex bg-white sticky top-0 z-50 lg:z-160 h-16 sm:h-[8vh] border-b border-gray-200 items-center">
       <div className="w-full flex justify-between items-center px-4">
         {/* Logo - Left */}
         <Link href="/recs" className="flex items-center">
@@ -135,7 +135,7 @@ export default function RecsHeader() {
 
             {/* User Dropdown Menu */}
             {userMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 z-110">
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 z-250">
                 <div className="py-1">
                   <Link
                     href="/profile"
