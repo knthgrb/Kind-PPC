@@ -89,7 +89,7 @@ function isKindBossingOnboardingRoute(pathname: string): boolean {
   return pathname.startsWith("/kindbossing-onboarding");
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const currentPathname = request.nextUrl.pathname;
 
   // Skip middleware logic for public routes
