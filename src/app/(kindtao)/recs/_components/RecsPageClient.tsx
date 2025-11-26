@@ -411,11 +411,11 @@ export default function RecsPageClient({
         className="recs-page-container w-full h-full flex flex-col lg:flex-row bg-gray-50 flex-1 overflow-x-hidden relative min-h-0"
         style={{ minHeight: mobileMinHeight }}
       >
-        {/* Sidebar: Show on mobile for matches/messages view, always show on desktop */}
+        {/* Sidebar: Hide on mobile (show swipe UI instead), always show on desktop */}
         {/* Ensure sidebar has solid background and fixed height on mobile */}
         {/* Sidebar accounts for visible header/tabs height on mobile, full height on desktop */}
         <div 
-          className="recs-sidebar-container flex w-full lg:w-80 bg-white lg:border-r border-gray-200 flex-col shrink-0 min-h-0 relative z-0 lg:h-full"
+          className="recs-sidebar-container hidden lg:flex w-full lg:w-80 bg-white lg:border-r border-gray-200 flex-col shrink-0 min-h-0 relative z-0 lg:h-full"
         >
           <RecsSidebar
             activeTab={activeTab}
@@ -434,8 +434,8 @@ export default function RecsPageClient({
           />
         </div>
 
-        {/* JobsCarousel: Hide on mobile, show on desktop */}
-        <div className="hidden lg:flex flex-1 items-center justify-center px-4 py-6 min-w-0 h-full min-h-0 relative">
+        {/* JobsCarousel: Show on mobile (swipe UI), show on desktop */}
+        <div className="flex flex-1 items-center justify-center px-4 py-6 min-w-0 h-full min-h-0 relative">
           <JobsCarousel
             jobs={initialJobs}
             initialSwipeLimit={initialSwipeLimit}
