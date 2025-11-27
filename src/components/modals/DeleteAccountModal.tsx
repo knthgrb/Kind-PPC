@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { IoCloseOutline, IoLockClosedOutline } from "react-icons/io5";
 
 interface DeleteAccountModalProps {
@@ -46,8 +47,8 @@ export default function DeleteAccountModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/40 p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -124,6 +125,7 @@ export default function DeleteAccountModal({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { FaTimes, FaPaperPlane } from "react-icons/fa";
 
 interface StartConversationModalProps {
@@ -30,8 +31,8 @@ export default function StartConversationModal({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+  return createPortal(
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-9999 p-4">
       <div className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -114,6 +115,7 @@ export default function StartConversationModal({
           </form>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

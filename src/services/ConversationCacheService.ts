@@ -421,11 +421,18 @@ class ConversationCacheService {
 
   /**
    * Get conversation from IndexedDB (async fallback)
+   * Decrypts data if encryption is enabled
    */
   async getConversationFromIndexedDB(
     conversationId: string
   ): Promise<CachedConversation | null> {
     if (typeof window === "undefined") return null;
+
+    const userId = this.getUserId();
+    if (!userId) {
+      logger.debug("No user ID available, skipping IndexedDB read");
+      return null;
+    }
 
     try {
       await this.initIndexedDB();
@@ -436,13 +443,29 @@ class ConversationCacheService {
         const store = transaction.objectStore("conversations");
         const request = store.get(conversationId);
 
-        request.onsuccess = () => {
-          const dbData = request.result as CachedConversation | undefined;
-          if (dbData) {
+        request.onsuccess = async () => {
+          const entry = request.result as EncryptedCacheEntry | undefined;
+          if (!entry) {
+            resolve(null);
+            return;
+          }
+
+          try {
+            // Decrypt the data
+            const decrypted = await this.encryptionService.decrypt(
+              userId,
+              entry.encryptedData
+            );
+
             // Load into memory for faster access
-            this.conversationCache.set(conversationId, dbData);
-            resolve(dbData);
-          } else {
+            this.conversationCache.set(conversationId, decrypted);
+            resolve(decrypted);
+          } catch (error) {
+            // If decryption fails, skip this entry (might be from different user or corrupted)
+            logger.warn("Failed to decrypt cached conversation:", {
+              conversationId,
+              error,
+            });
             resolve(null);
           }
         };

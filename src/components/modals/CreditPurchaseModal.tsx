@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { FaTimes, FaCoins, FaRocket, FaCheck } from "react-icons/fa";
 import { BOOST_PACKAGES } from "@/constants/subscriptionPlans";
 import { useToastActions } from "@/stores/useToastStore";
@@ -60,8 +61,8 @@ export default function CreditPurchaseModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-100 p-4">
+  return createPortal(
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-9999 p-4">
       <div className="bg-white rounded-2xl max-w-2xl w-full p-6 relative max-h-[90vh] overflow-y-auto">
         {/* Close button */}
         <button
@@ -152,6 +153,7 @@ export default function CreditPurchaseModal({
           </p>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

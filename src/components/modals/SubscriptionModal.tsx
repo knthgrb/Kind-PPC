@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   FaCheck,
   FaTimes,
@@ -83,8 +84,6 @@ export default function SubscriptionModal({
       setLoading(false);
     }
   };
-
-  if (!isOpen) return null;
 
   const handlePlanSelect = async (plan: any) => {
     if (plan.priceMonthly === 0 || plan.tier === "free") {
@@ -175,8 +174,10 @@ export default function SubscriptionModal({
     return plan.features || [];
   };
 
-  return (
-    <div className="fixed inset-0 z-100 bg-white">
+  if (!isOpen) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-9999 bg-white">
       <div className="h-full w-full overflow-y-auto">
         {/* Header */}
         <div className="flex justify-between items-center p-6">
@@ -414,6 +415,7 @@ export default function SubscriptionModal({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

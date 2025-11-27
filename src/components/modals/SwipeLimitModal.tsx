@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { FaTimes, FaClock, FaCrown, FaGift, FaCoins } from "react-icons/fa";
 import SubscriptionModal from "./SubscriptionModal";
 import CreditPurchaseModal from "./CreditPurchaseModal";
@@ -40,8 +41,8 @@ export default function SwipeLimitModal({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-100 p-4">
+  return createPortal(
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-9999 p-4">
       <div className="bg-white rounded-2xl max-w-md w-full p-6 relative">
         {/* Close button */}
         <button
@@ -173,6 +174,7 @@ export default function SwipeLimitModal({
         creditType="swipe_credits"
         currentCredits={remainingSwipes}
       />
-    </div>
+    </div>,
+    document.body
   );
 }

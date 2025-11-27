@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useConvex } from "convex/react";
 import { FiX } from "react-icons/fi";
 import { JobPreferencesService } from "@/services/JobPreferencesService";
 import { useToastActions } from "@/stores/useToastStore";
+import { useOptionalCurrentUser } from "@/hooks/useOptionalCurrentUser";
 import { JOB_CATEGORIES } from "@/constants/jobCategories";
 
 interface JobPreferencesModalProps {
@@ -112,18 +114,30 @@ export default function JobPreferencesModal({
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { showSuccess, showError } = useToastActions();
+  const convex = useConvex();
+  const { currentUser } = useOptionalCurrentUser();
 
-  const CACHE_KEY = "job_preferences_cache";
-  const CACHE_TIMESTAMP_KEY = "job_preferences_cache_timestamp";
   const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
+  // Get user-specific cache keys
+  const getCacheKeys = (userId: string | undefined) => {
+    if (!userId) return { cacheKey: null, timestampKey: null };
+    return {
+      cacheKey: `job_preferences_cache_${userId}`,
+      timestampKey: `job_preferences_cache_timestamp_${userId}`,
+    };
+  };
+
   // Load from localStorage helper
-  const loadFromCache = (): JobPreferences | null => {
-    if (typeof window === "undefined") return null;
+  const loadFromCache = (userId: string | undefined): JobPreferences | null => {
+    if (typeof window === "undefined" || !userId) return null;
+
+    const { cacheKey, timestampKey } = getCacheKeys(userId);
+    if (!cacheKey || !timestampKey) return null;
 
     try {
-      const cached = localStorage.getItem(CACHE_KEY);
-      const timestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY);
+      const cached = localStorage.getItem(cacheKey);
+      const timestamp = localStorage.getItem(timestampKey);
 
       if (cached && timestamp) {
         const age = Date.now() - parseInt(timestamp, 10);
@@ -131,8 +145,8 @@ export default function JobPreferencesModal({
           return JSON.parse(cached);
         } else {
           // Cache expired, remove it
-          localStorage.removeItem(CACHE_KEY);
-          localStorage.removeItem(CACHE_TIMESTAMP_KEY);
+          localStorage.removeItem(cacheKey);
+          localStorage.removeItem(timestampKey);
         }
       }
     } catch (error) {
@@ -142,12 +156,15 @@ export default function JobPreferencesModal({
   };
 
   // Save to localStorage helper
-  const saveToCache = (prefs: JobPreferences) => {
-    if (typeof window === "undefined") return;
+  const saveToCache = (prefs: JobPreferences, userId: string | undefined) => {
+    if (typeof window === "undefined" || !userId) return;
+
+    const { cacheKey, timestampKey } = getCacheKeys(userId);
+    if (!cacheKey || !timestampKey) return;
 
     try {
-      localStorage.setItem(CACHE_KEY, JSON.stringify(prefs));
-      localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
+      localStorage.setItem(cacheKey, JSON.stringify(prefs));
+      localStorage.setItem(timestampKey, Date.now().toString());
     } catch (error) {
       console.error("Error saving to cache:", error);
     }
@@ -159,10 +176,10 @@ export default function JobPreferencesModal({
       if (initialPreferences) {
         // Use provided preferences and cache them
         setPreferences(initialPreferences);
-        saveToCache(initialPreferences);
+        saveToCache(initialPreferences, currentUser?._id);
       } else {
-        // Check cache first
-        const cached = loadFromCache();
+        // Check cache first (user-specific)
+        const cached = loadFromCache(currentUser?._id);
         if (cached) {
           setPreferences(cached);
           setIsLoading(false);
@@ -172,18 +189,27 @@ export default function JobPreferencesModal({
         }
       }
     }
-  }, [isOpen, initialPreferences]);
+  }, [isOpen, initialPreferences, currentUser?._id]);
 
   const fetchJobPreferences = async () => {
+    if (!currentUser?._id) {
+      showError("Please log in to load job preferences.");
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const { data, error } = await JobPreferencesService.getJobPreferences();
+      const { data, error } = await JobPreferencesService.getJobPreferences(
+        convex,
+        currentUser._id
+      );
       if (error) {
         showError("Failed to load job preferences. Please try again.");
         console.error("Error fetching job preferences:", error);
       } else if (data) {
         setPreferences(data);
-        saveToCache(data); // Cache the fetched data
+        saveToCache(data, currentUser._id); // Cache the fetched data (user-specific)
       }
     } catch (error) {
       showError("Failed to load job preferences. Please try again.");
@@ -247,14 +273,23 @@ export default function JobPreferencesModal({
       return;
     }
 
+    if (!currentUser?._id) {
+      showError("Please log in to save job preferences.");
+      return;
+    }
+
     setIsSaving(true);
     try {
       const { success, error } =
-        await JobPreferencesService.updateJobPreferences(preferences);
+        await JobPreferencesService.updateJobPreferences(
+          convex,
+          currentUser._id,
+          preferences
+        );
       if (success) {
         showSuccess("Job preferences saved successfully!");
-        // Update cache with saved preferences
-        saveToCache(preferences);
+        // Update cache with saved preferences (user-specific)
+        saveToCache(preferences, currentUser._id);
         onSave(preferences);
         onClose();
       } else {

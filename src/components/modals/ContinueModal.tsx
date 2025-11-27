@@ -1,5 +1,6 @@
 "use client";
 
+import { createPortal } from "react-dom";
 import Image from "next/image";
 
 export default function ContinueModal({
@@ -21,8 +22,8 @@ export default function ContinueModal({
 }) {
   if (!open) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+  return createPortal(
+    <div className="fixed inset-0 z-9999 flex items-center justify-center">
       {/* overlay */}
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-md"
@@ -56,6 +57,7 @@ export default function ContinueModal({
           {buttonLabel || "OK"}
         </button>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -187,10 +187,10 @@ export default function EmployeeDetailModal({
   return createPortal(
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/50 z-50" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/40 z-9999" onClick={onClose} />
 
       {/* Modal */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+      <div className="fixed inset-0 z-9999 flex items-center justify-center p-4 overflow-y-auto">
         <div className="bg-white rounded-2xl border border-gray-200 shadow-xl w-full max-w-3xl my-8 max-h-[90vh] overflow-y-auto">
           {/* Header */}
           <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
