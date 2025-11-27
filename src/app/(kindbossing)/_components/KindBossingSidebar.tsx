@@ -233,7 +233,7 @@ export default function KindBossingSidebar() {
   return (
     <aside
       className={`hidden lg:flex border-r border-gray-200 bg-white flex-col transition-all duration-300 ease-in-out overflow-x-hidden ${
-        isCollapsed ? "w-16" : "w-64"
+        isCollapsed ? "w-16" : "w-56"
       }`}
       style={{ height: "calc(100vh - 8vh)" }}
     >
