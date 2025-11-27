@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { IoCloseOutline } from "react-icons/io5";
 import { MatchedJob } from "@/services/JobMatchingService";
 import { formatWorkSchedule } from "@/utils/workScheduleFormatter";
@@ -16,10 +18,16 @@ export default function JobDetailsModal({
   isOpen,
   onClose,
 }: JobDetailsModalProps) {
-  if (!isOpen) return null;
+  const [isMounted, setIsMounted] = useState(false);
 
-  return (
-    <div className="fixed inset-0 z-110 flex items-center justify-center bg-black/40 p-4">
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted || !isOpen) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/40 p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 shrink-0">
@@ -138,6 +146,7 @@ export default function JobDetailsModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
